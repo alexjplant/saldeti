@@ -1,0 +1,63 @@
+{{define "title"}}{{if .IsEdit}}Edit User{{else}}New User{{end}} — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h1>{{if .IsEdit}}Edit User{{else}}New User{{end}}</h1>
+</hgroup>
+
+{{if .Error}}
+<blockquote>
+    <p>{{.Error}}</p>
+</blockquote>
+{{end}}
+
+<form method="POST" action="{{.FormAction}}">
+    <fieldset>
+        <label for="displayName">Display Name *
+            <input type="text" id="displayName" name="displayName" value="{{.Form.DisplayName}}" required>
+        </label>
+        <label for="userPrincipalName">User Principal Name *
+            <input type="text" id="userPrincipalName" name="userPrincipalName" value="{{.Form.UserPrincipalName}}" required>
+        </label>
+    </fieldset>
+    <fieldset>
+        <label for="givenName">Given Name
+            <input type="text" id="givenName" name="givenName" value="{{.Form.GivenName}}">
+        </label>
+        <label for="surname">Surname
+            <input type="text" id="surname" name="surname" value="{{.Form.Surname}}">
+        </label>
+    </fieldset>
+    <fieldset>
+        <label for="mail">Mail
+            <input type="email" id="mail" name="mail" value="{{.Form.Mail}}">
+        </label>
+        <label for="mailNickname">Mail Nickname
+            <input type="text" id="mailNickname" name="mailNickname" value="{{.Form.MailNickname}}">
+        </label>
+    </fieldset>
+    <fieldset>
+        <label for="jobTitle">Job Title
+            <input type="text" id="jobTitle" name="jobTitle" value="{{.Form.JobTitle}}">
+        </label>
+        <label for="department">Department
+            <input type="text" id="department" name="department" value="{{.Form.Department}}">
+        </label>
+    </fieldset>
+    <fieldset>
+        <label for="officeLocation">Office Location
+            <input type="text" id="officeLocation" name="officeLocation" value="{{.Form.OfficeLocation}}">
+        </label>
+        <label for="mobilePhone">Mobile Phone
+            <input type="text" id="mobilePhone" name="mobilePhone" value="{{.Form.MobilePhone}}">
+        </label>
+    </fieldset>
+    <label>
+        <input type="checkbox" name="accountEnabled" value="true" {{if .Form.AccountEnabled}}checked{{end}}>
+        Account Enabled
+    </label>
+
+    <button type="submit">{{if .IsEdit}}Update User{{else}}Create User{{end}}</button>
+    <a href="{{.CancelURL}}">Cancel</a>
+</form>
+{{end}}

@@ -1,0 +1,271 @@
+{
+  "clients": [
+    {
+      "client_id": "sim-client-id",
+      "client_secret": "sim-client-secret",
+      "tenant_id": "sim-tenant-id"
+    }
+  ],
+  "users": [
+    {
+      "email": "admin@saldeti.local",
+      "display_name": "Admin User",
+      "password": "Simulator123!",
+      "given_name": "Admin",
+      "surname": "User",
+      "job_title": "Administrator",
+      "department": "IT",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "alice.smith@saldeti.local",
+      "display_name": "Alice Smith",
+      "password": "Simulator123!",
+      "given_name": "Alice",
+      "surname": "Smith",
+      "job_title": "Software Engineer",
+      "department": "Engineering",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "bob.jones@saldeti.local",
+      "display_name": "Bob Jones",
+      "password": "Simulator123!",
+      "given_name": "Bob",
+      "surname": "Jones",
+      "job_title": "Senior Engineer",
+      "department": "Engineering",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "charlie.brown@saldeti.local",
+      "display_name": "Charlie Brown",
+      "password": "Simulator123!",
+      "given_name": "Charlie",
+      "surname": "Brown",
+      "job_title": "Marketing Manager",
+      "department": "Marketing",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "diana.prince@saldeti.local",
+      "display_name": "Diana Prince",
+      "password": "Simulator123!",
+      "given_name": "Diana",
+      "surname": "Prince",
+      "job_title": "HR Director",
+      "department": "HR",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "eve.wilson@saldeti.local",
+      "display_name": "Eve Wilson",
+      "password": "Simulator123!",
+      "given_name": "Eve",
+      "surname": "Wilson",
+      "job_title": "Tech Lead",
+      "department": "Engineering",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "frank.miller@saldeti.local",
+      "display_name": "Frank Miller",
+      "password": "Simulator123!",
+      "given_name": "Frank",
+      "surname": "Miller",
+      "job_title": "CFO",
+      "department": "Finance",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "grace.lee@saldeti.local",
+      "display_name": "Grace Lee",
+      "password": "Simulator123!",
+      "given_name": "Grace",
+      "surname": "Lee",
+      "job_title": "Intern",
+      "department": "Engineering",
+      "enabled": false,
+      "is_guest": false
+    },
+    {
+      "email": "henry.taylor@saldeti.local",
+      "display_name": "Henry Taylor",
+      "password": "Simulator123!",
+      "given_name": "Henry",
+      "surname": "Taylor",
+      "job_title": "Account Executive",
+      "department": "Sales",
+      "enabled": true,
+      "is_guest": false
+    },
+    {
+      "email": "ivan.guest@external.com",
+      "display_name": "Ivan Guest",
+      "password": "Simulator123!",
+      "given_name": "Ivan",
+      "surname": "Guest",
+      "enabled": true,
+      "is_guest": true
+    },
+    {
+      "email": "julia.roberts@saldeti.local",
+      "display_name": "Julia Roberts",
+      "password": "Simulator123!",
+      "given_name": "Julia",
+      "surname": "Roberts",
+      "job_title": "Content Writer",
+      "department": "Marketing",
+      "enabled": true,
+      "is_guest": false
+    }
+  ],
+  "groups": [
+    {
+      "display_name": "Engineering Team",
+      "description": "Engineering department",
+      "mail_nickname": "engineeringteam",
+      "visibility": "Public"
+    },
+    {
+      "display_name": "Marketing Team",
+      "description": "Marketing department",
+      "mail_nickname": "marketingteam",
+      "visibility": "Public"
+    },
+    {
+      "display_name": "All Staff",
+      "description": "All employees",
+      "mail_nickname": "allstaff",
+      "visibility": "Public"
+    },
+    {
+      "display_name": "Leadership",
+      "description": "Leadership team",
+      "mail_nickname": "leadership",
+      "visibility": "Private"
+    },
+    {
+      "display_name": "Project Alpha",
+      "description": "Project Alpha team",
+      "mail_nickname": "projectalpha",
+      "visibility": "Public",
+      "group_types": ["Unified"]
+    }
+  ],
+  "memberships": [
+    {
+      "user_index": 1,
+      "group_index": 0
+    },
+    {
+      "user_index": 2,
+      "group_index": 0
+    },
+    {
+      "user_index": 5,
+      "group_index": 0
+    },
+    {
+      "user_index": 7,
+      "group_index": 0
+    },
+    {
+      "user_index": 3,
+      "group_index": 1
+    },
+    {
+      "user_index": 10,
+      "group_index": 1
+    },
+    {
+      "user_index": 1,
+      "group_index": 2
+    },
+    {
+      "user_index": 2,
+      "group_index": 2
+    },
+    {
+      "user_index": 3,
+      "group_index": 2
+    },
+    {
+      "user_index": 4,
+      "group_index": 2
+    },
+    {
+      "user_index": 5,
+      "group_index": 2
+    },
+    {
+      "user_index": 6,
+      "group_index": 2
+    },
+    {
+      "user_index": 8,
+      "group_index": 2
+    },
+    {
+      "user_index": 10,
+      "group_index": 2
+    },
+    {
+      "member_group_index": 0,
+      "group_index": 2
+    },
+    {
+      "member_group_index": 1,
+      "group_index": 2
+    },
+    {
+      "user_index": 4,
+      "group_index": 3
+    },
+    {
+      "user_index": 6,
+      "group_index": 3
+    },
+    {
+      "user_index": 1,
+      "group_index": 4
+    },
+    {
+      "user_index": 3,
+      "group_index": 4
+    },
+    {
+      "user_index": 5,
+      "group_index": 4
+    }
+  ],
+  "managers": [
+    {
+      "user_index": 6,
+      "manager_index": 0
+    },
+    {
+      "user_index": 4,
+      "manager_index": 0
+    },
+    {
+      "user_index": 5,
+      "manager_index": 6
+    },
+    {
+      "user_index": 1,
+      "manager_index": 5
+    },
+    {
+      "user_index": 2,
+      "manager_index": 5
+    }
+  ]
+}

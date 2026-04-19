@@ -1,0 +1,14 @@
+{{define "pagination"}}
+{{if .HasPagination}}
+<nav aria-label="Pagination">
+    <ul>
+        {{if .PrevPage}}
+        <li><a href="?page={{.PrevPage}}&per_page={{.PerPage}}">← Previous</a></li>
+        {{end}}
+        {{if .NextPage}}
+        <li><a href="?page={{.NextPage}}&per_page={{.PerPage}}">Next →</a></li>
+        {{end}}
+    </ul>
+</nav>
+{{end}}
+{{end}}

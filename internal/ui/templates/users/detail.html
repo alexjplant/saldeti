@@ -1,0 +1,71 @@
+{{define "title"}}User Detail — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h1>{{.User.DisplayName}}</h1>
+    <p>{{.User.UserPrincipalName}}</p>
+</hgroup>
+
+<p>
+    <a href="/ui/users/{{.User.ID}}/edit"><i data-lucide="pencil"></i> Edit</a>
+    <a href="/ui/users"><i data-lucide="arrow-left"></i> Back to Users</a>
+    <form method="POST" action="/ui/users/{{.User.ID}}/delete" onsubmit="return confirm('Delete {{.User.DisplayName}}?');">
+        <button type="submit"><i data-lucide="trash-2"></i> Delete</button>
+    </form>
+</p>
+
+<div role="group">
+    <article>
+        <header><strong>General</strong></header>
+        <dl>
+            <dt>ID</dt><dd>{{.User.ID}}</dd>
+            <dt>Display Name</dt><dd>{{.User.DisplayName}}</dd>
+            <dt>Given Name</dt><dd>{{.User.GivenName}}</dd>
+            <dt>Surname</dt><dd>{{.User.Surname}}</dd>
+            <dt>UPN</dt><dd>{{.User.UserPrincipalName}}</dd>
+            <dt>Mail</dt><dd>{{.User.Mail}}</dd>
+            <dt>Mail Nickname</dt><dd>{{.User.MailNickname}}</dd>
+        </dl>
+    </article>
+    <article>
+        <header><strong>Work</strong></header>
+        <dl>
+            <dt>Job Title</dt><dd>{{.User.JobTitle}}</dd>
+            <dt>Department</dt><dd>{{.User.Department}}</dd>
+            <dt>Office Location</dt><dd>{{.User.OfficeLocation}}</dd>
+            <dt>Mobile Phone</dt><dd>{{.User.MobilePhone}}</dd>
+            <dt>Account Enabled</dt><dd>{{yesno .User.AccountEnabled}}</dd>
+            <dt>User Type</dt><dd>{{.User.UserType}}</dd>
+        </dl>
+    </article>
+</div>
+
+{{if .Manager}}
+<article>
+    <header><strong>Manager</strong></header>
+    <p><a href="/ui/users/{{.Manager.ID}}">{{.Manager.DisplayName}}</a></p>
+</article>
+{{end}}
+
+{{if .DirectReports}}
+<article>
+    <header><strong>Direct Reports</strong></header>
+    <ul>
+        {{range .DirectReports}}
+        <li><a href="/ui/users/{{.ID}}">{{.DisplayName}}</a></li>
+        {{end}}
+    </ul>
+</article>
+{{end}}
+
+{{if .GroupMemberships}}
+<article>
+    <header><strong>Group Memberships</strong></header>
+    <ul>
+        {{range .GroupMemberships}}
+        <li><a href="/ui/groups/{{.ID}}">{{.DisplayName}}</a></li>
+        {{end}}
+    </ul>
+</article>
+{{end}}
+{{end}}

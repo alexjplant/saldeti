@@ -1,0 +1,54 @@
+{{define "title"}}Users — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h1>Users</h1>
+    <p>{{.TotalCount}} total users</p>
+</hgroup>
+
+<div role="group">
+    <form method="GET" action="/ui/users">
+        <input type="search" name="search" placeholder="Search users..." value="{{.Search}}">
+        <button type="submit">Search</button>
+        {{if .Search}}<a href="/ui/users">Clear</a>{{end}}
+    </form>
+    <div>
+        <a href="/ui/users/new"><i data-lucide="plus"></i> New User</a>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Display Name</th>
+            <th>UPN</th>
+            <th>Mail</th>
+            <th>Department</th>
+            <th>Enabled</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Users}}
+        <tr>
+            <td><a href="/ui/users/{{.ID}}">{{.DisplayName}}</a></td>
+            <td>{{.UserPrincipalName}}</td>
+            <td>{{.Mail}}</td>
+            <td>{{.Department}}</td>
+            <td>{{yesno .AccountEnabled}}</td>
+            <td>
+                <a href="/ui/users/{{.ID}}" title="View"><i data-lucide="eye"></i></a>
+                <a href="/ui/users/{{.ID}}/edit" title="Edit"><i data-lucide="pencil"></i></a>
+                <form method="POST" action="/ui/users/{{.ID}}/delete" onsubmit="return confirm('Delete {{.DisplayName}}?');">
+                    <button type="submit" title="Delete"><i data-lucide="trash-2"></i></button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6">No users found.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{template "pagination" .}}
+{{end}}

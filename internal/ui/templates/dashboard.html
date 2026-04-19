@@ -1,0 +1,43 @@
+{{define "title"}}Dashboard — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h1>Dashboard</h1>
+    <p>Graph API Simulator overview</p>
+</hgroup>
+
+<div role="group">
+    <article>
+        <header style="text-align:center;">
+            <h2>{{.TotalUsers}}</h2>
+        </header>
+        <footer style="text-align:center;">
+            <p><a href="/ui/users">Total Users</a></p>
+        </footer>
+    </article>
+    <article>
+        <header style="text-align:center;">
+            <h2>{{.EnabledUsers}}</h2>
+        </header>
+        <footer style="text-align:center;">
+            <p>Enabled Users</p>
+        </footer>
+    </article>
+    <article>
+        <header style="text-align:center;">
+            <h2>{{.DisabledUsers}}</h2>
+        </header>
+        <footer style="text-align:center;">
+            <p>Disabled Users</p>
+        </footer>
+    </article>
+    <article>
+        <header style="text-align:center;">
+            <h2>{{.TotalGroups}}</h2>
+        </header>
+        <footer style="text-align:center;">
+            <p><a href="/ui/groups">Total Groups</a></p>
+        </footer>
+    </article>
+</div>
+{{end}}

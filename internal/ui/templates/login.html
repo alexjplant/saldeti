@@ -1,0 +1,22 @@
+{{define "title"}}Login — Saldeti{{end}}
+
+{{define "content"}}
+<article>
+    <hgroup>
+        <h1>Saldeti Admin</h1>
+        <p>Sign in to manage the simulator</p>
+    </hgroup>
+    {{if .Error}}
+    <blockquote>
+        <p>{{.Error}}</p>
+    </blockquote>
+    {{end}}
+    <form method="POST" action="/ui/login">
+        <label for="username">Username (UPN)</label>
+        <input type="text" id="username" name="username" placeholder="admin@saldeti.local" required>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Simulator123!" required>
+        <button type="submit">Sign In</button>
+    </form>
+</article>
+{{end}}

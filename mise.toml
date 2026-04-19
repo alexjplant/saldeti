@@ -1,0 +1,103 @@
+[tools]
+go = "1.26.1"
+node = "22"
+
+[env]
+_.file = ".env"
+
+[tasks.build]
+description = "Builds the saldeti binary"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+go build -o bin/saldeti ./cmd/saldeti/
+"""
+
+[tasks.clean]
+description = "Removes build artifacts"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+rm -rf bin/
+"""
+
+[tasks.e2e]
+description = "Runs end-to-end tests (requires e2e build tag)"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+go test ./test/ -v -count=1 -tags=e2e "$@"
+"""
+
+[tasks.lint]
+description = "Runs go vet"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+go vet ./...
+"""
+
+[tasks.run]
+description = "Runs the saldeti server (pass -seed seed.json to load seed data)"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+go run ./cmd/saldeti/ "$@"
+"""
+
+[tasks.test]
+description = "Runs the test suite (excludes E2E tests)"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+go test ./internal/... ./cmd/... -v -count=1 "$@"
+"""
+
+[tasks.test-all]
+description = "Runs unit + integration tests"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+go test -tags e2e ./...
+"""
+
+[tasks.ui-test]
+description = "Runs Go UI unit tests (build tag: ui)"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+go test -tags ui -v -count=1 ./internal/ui_test/...
+"""
+
+[tasks.ui-e2e-install]
+description = "Installs Playwright and Chromium browser"
+dir = "e2e"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npm install
+npx playwright install --with-deps chromium
+"""
+
+[tasks.ui-e2e]
+description = "Runs Playwright E2E tests against the UI"
+depends = ["build"]
+dir = "e2e"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npx playwright test "$@"
+"""
+
+[tasks.ui-e2e-headed]
+description = "Runs Playwright E2E tests with visible browser"
+depends = ["build"]
+dir = "e2e"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npx playwright test --headed "$@"
+"""
+
+[tasks.litellm]
+run = "litellm --config litellm.config.yaml"

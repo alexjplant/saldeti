@@ -1,0 +1,56 @@
+{{define "title"}}Groups — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h1>Groups</h1>
+    <p>{{.TotalCount}} total groups</p>
+</hgroup>
+
+<div role="group">
+    <form method="GET" action="/ui/groups">
+        <input type="search" name="search" placeholder="Search groups..." value="{{.Search}}">
+        <button type="submit">Search</button>
+        {{if .Search}}<a href="/ui/groups">Clear</a>{{end}}
+    </form>
+    <div>
+        <a href="/ui/groups/new"><i data-lucide="plus"></i> New Group</a>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Display Name</th>
+            <th>Description</th>
+            <th>Mail Nickname</th>
+            <th>Type</th>
+            <th>Members</th>
+            <th>Visibility</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .GroupRows}}
+        <tr>
+            <td><a href="/ui/groups/{{.Group.ID}}">{{.Group.DisplayName}}</a></td>
+            <td>{{truncate .Group.Description 50}}</td>
+            <td>{{.Group.MailNickname}}</td>
+            <td>{{.TypeLabel}}</td>
+            <td>{{.MemberCount}}</td>
+            <td>{{.Group.Visibility}}</td>
+            <td>
+                <a href="/ui/groups/{{.Group.ID}}" title="View"><i data-lucide="eye"></i></a>
+                <a href="/ui/groups/{{.Group.ID}}/edit" title="Edit"><i data-lucide="pencil"></i></a>
+                <form method="POST" action="/ui/groups/{{.Group.ID}}/delete" onsubmit="return confirm('Delete {{.Group.DisplayName}}?');">
+                    <button type="submit" title="Delete"><i data-lucide="trash-2"></i></button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="7">No groups found.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{template "pagination" .}}
+{{end}}

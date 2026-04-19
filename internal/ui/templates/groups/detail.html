@@ -1,0 +1,110 @@
+{{define "title"}}Group Detail — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h1>{{.Group.DisplayName}}</h1>
+    <p>{{.Group.MailNickname}}</p>
+</hgroup>
+
+<p>
+    <a href="/ui/groups/{{.Group.ID}}/edit"><i data-lucide="pencil"></i> Edit</a>
+    <a href="/ui/groups"><i data-lucide="arrow-left"></i> Back to Groups</a>
+    <form method="POST" action="/ui/groups/{{.Group.ID}}/delete" onsubmit="return confirm('Delete {{.Group.DisplayName}}?');">
+        <button type="submit"><i data-lucide="trash-2"></i> Delete</button>
+    </form>
+</p>
+
+<article>
+    <header><strong>Group Info</strong></header>
+    <dl>
+        <dt>ID</dt><dd>{{.Group.ID}}</dd>
+        <dt>Display Name</dt><dd>{{.Group.DisplayName}}</dd>
+        <dt>Description</dt><dd>{{.Group.Description}}</dd>
+        <dt>Mail Nickname</dt><dd>{{.Group.MailNickname}}</dd>
+        <dt>Mail</dt><dd>{{.Group.Mail}}</dd>
+        <dt>Mail Enabled</dt><dd>{{yesno .Group.MailEnabled}}</dd>
+        <dt>Security Enabled</dt><dd>{{yesno .Group.SecurityEnabled}}</dd>
+        <dt>Visibility</dt><dd>{{.Group.Visibility}}</dd>
+        <dt>Group Types</dt><dd>{{if .Group.GroupTypes}}{{range .Group.GroupTypes}}{{.}} {{end}}{{else}}None{{end}}</dd>
+    </dl>
+</article>
+
+{{if .MemberOf}}
+<article>
+    <header><strong>Member Of</strong></header>
+    <ul>
+        {{range .MemberOf}}
+        <li><a href="/ui/groups/{{.ID}}">{{.DisplayName}}</a></li>
+        {{end}}
+    </ul>
+</article>
+{{end}}
+
+<article>
+    <header><strong>Members ({{len .Members}})</strong></header>
+
+    <form method="POST" action="/ui/groups/{{.Group.ID}}/members/add">
+        <select name="userId" required>
+            <option value="">Select user to add...</option>
+            {{range .AllUsers}}
+            <option value="{{.ID}}">{{.DisplayName}} ({{.UserPrincipalName}})</option>
+            {{end}}
+        </select>
+        <button type="submit">Add Member</button>
+    </form>
+
+    {{if .Members}}
+    <table>
+        <thead><tr><th>Name</th><th>Actions</th></tr></thead>
+        <tbody>
+            {{range .Members}}
+            <tr>
+                <td><a href="/ui/users/{{.ID}}">{{.DisplayName}}</a></td>
+                <td>
+                    <form method="POST" action="/ui/groups/{{$.Group.ID}}/members/{{.ID}}/remove" onsubmit="return confirm('Remove {{.DisplayName}}?');">
+                        <button type="submit" title="Remove"><i data-lucide="user-minus"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p>No members.</p>
+    {{end}}
+</article>
+
+<article>
+    <header><strong>Owners ({{len .Owners}})</strong></header>
+
+    <form method="POST" action="/ui/groups/{{.Group.ID}}/owners/add">
+        <select name="userId" required>
+            <option value="">Select user to add as owner...</option>
+            {{range .AllUsers}}
+            <option value="{{.ID}}">{{.DisplayName}} ({{.UserPrincipalName}})</option>
+            {{end}}
+        </select>
+        <button type="submit">Add Owner</button>
+    </form>
+
+    {{if .Owners}}
+    <table>
+        <thead><tr><th>Name</th><th>Actions</th></tr></thead>
+        <tbody>
+            {{range .Owners}}
+            <tr>
+                <td><a href="/ui/users/{{.ID}}">{{.DisplayName}}</a></td>
+                <td>
+                    <form method="POST" action="/ui/groups/{{$.Group.ID}}/owners/{{.ID}}/remove" onsubmit="return confirm('Remove {{.DisplayName}} as owner?');">
+                        <button type="submit" title="Remove"><i data-lucide="user-minus"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p>No owners.</p>
+    {{end}}
+</article>
+{{end}}
