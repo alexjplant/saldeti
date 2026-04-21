@@ -21,6 +21,14 @@ set -euo pipefail
 rm -rf bin/
 """
 
+[tasks.build-prod]
+description = "Builds the saldeti binary for production"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/saldeti ./cmd/saldeti/
+"""
+
 [tasks.e2e]
 description = "Runs end-to-end tests (requires e2e build tag)"
 run = """
