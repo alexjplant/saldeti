@@ -13,6 +13,15 @@ set -euo pipefail
 go build -o bin/saldeti ./cmd/saldeti/
 """
 
+[tasks.build-prod]
+description = "Builds the saldeti binary for production"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+CGO_ENABLED=0 GOOS="${GOOS:-$(go env GOOS)}" GOARCH="${GOARCH:-$(go env GOARCH)}" \
+  go build -trimpath -ldflags="-s -w" -o "${OUTPUT:-bin/saldeti}" ./cmd/saldeti/
+"""
+
 [tasks.clean]
 description = "Removes build artifacts"
 run = """
@@ -98,6 +107,3 @@ run = """
 set -euo pipefail
 npx playwright test --headed "$@"
 """
-
-[tasks.litellm]
-run = "litellm --config litellm.config.yaml"
