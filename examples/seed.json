@@ -14,7 +14,10 @@
       "given_name": "Admin",
       "surname": "User",
       "job_title": "Administrator",
-      "department": "IT"
+      "department": "IT",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E5"}
+      ]
     },
     {
       "email": "alice.smith@saldeti.local",
@@ -24,7 +27,10 @@
       "surname": "Smith",
       "job_title": "Software Engineer",
       "department": "Engineering",
-      "manager_upn": "eve.wilson@saldeti.local"
+      "manager_upn": "eve.wilson@saldeti.local",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E3", "disabledPlans": ["MCOSTANDARD"]}
+      ]
     },
     {
       "email": "bob.jones@saldeti.local",
@@ -34,7 +40,10 @@
       "surname": "Jones",
       "job_title": "Senior Engineer",
       "department": "Engineering",
-      "manager_upn": "eve.wilson@saldeti.local"
+      "manager_upn": "eve.wilson@saldeti.local",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E3"}
+      ]
     },
     {
       "email": "charlie.brown@saldeti.local",
@@ -43,7 +52,10 @@
       "given_name": "Charlie",
       "surname": "Brown",
       "job_title": "Marketing Manager",
-      "department": "Marketing"
+      "department": "Marketing",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E3"}
+      ]
     },
     {
       "email": "diana.prince@saldeti.local",
@@ -53,7 +65,10 @@
       "surname": "Prince",
       "job_title": "HR Director",
       "department": "HR",
-      "manager_upn": "admin@saldeti.local"
+      "manager_upn": "admin@saldeti.local",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E3"}
+      ]
     },
     {
       "email": "eve.wilson@saldeti.local",
@@ -63,7 +78,11 @@
       "surname": "Wilson",
       "job_title": "Tech Lead",
       "department": "Engineering",
-      "manager_upn": "frank.miller@saldeti.local"
+      "manager_upn": "frank.miller@saldeti.local",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E5"},
+        {"skuPartNumber": "EMS"}
+      ]
     },
     {
       "email": "frank.miller@saldeti.local",
@@ -73,7 +92,10 @@
       "surname": "Miller",
       "job_title": "CFO",
       "department": "Finance",
-      "manager_upn": "admin@saldeti.local"
+      "manager_upn": "admin@saldeti.local",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E5"}
+      ]
     },
     {
       "email": "grace.lee@saldeti.local",
@@ -92,7 +114,10 @@
       "given_name": "Henry",
       "surname": "Taylor",
       "job_title": "Account Executive",
-      "department": "Sales"
+      "department": "Sales",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E3"}
+      ]
     },
     {
       "email": "ivan.guest@external.com",
@@ -109,7 +134,10 @@
       "given_name": "Julia",
       "surname": "Roberts",
       "job_title": "Content Writer",
-      "department": "Marketing"
+      "department": "Marketing",
+      "assigned_licenses": [
+        {"skuPartNumber": "SPE_E3"}
+      ]
     }
   ],
   "groups": [
