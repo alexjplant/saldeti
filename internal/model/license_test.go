@@ -41,10 +41,10 @@ func TestFindSkuByPartNumber(t *testing.T) {
 			expectSkuID:  "6fd2c87f-b296-42f0-b197-1e91e994b900",
 		},
 		{
-			name:        "M365_E5",
-			skuPartNum:  "M365_E5",
+			name:        "SPE_E5",
+			skuPartNum:  "SPE_E5",
 			expectFound: true,
-			expectSkuID:  "e8f81a67-4b57-4de3-a716-6110c0012e3d",
+			expectSkuID:  "06ebc4ee-1bb5-47dd-8120-11324bc54e06",
 		},
 		{
 			name:        "NONEXISTENT",
@@ -80,10 +80,10 @@ func TestFindSkuBySkuID(t *testing.T) {
 			expectPartNumber: "ENTERPRISEPACK",
 		},
 		{
-			name:             "M365_E5 SKU ID",
-			skuId:            "e8f81a67-4b57-4de3-a716-6110c0012e3d",
+			name:             "SPE_E5 SKU ID",
+			skuId:            "06ebc4ee-1bb5-47dd-8120-11324bc54e06",
 			expectFound:      true,
-			expectPartNumber: "M365_E5",
+			expectPartNumber: "SPE_E5",
 		},
 		{
 			name:        "Non-existent SKU ID",

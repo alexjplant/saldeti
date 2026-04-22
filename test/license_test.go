@@ -70,9 +70,9 @@ func TestListSubscribedSkus(t *testing.T) {
 		assert.True(t, hasServicePlans, "Expected SKU item %d to have servicePlans", i)
 	}
 
-	// Verify ENTERPRISEPACK and M365_E3 are present
+	// Verify ENTERPRISEPACK and SPE_E3 are present
 	foundEnterprisePack := false
-	foundM365E3 := false
+	foundSpeE3 := false
 	for _, sku := range value {
 		skuMap := sku.(map[string]interface{})
 		if skuPartNumber, ok := skuMap["skuPartNumber"].(string); ok {
@@ -80,14 +80,14 @@ func TestListSubscribedSkus(t *testing.T) {
 				foundEnterprisePack = true
 				t.Logf("Found ENTERPRISEPACK SKU: %v", skuMap["skuId"])
 			}
-			if skuPartNumber == "M365_E3" {
-				foundM365E3 = true
-				t.Logf("Found M365_E3 SKU: %v", skuMap["skuId"])
+			if skuPartNumber == "SPE_E3" {
+				foundSpeE3 = true
+				t.Logf("Found SPE_E3 SKU: %v", skuMap["skuId"])
 			}
 		}
 	}
 	assert.True(t, foundEnterprisePack, "Expected ENTERPRISEPACK SKU to be present")
-	assert.True(t, foundM365E3, "Expected M365_E3 SKU to be present")
+	assert.True(t, foundSpeE3, "Expected SPE_E3 SKU to be present")
 }
 
 // TestAssignLicense tests POST /v1.0/users/{id}/assignLicense
