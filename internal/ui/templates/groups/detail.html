@@ -7,10 +7,10 @@
 </hgroup>
 
 <p>
-    <a href="/ui/groups/{{.Group.ID}}/edit"><i data-lucide="pencil"></i> Edit</a>
-    <a href="/ui/groups"><i data-lucide="arrow-left"></i> Back to Groups</a>
+    <a href="/ui/groups/{{.Group.ID}}/edit" role="button" class="secondary"><i data-lucide="pencil"></i> Edit</a>
+    <a href="/ui/groups" role="button" class="secondary"><i data-lucide="arrow-left"></i> Back to Groups</a>
     <form method="POST" action="/ui/groups/{{.Group.ID}}/delete" onsubmit="return confirm('Delete {{.Group.DisplayName}}?');">
-        <button type="submit"><i data-lucide="trash-2"></i> Delete</button>
+        <button type="submit" class="outline contrast"><i data-lucide="trash-2"></i> Delete</button>
     </form>
 </p>
 
@@ -50,7 +50,7 @@
             <option value="{{.ID}}">{{.DisplayName}} ({{.UserPrincipalName}})</option>
             {{end}}
         </select>
-        <button type="submit">Add Member</button>
+        <button type="submit" role="button">Add Member</button>
     </form>
 
     {{if .Members}}
@@ -84,7 +84,7 @@
             <option value="{{.ID}}">{{.DisplayName}} ({{.UserPrincipalName}})</option>
             {{end}}
         </select>
-        <button type="submit">Add Owner</button>
+        <button type="submit" role="button">Add Owner</button>
     </form>
 
     {{if .Owners}}

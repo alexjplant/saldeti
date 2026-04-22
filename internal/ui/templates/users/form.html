@@ -6,7 +6,7 @@
 </hgroup>
 
 {{if .Error}}
-<blockquote>
+<blockquote role="alert">
     <p>{{.Error}}</p>
 </blockquote>
 {{end}}
@@ -58,6 +58,6 @@
     </label>
 
     <button type="submit">{{if .IsEdit}}Update User{{else}}Create User{{end}}</button>
-    <a href="{{.CancelURL}}">Cancel</a>
+    <a href="{{.CancelURL}}" role="button" class="secondary">Cancel</a>
 </form>
 {{end}}

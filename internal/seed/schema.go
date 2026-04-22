@@ -27,15 +27,19 @@ type SeedUser struct {
 	Department  string `json:"department,omitempty"`
 	Enabled     *bool  `json:"enabled,omitempty"` // defaults to true if nil
 	IsGuest     bool   `json:"is_guest,omitempty"`
+	ManagerUPN  string `json:"manager_upn,omitempty"`
 }
 
 type SeedGroup struct {
-	ID           string   `json:"id,omitempty"`
-	DisplayName  string   `json:"display_name"`
-	Description  string   `json:"description,omitempty"`
-	MailNickname string   `json:"mail_nickname,omitempty"`
-	Visibility   string   `json:"visibility,omitempty"` // "Public" (default) or "Private"
-	GroupTypes   []string `json:"group_types,omitempty"`
+	ID               string   `json:"id,omitempty"`
+	DisplayName      string   `json:"display_name"`
+	Description      string   `json:"description,omitempty"`
+	MailNickname     string   `json:"mail_nickname,omitempty"`
+	Visibility       string   `json:"visibility,omitempty"` // "Public" (default) or "Private"
+	GroupTypes       []string `json:"group_types,omitempty"`
+	MemberUPNs       []string `json:"member_upns,omitempty"`
+	MemberGroupNames []string `json:"member_group_names,omitempty"`
+	OwnerUPNs        []string `json:"owner_upns,omitempty"`
 }
 
 // SeedMembership adds an entity to a group.

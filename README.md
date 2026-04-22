@@ -21,7 +21,7 @@ mise run build
 ./bin/saldeti -port 9443
 
 # Run with sample seed data (persists changes on shutdown)
-./bin/saldeti -port 9443 -seed seed.json -dump snapshot.json
+./bin/saldeti -port 9443 -seed examples/seed.json -dump snapshot.json
 
 # Get a token (requires seed data or manually created client)
 curl -X POST http://localhost:9443/sim-tenant-id/oauth2/v2.0/token \
@@ -48,7 +48,7 @@ By default, the simulator starts with an **empty store** — no users, groups, o
 To load sample data on startup, pass the `-seed` flag with a path to a JSON seed file:
 
 ```bash
-./bin/saldeti -port 9443 -seed seed.json
+./bin/saldeti -port 9443 -seed examples/seed.json
 ```
 
 A sample `seed.json` file is included in the repository with realistic test data:
@@ -73,7 +73,7 @@ The seed JSON file uses this schema:
 }
 ```
 
-See `seed.json` in the repository root for a complete example.
+See `examples/seed.json` for a complete example.
 
 ### Persisting Changes
 
@@ -81,7 +81,7 @@ Use `-dump` to save the current store state on shutdown (Ctrl+C). Combined with 
 
 ```bash
 # Start with seed data and enable dump-on-shutdown
-./bin/saldeti -seed seed.json -dump snapshot.json
+./bin/saldeti -seed examples/seed.json -dump snapshot.json
 
 # Make changes via the API, then Ctrl+C to shut down
 # snapshot.json now contains the updated state

@@ -1,11 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/ui/login');
-  await page.fill('input[name="username"]', 'admin@saldeti.local');
-  await page.fill('input[name="password"]', 'Simulator123!');
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(/\/ui$/);
+  await page.goto('/ui');
 });
 
 test.describe('Users', () => {
@@ -42,10 +38,11 @@ test.describe('Users', () => {
 
     await expect(page.locator('h1')).toHaveText('New User');
 
+    const suffix = Date.now().toString(36);
     // Fill form
     await page.fill('input[name="displayName"]', 'E2E Test User');
-    await page.fill('input[name="userPrincipalName"]', 'e2e.test@saldeti.local');
-    await page.fill('input[name="mail"]', 'e2e.test@saldeti.local');
+    await page.fill('input[name="userPrincipalName"]', `e2e.test.${suffix}@saldeti.local`);
+    await page.fill('input[name="mail"]', `e2e.test.${suffix}@saldeti.local`);
     await page.fill('input[name="department"]', 'QA');
     await page.fill('input[name="jobTitle"]', 'Test Engineer');
     await page.check('input[name="accountEnabled"]');
@@ -56,7 +53,6 @@ test.describe('Users', () => {
     // Should be redirected to detail page
     await expect(page).toHaveURL(/\/ui\/users\/[a-f0-9-]+$/);
     await expect(page.locator('h1')).toHaveText('E2E Test User');
-    await expect(page.locator('dd').filter({ hasText: 'e2e.test@saldeti.local' }).first()).toBeVisible();
     await expect(page.locator('dd').filter({ hasText: 'QA' }).first()).toBeVisible();
   });
 

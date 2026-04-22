@@ -25,13 +25,10 @@ func TestGroupListShowsGroups(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Get group list
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/groups", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -58,13 +55,10 @@ func TestGroupSearch(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Search for Engineering
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/groups?search=Engineering", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -109,13 +103,10 @@ func TestGroupDetail(t *testing.T) {
 		t.Fatal("Engineering Team not found in seed data")
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Get Engineering Team detail page
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/groups/"+engineeringTeamID, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -142,8 +133,6 @@ func TestGroupCreate(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, st := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Create new group
 	formData := url.Values{}
@@ -157,7 +146,6 @@ func TestGroupCreate(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/groups/new", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to group detail page
@@ -174,7 +162,6 @@ func TestGroupCreate(t *testing.T) {
 	w = httptest.NewRecorder()
 	newGroupID := strings.TrimPrefix(location, "/ui/groups/")
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -208,8 +195,6 @@ func TestGroupCreateValidation(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Try to create group without required fields
 	formData := url.Values{}
@@ -219,7 +204,6 @@ func TestGroupCreateValidation(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/groups/new", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should return the form with error (not redirect)
@@ -264,8 +248,6 @@ func TestGroupEdit(t *testing.T) {
 		t.Fatal("Engineering Team not found in seed data")
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Update Engineering Team
 	formData := url.Values{}
@@ -279,7 +261,6 @@ func TestGroupEdit(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/groups/"+engineeringTeamID+"/edit", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to group detail page
@@ -295,7 +276,6 @@ func TestGroupEdit(t *testing.T) {
 	// Follow redirect to detail page
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -340,13 +320,10 @@ func TestGroupDelete(t *testing.T) {
 		t.Fatalf("Failed to create test group: %v", err)
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Verify group exists before deletion
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/groups/"+createdGroup.ID, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -356,7 +333,6 @@ func TestGroupDelete(t *testing.T) {
 	// Delete group
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/ui/groups/"+createdGroup.ID+"/delete", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to group list
@@ -409,8 +385,6 @@ func TestGroupAddMember(t *testing.T) {
 		t.Fatal("Henry Taylor not found in seed data")
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Add Henry to Engineering Team
 	formData := url.Values{}
@@ -419,7 +393,6 @@ func TestGroupAddMember(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/groups/"+engineeringTeamID+"/members/add", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to group detail page
@@ -435,7 +408,6 @@ func TestGroupAddMember(t *testing.T) {
 	// Follow redirect to detail page
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -483,8 +455,6 @@ func TestGroupRemoveMember(t *testing.T) {
 		t.Fatal("Grace Lee not found in seed data")
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Verify Grace is in the group first
 	members, _, _ := st.ListMembers(ctx, engineeringTeamID, model.ListOptions{Top: 100})
@@ -502,7 +472,6 @@ func TestGroupRemoveMember(t *testing.T) {
 	// Remove Grace from Engineering Team
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/groups/"+engineeringTeamID+"/members/"+graceID+"/remove", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to group detail page
@@ -518,7 +487,6 @@ func TestGroupRemoveMember(t *testing.T) {
 	// Follow redirect to detail page
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -583,8 +551,6 @@ func TestGroupAddOwner(t *testing.T) {
 		t.Fatal("Henry Taylor not found in seed data")
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Add Henry as owner of Engineering Team
 	formData := url.Values{}
@@ -593,7 +559,6 @@ func TestGroupAddOwner(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/groups/"+engineeringTeamID+"/owners/add", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to group detail page
@@ -609,7 +574,6 @@ func TestGroupAddOwner(t *testing.T) {
 	// Follow redirect to detail page
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -670,8 +634,6 @@ func TestGroupRemoveOwner(t *testing.T) {
 		t.Fatalf("Failed to add Alice as owner: %v", err)
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Verify Alice is an owner
 	owners, _, _ := st.ListOwners(ctx, createdGroup.ID, model.ListOptions{Top: 100})
@@ -689,7 +651,6 @@ func TestGroupRemoveOwner(t *testing.T) {
 	// Remove Alice as owner
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/groups/"+createdGroup.ID+"/owners/"+aliceID+"/remove", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to group detail page
@@ -705,7 +666,6 @@ func TestGroupRemoveOwner(t *testing.T) {
 	// Follow redirect to detail page
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

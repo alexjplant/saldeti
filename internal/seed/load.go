@@ -67,6 +67,54 @@ func validateConfig(cfg *SeedConfig) error {
 		}
 	}
 
+	// Build set of all user emails for validation
+	userEmails := make(map[string]bool)
+	for _, user := range cfg.Users {
+		userEmails[user.Email] = true
+	}
+
+	// Validate ManagerUPN on users
+	for i, user := range cfg.Users {
+		if user.ManagerUPN != "" {
+			if !userEmails[user.ManagerUPN] {
+				return fmt.Errorf("user[%d]: manager_upn %s does not reference any user", i, user.ManagerUPN)
+			}
+		}
+	}
+
+	// Validate MemberUPNs on groups
+	for i, group := range cfg.Groups {
+		for _, upn := range group.MemberUPNs {
+			if !userEmails[upn] {
+				return fmt.Errorf("group[%d]: member_upns %s does not reference any user", i, upn)
+			}
+		}
+	}
+
+	// Build set of all group display names for validation
+	groupNames := make(map[string]bool)
+	for _, group := range cfg.Groups {
+		groupNames[group.DisplayName] = true
+	}
+
+	// Validate MemberGroupNames on groups
+	for i, group := range cfg.Groups {
+		for _, groupName := range group.MemberGroupNames {
+			if !groupNames[groupName] {
+				return fmt.Errorf("group[%d]: member_group_names %s does not reference any group", i, groupName)
+			}
+		}
+	}
+
+	// Validate OwnerUPNs on groups
+	for i, group := range cfg.Groups {
+		for _, upn := range group.OwnerUPNs {
+			if !userEmails[upn] {
+				return fmt.Errorf("group[%d]: owner_upns %s does not reference any user", i, upn)
+			}
+		}
+	}
+
 	// Validate membership indices
 	numUsers := len(cfg.Users)
 	numGroups := len(cfg.Groups)
@@ -178,6 +226,12 @@ func SeedFromConfig(s store.Store, cfg *SeedConfig) error {
 		userIDs[i] = createdUser.ID
 	}
 
+	// Build map of UPN to user ID for resolving new fields
+	upnToID := make(map[string]string)
+	for i, user := range cfg.Users {
+		upnToID[user.Email] = userIDs[i]
+	}
+
 	// Create groups and store their IDs
 	groupIDs := make([]string, len(cfg.Groups))
 	securityEnabled := true
@@ -253,6 +307,46 @@ func SeedFromConfig(s store.Store, cfg *SeedConfig) error {
 				return fmt.Errorf("group %s already exists but was not found in group list", displayName)
 			}
 			groupIDs[idx] = groupID
+		}
+	}
+
+	// Build map of group display name to group ID for resolving new fields
+	groupNameToID := make(map[string]string)
+	for i, group := range cfg.Groups {
+		groupNameToID[group.DisplayName] = groupIDs[i]
+	}
+
+	// Process manager_upn from users (new schema)
+	for _, user := range cfg.Users {
+		if user.ManagerUPN != "" {
+			userID := upnToID[user.Email]
+			managerID := upnToID[user.ManagerUPN]
+			if err := s.SetManager(ctx, userID, managerID); err != nil {
+				return fmt.Errorf("failed to set manager %s for user %s: %w", user.ManagerUPN, user.Email, err)
+			}
+		}
+	}
+
+	// Process member_upns, member_group_names, owner_upns from groups (new schema)
+	for _, group := range cfg.Groups {
+		groupID := groupNameToID[group.DisplayName]
+		for _, upn := range group.MemberUPNs {
+			userID := upnToID[upn]
+			if err := s.AddMember(ctx, groupID, userID, "user"); err != nil && !errors.Is(err, store.ErrAlreadyMember) {
+				return fmt.Errorf("failed to add user %s to group %s: %w", upn, group.DisplayName, err)
+			}
+		}
+		for _, memberGroupName := range group.MemberGroupNames {
+			memberGroupID := groupNameToID[memberGroupName]
+			if err := s.AddMember(ctx, groupID, memberGroupID, "group"); err != nil && !errors.Is(err, store.ErrAlreadyMember) {
+				return fmt.Errorf("failed to add group %s to group %s: %w", memberGroupName, group.DisplayName, err)
+			}
+		}
+		for _, upn := range group.OwnerUPNs {
+			userID := upnToID[upn]
+			if err := s.AddOwner(ctx, groupID, userID, "user"); err != nil && !errors.Is(err, store.ErrAlreadyOwner) {
+				return fmt.Errorf("failed to add owner %s to group %s: %w", upn, group.DisplayName, err)
+			}
 		}
 	}
 

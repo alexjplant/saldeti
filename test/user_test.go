@@ -9,7 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
 	"github.com/stretchr/testify/assert"
@@ -143,10 +146,26 @@ func TestE2E_SDKCredentialGetToken(t *testing.T) {
 	tss := setupTestServer(t)
 	defer tss.Server.Close()
 
-	cred := NewSimulatorCredential(tss.BaseURL, "sim-tenant-id", "sim-client-id", "sim-client-secret")
+	cred, err := azidentity.NewClientSecretCredential(
+		"sim-tenant-id", "sim-client-id", "sim-client-secret",
+		&azidentity.ClientSecretCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloud.Configuration{
+					ActiveDirectoryAuthorityHost: tss.BaseURL,
+				},
+				Transport: &httpTransport{client: tss.Server.Client()},
+			},
+			DisableInstanceDiscovery: true,
+		},
+	)
+	if err != nil {
+		t.Fatalf("Failed to create credential: %v", err)
+	}
 
 	ctx := context.Background()
-	token, err := cred.GetToken(ctx, policy.TokenRequestOptions{})
+	token, err := cred.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: []string{"https://graph.microsoft.com/.default"},
+	})
 	if err != nil {
 		t.Fatalf("Failed to get token: %v", err)
 	}
@@ -157,7 +176,6 @@ func TestE2E_SDKCredentialGetToken(t *testing.T) {
 	if token.ExpiresOn.IsZero() {
 		t.Error("ExpiresOn is zero")
 	}
-	// Check that token expires in the future
 	if token.ExpiresOn.Before(time.Now()) {
 		t.Error("ExpiresOn is in the past")
 	}
@@ -166,7 +184,7 @@ func TestE2E_SDKCredentialGetToken(t *testing.T) {
 	req, _ := http.NewRequest("GET", tss.BaseURL+"/v1.0/users", nil)
 	req.Header.Set("Authorization", "Bearer "+token.Token)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := tss.Server.Client().Do(req)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
 	}

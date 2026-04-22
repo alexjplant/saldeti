@@ -3,14 +3,14 @@
 package ui_test
 
 import (
-	"net"
+	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/saldeti/saldeti/internal/auth"
 	"github.com/saldeti/saldeti/internal/handler"
 	"github.com/saldeti/saldeti/internal/seed"
 	"github.com/saldeti/saldeti/internal/store"
@@ -23,56 +23,41 @@ func setupTestServer(t *testing.T) (*httptest.Server, store.Store) {
 		t.Fatalf("Failed to seed data: %v", err)
 	}
 
+	// Register admin client for UI first
+	ctx := context.Background()
+	adminClientID := "test-admin-client-id"
+	adminClientSecret := "test-admin-secret"
+	adminTenantID := "test-admin-tenant"
+	if err := st.RegisterClient(ctx, adminClientID, adminClientSecret, adminTenantID); err != nil {
+		t.Fatalf("Failed to register admin client: %v", err)
+	}
+
 	// Create engine with API routes
 	engine := handler.NewRouter(st)
 
-	// Create unstarted server to get a port
-	ts := httptest.NewUnstartedServer(engine)
-	port := ts.Listener.Addr().(*net.TCPAddr).Port
+	// Use TLS test server
+	ts := httptest.NewTLSServer(engine)
 
-	// Register UI routes on the same engine
-	ui.RegisterUIRoutes(engine, st, port)
+	// Register UI routes with the HTTPS base URL
+	baseURL := ts.URL
+	ui.RegisterUIRoutes(engine, baseURL, adminClientID, adminClientSecret, adminTenantID)
 
-	ts.Start()
 	t.Cleanup(func() { ts.Close() })
 	return ts, st
 }
 
-// Helper function to login and get session cookie
-func loginAndGetSession(t *testing.T, ts *httptest.Server) *http.Cookie {
-	w := httptest.NewRecorder()
-
-	formData := url.Values{}
-	formData.Set("username", "admin@saldeti.local")
-	formData.Set("password", "Simulator123!")
-
-	req, _ := http.NewRequest("POST", ts.URL+"/ui/login", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	ts.Config.Handler.ServeHTTP(w, req)
-
-	if w.Code != http.StatusFound {
-		t.Fatalf("Login failed: expected status %d, got %d", http.StatusFound, w.Code)
-	}
-
-	var sessionCookie *http.Cookie
-	for _, cookie := range w.Result().Cookies() {
-		if cookie.Name == "saldeti_session" {
-			sessionCookie = cookie
-			break
+func TestMain(m *testing.M) {
+	// Configure default HTTP transport to trust self-signed cert for UI tests.
+	// This is needed because azidentity creates its own HTTP client that uses
+	// the default transport.
+	if transport, ok := http.DefaultTransport.(*http.Transport); ok {
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
 		}
 	}
 
-	if sessionCookie == nil {
-		t.Fatal("Expected session cookie to be set after login")
-	}
-
-	return sessionCookie
-}
-
-func init() {
-	// Change working directory to project root so templates can be found
-	// This is needed because tests run from the internal/ui_test directory
-	// but templates are in the project root's templates/ directory
+	auth.SetSigningKey([]byte("test-signing-key-32-bytes-long"))
+	m.Run()
 }
 
 func TestFlashHelpers(t *testing.T) {

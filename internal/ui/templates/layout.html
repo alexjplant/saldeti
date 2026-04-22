@@ -9,7 +9,6 @@
     {{block "head" .}}{{end}}
 </head>
 <body>
-    {{if .LoggedIn}}
     <nav>
         <ul>
             <li><strong><a href="/ui">Saldeti</a></strong></li>
@@ -19,11 +18,7 @@
             <li><a href="/ui/users">Users</a></li>
             <li><a href="/ui/groups">Groups</a></li>
         </ul>
-        <ul>
-            <li><a href="/ui/logout">Logout</a></li>
-        </ul>
     </nav>
-    {{end}}
 
     <main>
         {{template "flash" .}}
