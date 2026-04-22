@@ -50,7 +50,7 @@ func TestE2E_ErrorResponses(t *testing.T) {
 	// Can't test this with SDK since SDK always sends auth token
 	// Keep this as raw HTTP test
 	req, _ := http.NewRequest("GET", tss.BaseURL+"/v1.0/me", nil)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := tss.Server.Client().Do(req)
 	if err != nil {
 		t.Fatalf("Failed to get /me without token: %v", err)
 	}

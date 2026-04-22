@@ -1,28 +1,37 @@
 package ui
 
 import (
+	"crypto/tls"
 	"html/template"
 	"net/http"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/gin-gonic/gin"
-	"github.com/saldeti/saldeti/internal/store"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse // Don't follow redirects
+	},
+	Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	},
+}
 
 type UIHandler struct {
-  store    store.Store // kept for login validation only
   client   *msgraphsdk.GraphServiceClient
-  cred     *SimulatorCredential
+  cred     azcore.TokenCredential
   baseURL  string
   baseTmpl *template.Template
 }
 
-func NewUIHandler(st store.Store, client *msgraphsdk.GraphServiceClient, cred *SimulatorCredential, baseURL string, baseTmpl *template.Template) *UIHandler {
+func NewUIHandler(client *msgraphsdk.GraphServiceClient, cred azcore.TokenCredential, baseURL string, baseTmpl *template.Template) *UIHandler {
 	return &UIHandler{
-		store:    st,
 		client:   client,
 		cred:     cred,
 		baseURL:  baseURL,
@@ -38,10 +47,6 @@ func (h *UIHandler) render(c *gin.Context, pageFile string, data gin.H) {
 
 	flash := GetFlash(c)
 	data["Flash"] = flash
-
-	user := currentUser(c)
-	data["LoggedIn"] = user != ""
-	data["CurrentUser"] = user
 
 	if _, ok := data["ActiveNav"]; !ok {
 		data["ActiveNav"] = ""
@@ -60,16 +65,8 @@ func (h *UIHandler) render(c *gin.Context, pageFile string, data gin.H) {
 		return
 	}
 
-	c.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+		c.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(c.Writer, "layout", data); err != nil {
 		http.Error(c.Writer, "Template execute error: "+err.Error(), http.StatusInternalServerError)
 	}
-}
-
-func currentUser(c *gin.Context) string {
-	user, exists := c.Get("ui_user")
-	if !exists {
-		return ""
-	}
-	return user.(string)
 }

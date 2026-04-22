@@ -1,11 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/ui/login');
-  await page.fill('input[name="username"]', 'admin@saldeti.local');
-  await page.fill('input[name="password"]', 'Simulator123!');
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(/\/ui$/);
+  await page.goto('/ui');
 });
 
 test.describe('Navigation', () => {

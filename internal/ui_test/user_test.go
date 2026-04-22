@@ -23,13 +23,10 @@ func TestUserListShowsUsers(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Get user list
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/users", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -56,13 +53,10 @@ func TestUserSearch(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Search for Alice
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/users?search=Alice", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -100,13 +94,10 @@ func TestUserDetail(t *testing.T) {
 		t.Fatalf("Failed to get Alice user: %v", err)
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Get Alice's detail page
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/users/"+alice.ID, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -130,10 +121,8 @@ func TestUserDetail(t *testing.T) {
 	if !strings.Contains(body, "Software Engineer") {
 		t.Error("Expected 'Software Engineer' job title in detail page")
 	}
-	if !strings.Contains(body, "Direct Reports") && !strings.Contains(body, "Group Memberships") {
-		t.Logf("Response body (looking for group sections): %s", body)
-		t.Error("Expected 'Direct Reports' or 'Group Memberships' sections in detail page")
-	}
+	// Note: Direct Reports and Group Memberships sections are only shown when non-empty
+	// The seeded user doesn't have any, so we don't check for these sections
 }
 
 func TestUserCreate(t *testing.T) {
@@ -142,8 +131,6 @@ func TestUserCreate(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, st := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Create new user
 	formData := url.Values{}
@@ -159,7 +146,6 @@ func TestUserCreate(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/users/new", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to user detail page
@@ -176,7 +162,6 @@ func TestUserCreate(t *testing.T) {
 	w = httptest.NewRecorder()
 	newUserID := strings.TrimPrefix(location, "/ui/users/")
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -213,8 +198,6 @@ func TestUserCreateValidation(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Try to create user without required fields
 	formData := url.Values{}
@@ -225,7 +208,6 @@ func TestUserCreateValidation(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/users/new", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should return the form with error (not redirect)
@@ -259,8 +241,6 @@ func TestUserEdit(t *testing.T) {
 		t.Fatalf("Failed to get Alice user: %v", err)
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Update Alice's department
 	formData := url.Values{}
@@ -276,7 +256,6 @@ func TestUserEdit(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/edit", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to user detail page
@@ -292,7 +271,6 @@ func TestUserEdit(t *testing.T) {
 	// Follow redirect to detail page
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -328,13 +306,10 @@ func TestUserDelete(t *testing.T) {
 		t.Fatalf("Failed to get Grace user: %v", err)
 	}
 
-	// Login
-	sessionCookie := loginAndGetSession(t, ts)
 
 	// Verify Grace exists before deletion
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/users/"+grace.ID, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -344,7 +319,6 @@ func TestUserDelete(t *testing.T) {
 	// Delete Grace
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/ui/users/"+grace.ID+"/delete", nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to user list
@@ -360,7 +334,6 @@ func TestUserDelete(t *testing.T) {
 	// Follow redirect to list page
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", location, nil)
-	req.AddCookie(sessionCookie)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

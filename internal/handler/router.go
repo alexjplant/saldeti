@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -29,11 +30,14 @@ func zerologMiddleware() gin.HandlerFunc {
 func NewRouter(st store.Store) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+	r.RedirectTrailingSlash = false
 	r.Use(zerologMiddleware())
 	r.Use(gin.Recovery())
 
 	// Token endpoint (no auth)
 	r.POST("/:tenant/oauth2/v2.0/token", auth.TokenHandler(st))
+	// OpenID configuration endpoint (no auth) - required by azidentity
+	r.GET("/:tenant/v2.0/.well-known/openid-configuration", openIDConfigurationHandler)
 
 	// v1.0 API group (requires auth)
 	v1 := r.Group("/v1.0")
@@ -44,13 +48,16 @@ func NewRouter(st store.Store) *gin.Engine {
 		v1.GET("/me", meHandler(st))
 
 		// Users
+		// Add routes without trailing slash for SDK compatibility
+		v1.POST("/users", createUserHandler(st))
+		v1.GET("/users", listUsersHandler(st)) // List users without trailing slash
 		users := v1.Group("/users")
 		{
 			users.GET("/", listUsersHandler(st))
-			users.POST("/", createUserHandler(st))
 			// Register delta routes BEFORE the :id group to ensure they're matched first
 			users.GET("/delta", usersDeltaHandler(st))
 			users.GET("/delta/", usersDeltaHandler(st))
+			users.GET("/delta()", usersDeltaHandler(st)) // SDK sometimes calls with parentheses
 			usersUID := users.Group("/:id")
 			{
 				usersUID.GET("/", getUserHandler(st))
@@ -71,10 +78,12 @@ func NewRouter(st store.Store) *gin.Engine {
 		}
 
 		// Groups
+		// Add routes without trailing slash for SDK compatibility
+		v1.POST("/groups", createGroupHandler(st))
+		v1.GET("/groups", listGroupsHandler(st)) // List groups without trailing slash
 		groups := v1.Group("/groups")
 		{
 			groups.GET("/", listGroupsHandler(st))
-			groups.POST("/", createGroupHandler(st))
 			groups.GET("/delta", groupsDeltaHandler(st))
 			groupsGID := groups.Group("/:id")
 			{
@@ -142,4 +151,29 @@ func meHandler(store store.Store) gin.HandlerFunc {
 
 		writeError(c, http.StatusNotFound, "ResourceNotFound", "User not found")
 	}
+}
+
+func openIDConfigurationHandler(c *gin.Context) {
+	tenantID := c.Param("tenant")
+	scheme := "https"
+	if c.Request.TLS == nil {
+		scheme = "http"
+	}
+	host := c.Request.Host
+	baseURL := fmt.Sprintf("%s://%s/%s", scheme, host, tenantID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"issuer":                                baseURL,
+		"authorization_endpoint":                baseURL + "/oauth2/v2.0/authorize",
+		"token_endpoint":                         baseURL + "/oauth2/v2.0/token",
+		"jwks_uri":                              baseURL + "/discovery/v2.0/keys",
+		"response_types_supported":               []string{"code", "id_token", "token", "token id_token"},
+		"subject_types_supported":                []string{"pairwise"},
+		"id_token_signing_alg_values_supported":  []string{"RS256"},
+		"scopes_supported":                       []string{"openid", "profile", "email", "offline_access"},
+		"token_endpoint_auth_methods_supported":  []string{"client_secret_post", "private_key_jwt", "client_secret_basic"},
+		"claims_supported":                       []string{"sub", "aud", "exp", "iat", "iss", "auth_time", "acr", "amr", "email", "given_name", "family_name"},
+		"request_uri_parameter_supported":        false,
+		"request_parameter_supported":            false,
+	})
 }

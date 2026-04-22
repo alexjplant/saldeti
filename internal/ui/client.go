@@ -2,30 +2,45 @@ package ui
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
 	absser "github.com/microsoft/kiota-abstractions-go/serialization"
-	abs "github.com/microsoft/kiota-abstractions-go"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/gin-gonic/gin"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/saldeti/saldeti/internal/model"
+	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 )
 
 func ptrString(s string) *string { return &s }
 func ptrBool(b bool) *bool { return &b }
 func ptrInt32(i int32) *int32 { return &i }
 
-func newGraphClient(baseURL string, cred *SimulatorCredential) (*msgraphsdk.GraphServiceClient, error) {
-	// Create Kiota authentication provider
-	authProvider := NewKiotaAuthenticationProvider(cred)
+func newInsecureHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+}
 
-	// Create a custom HTTP client
-	customHTTPClient := &http.Client{}
+func newGraphClient(baseURL string, cred azcore.TokenCredential) (*msgraphsdk.GraphServiceClient, error) {
+	// Create Kiota authentication provider using Azure SDK authentication
+	authProvider, err := kiotaauth.NewAzureIdentityAuthenticationProvider(cred)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create auth provider: %w", err)
+	}
+
+	// Create a custom HTTP client that skips TLS verification for self-signed certs
+	customHTTPClient := newInsecureHTTPClient()
 
 	// Create a custom request adapter with custom HTTP client
 	adapter, err := msgraphsdk.NewGraphRequestAdapterWithParseNodeFactoryAndSerializationWriterFactoryAndHttpClient(
@@ -44,35 +59,6 @@ func newGraphClient(baseURL string, cred *SimulatorCredential) (*msgraphsdk.Grap
 	client.GetAdapter().SetBaseUrl(baseURL + "/v1.0")
 
 	return client, nil
-}
-
-// KiotaAuthenticationProvider adapts SimulatorCredential to work with Kiota's AuthenticationProvider interface
-type KiotaAuthenticationProvider struct {
-	cred *SimulatorCredential
-}
-
-// NewKiotaAuthenticationProvider creates a new Kiota authentication provider
-func NewKiotaAuthenticationProvider(cred *SimulatorCredential) *KiotaAuthenticationProvider {
-	return &KiotaAuthenticationProvider{
-		cred: cred,
-	}
-}
-
-// AuthenticateRequest implements the Kiota AuthenticationProvider interface
-func (p *KiotaAuthenticationProvider) AuthenticateRequest(ctx context.Context, request *abs.RequestInformation, additionalAuthenticationContext map[string]interface{}) error {
-	// Get token from the underlying credential
-	token, err := p.cred.GetToken(ctx, policy.TokenRequestOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get token: %w", err)
-	}
-
-	// Set authorization header
-	if request.Headers == nil {
-		request.Headers = abs.NewRequestHeaders()
-	}
-	request.Headers.Add("Authorization", "Bearer "+token.Token)
-
-	return nil
 }
 
 // Convert SDK user to model.User for templates
@@ -230,7 +216,9 @@ func buildFormMap(c *gin.Context) map[string]string {
 
 // fetchDirectoryObjects performs a manual HTTP GET to fetch a list of directory objects
 func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]model.DirectoryObject, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{})
+	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: []string{"https://graph.microsoft.com/.default"},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token: %w", err)
 	}
@@ -267,7 +255,9 @@ func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]mo
 
 // fetchDirectoryObject performs a manual HTTP GET to fetch a single directory object
 func (h *UIHandler) fetchDirectoryObject(ctx context.Context, url string) (*model.DirectoryObject, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{})
+	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: []string{"https://graph.microsoft.com/.default"},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token: %w", err)
 	}

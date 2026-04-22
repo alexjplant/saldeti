@@ -42,6 +42,7 @@ func Seed(s store.Store) error {
 				Department:  "Engineering",
 				Enabled:     &accountEnabled,
 				IsGuest:     false,
+				ManagerUPN:  "eve.wilson@saldeti.local",
 			},
 			// Bob Jones (index 2)
 			{
@@ -54,6 +55,7 @@ func Seed(s store.Store) error {
 				Department:  "Engineering",
 				Enabled:     &accountEnabled,
 				IsGuest:     false,
+				ManagerUPN:  "eve.wilson@saldeti.local",
 			},
 			// Charlie Brown (index 3)
 			{
@@ -78,6 +80,7 @@ func Seed(s store.Store) error {
 				Department:  "HR",
 				Enabled:     &accountEnabled,
 				IsGuest:     false,
+				ManagerUPN:  "admin@saldeti.local",
 			},
 			// Eve Wilson (index 5)
 			{
@@ -90,6 +93,7 @@ func Seed(s store.Store) error {
 				Department:  "Engineering",
 				Enabled:     &accountEnabled,
 				IsGuest:     false,
+				ManagerUPN:  "frank.miller@saldeti.local",
 			},
 			// Frank Miller (index 6)
 			{
@@ -102,6 +106,7 @@ func Seed(s store.Store) error {
 				Department:  "Finance",
 				Enabled:     &accountEnabled,
 				IsGuest:     false,
+				ManagerUPN:  "admin@saldeti.local",
 			},
 			// Grace Lee (index 7, disabled)
 			{
@@ -156,24 +161,29 @@ func Seed(s store.Store) error {
 				Description:  "Engineering department",
 				MailNickname: "engineeringteam",
 				Visibility:   "Public",
+				MemberUPNs:   []string{"alice.smith@saldeti.local", "bob.jones@saldeti.local", "eve.wilson@saldeti.local", "grace.lee@saldeti.local"},
 			},
 			{
 				DisplayName:  "Marketing Team",
 				Description:  "Marketing department",
 				MailNickname: "marketingteam",
 				Visibility:   "Public",
+				MemberUPNs:   []string{"charlie.brown@saldeti.local", "julia.roberts@saldeti.local"},
 			},
 			{
-				DisplayName:  "All Staff",
-				Description:  "All employees",
-				MailNickname: "allstaff",
-				Visibility:   "Public",
+				DisplayName:       "All Staff",
+				Description:       "All employees",
+				MailNickname:      "allstaff",
+				Visibility:        "Public",
+				MemberUPNs:        []string{"alice.smith@saldeti.local", "bob.jones@saldeti.local", "charlie.brown@saldeti.local", "diana.prince@saldeti.local", "eve.wilson@saldeti.local", "frank.miller@saldeti.local", "henry.taylor@saldeti.local", "julia.roberts@saldeti.local"},
+				MemberGroupNames: []string{"Engineering Team", "Marketing Team"},
 			},
 			{
 				DisplayName:  "Leadership",
 				Description:  "Leadership team",
 				MailNickname: "leadership",
 				Visibility:   "Private",
+				MemberUPNs:   []string{"diana.prince@saldeti.local", "frank.miller@saldeti.local"},
 			},
 			{
 				DisplayName:  "Project Alpha",
@@ -181,48 +191,8 @@ func Seed(s store.Store) error {
 				MailNickname: "projectalpha",
 				Visibility:   "Public",
 				GroupTypes:   []string{"Unified"},
+				MemberUPNs:   []string{"alice.smith@saldeti.local", "charlie.brown@saldeti.local", "eve.wilson@saldeti.local"},
 			},
-		},
-		Memberships: []SeedMembership{
-			// Engineering Team: alice (1), bob (2), eve (5), grace (7)
-			{UserIndex: intPtr(1), GroupIndex: intPtr(0)},
-			{UserIndex: intPtr(2), GroupIndex: intPtr(0)},
-			{UserIndex: intPtr(5), GroupIndex: intPtr(0)},
-			{UserIndex: intPtr(7), GroupIndex: intPtr(0)},
-			// Marketing Team: charlie (3), julia (10)
-			{UserIndex: intPtr(3), GroupIndex: intPtr(1)},
-			{UserIndex: intPtr(10), GroupIndex: intPtr(1)},
-			// All Staff: alice (1), bob (2), charlie (3), diana (4), eve (5), frank (6), henry (8), julia (10)
-			{UserIndex: intPtr(1), GroupIndex: intPtr(2)},
-			{UserIndex: intPtr(2), GroupIndex: intPtr(2)},
-			{UserIndex: intPtr(3), GroupIndex: intPtr(2)},
-			{UserIndex: intPtr(4), GroupIndex: intPtr(2)},
-			{UserIndex: intPtr(5), GroupIndex: intPtr(2)},
-			{UserIndex: intPtr(6), GroupIndex: intPtr(2)},
-			{UserIndex: intPtr(8), GroupIndex: intPtr(2)},
-			{UserIndex: intPtr(10), GroupIndex: intPtr(2)},
-			// All Staff nested: Engineering Team (0), Marketing Team (1)
-			{MemberGroupIndex: intPtr(0), GroupIndex: intPtr(2)},
-			{MemberGroupIndex: intPtr(1), GroupIndex: intPtr(2)},
-			// Leadership: diana (4), frank (6)
-			{UserIndex: intPtr(4), GroupIndex: intPtr(3)},
-			{UserIndex: intPtr(6), GroupIndex: intPtr(3)},
-			// Project Alpha: alice (1), charlie (3), eve (5)
-			{UserIndex: intPtr(1), GroupIndex: intPtr(4)},
-			{UserIndex: intPtr(3), GroupIndex: intPtr(4)},
-			{UserIndex: intPtr(5), GroupIndex: intPtr(4)},
-		},
-		Managers: []SeedManager{
-			// frank (6) → manager: admin (0)
-			{UserIndex: 6, ManagerIndex: 0},
-			// diana (4) → manager: admin (0)
-			{UserIndex: 4, ManagerIndex: 0},
-			// eve (5) → manager: frank (6)
-			{UserIndex: 5, ManagerIndex: 6},
-			// alice (1) → manager: eve (5)
-			{UserIndex: 1, ManagerIndex: 5},
-			// bob (2) → manager: eve (5)
-			{UserIndex: 2, ManagerIndex: 5},
 		},
 	}
 

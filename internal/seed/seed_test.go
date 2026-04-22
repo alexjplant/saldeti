@@ -475,6 +475,137 @@ func TestLoadFromFileValidation(t *testing.T) {
 			wantErr: true,
 			errMsg:  "failed to read seed file",
 		},
+		{
+			name: "manager_upn with non-existent user",
+			json: `{
+				"clients": [
+					{
+						"client_id": "test-id",
+						"client_secret": "test-secret",
+						"tenant_id": "test-tenant"
+					}
+				],
+				"users": [
+					{
+						"email": "test@example.com",
+						"display_name": "Test User",
+						"password": "TestPassword123!",
+						"manager_upn": "nonexistent@example.com"
+					}
+				],
+				"groups": []
+			}`,
+			wantErr: true,
+			errMsg:  "manager_upn",
+		},
+		{
+			name: "member_upns with non-existent user",
+			json: `{
+				"clients": [
+					{
+						"client_id": "test-id",
+						"client_secret": "test-secret",
+						"tenant_id": "test-tenant"
+					}
+				],
+				"users": [
+					{
+						"email": "test@example.com",
+						"display_name": "Test User",
+						"password": "TestPassword123!"
+					}
+				],
+				"groups": [
+					{
+						"display_name": "Test Group",
+						"member_upns": ["nonexistent@example.com"]
+					}
+				]
+			}`,
+			wantErr: true,
+			errMsg:  "member_upns",
+		},
+		{
+			name: "member_group_names with non-existent group",
+			json: `{
+				"clients": [
+					{
+						"client_id": "test-id",
+						"client_secret": "test-secret",
+						"tenant_id": "test-tenant"
+					}
+				],
+				"users": [],
+				"groups": [
+					{
+						"display_name": "Test Group",
+						"member_group_names": ["Nonexistent Group"]
+					}
+				]
+			}`,
+			wantErr: true,
+			errMsg:  "member_group_names",
+		},
+		{
+			name: "owner_upns with non-existent user",
+			json: `{
+				"clients": [
+					{
+						"client_id": "test-id",
+						"client_secret": "test-secret",
+						"tenant_id": "test-tenant"
+					}
+				],
+				"users": [
+					{
+						"email": "test@example.com",
+						"display_name": "Test User",
+						"password": "TestPassword123!"
+					}
+				],
+				"groups": [
+					{
+						"display_name": "Test Group",
+						"owner_upns": ["nonexistent@example.com"]
+					}
+				]
+			}`,
+			wantErr: true,
+			errMsg:  "owner_upns",
+		},
+		{
+			name: "valid new schema fields",
+			json: `{
+				"clients": [
+					{
+						"client_id": "test-id",
+						"client_secret": "test-secret",
+						"tenant_id": "test-tenant"
+					}
+				],
+				"users": [
+					{
+						"email": "manager@example.com",
+						"display_name": "Manager User",
+						"password": "TestPassword123!"
+					},
+					{
+						"email": "employee@example.com",
+						"display_name": "Employee User",
+						"password": "TestPassword123!",
+						"manager_upn": "manager@example.com"
+					}
+				],
+				"groups": [
+					{
+						"display_name": "Test Group",
+						"member_upns": ["employee@example.com"],
+						"owner_upns": ["manager@example.com"]
+					}
+				]
+			}`,
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -614,6 +745,176 @@ func TestSeedFromConfig(t *testing.T) {
 	}
 	if manager.ID != user.ID {
 		t.Errorf("Expected manager ID %s, got %s", user.ID, manager.ID)
+	}
+}
+
+func TestSeedFromConfig_NewSchema(t *testing.T) {
+	// Create a memory store
+	s := store.NewMemoryStore()
+
+	// Create a config using new schema fields
+	trueVal := true
+	cfg := &SeedConfig{
+		Clients: []SeedClient{
+			{
+				ClientID:     "test-client-id",
+				ClientSecret: "test-client-secret",
+				TenantID:     "test-tenant-id",
+			},
+		},
+		Users: []SeedUser{
+			{
+				Email:       "manager@example.com",
+				DisplayName: "Manager User",
+				Password:    "TestPassword123!",
+				Enabled:     &trueVal,
+				IsGuest:     false,
+			},
+			{
+				Email:       "employee@example.com",
+				DisplayName: "Employee User",
+				Password:    "TestPassword123!",
+				Enabled:     &trueVal,
+				IsGuest:     false,
+				ManagerUPN:  "manager@example.com",
+			},
+		},
+		Groups: []SeedGroup{
+			{
+				DisplayName:  "Test Group",
+				Description:  "A test group",
+				MailNickname: "testgroup",
+				Visibility:   "Public",
+				MemberUPNs:   []string{"employee@example.com"},
+				OwnerUPNs:    []string{"manager@example.com"},
+			},
+		},
+	}
+
+	// Seed the store
+	err := SeedFromConfig(s, cfg)
+	if err != nil {
+		t.Fatalf("SeedFromConfig() failed: %v", err)
+	}
+
+	// Verify manager relationship using manager_upn
+	managerUser, err := s.GetUserByUPN(nil, "manager@example.com")
+	if err != nil {
+		t.Errorf("Failed to get manager user: %v", err)
+	}
+	employeeUser, err := s.GetUserByUPN(nil, "employee@example.com")
+	if err != nil {
+		t.Errorf("Failed to get employee user: %v", err)
+	}
+	manager, err := s.GetManager(nil, employeeUser.ID)
+	if err != nil {
+		t.Errorf("Failed to get manager: %v", err)
+	}
+	if manager.ID != managerUser.ID {
+		t.Errorf("Expected manager ID %s, got %s", managerUser.ID, manager.ID)
+	}
+
+	// Verify membership using member_upns
+	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list groups: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Errorf("Expected 1 group, got %d", len(groups))
+	}
+	members, _, err := s.ListMembers(nil, groups[0].ID, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list members: %v", err)
+	}
+	if len(members) != 1 {
+		t.Errorf("Expected 1 member, got %d", len(members))
+	}
+	if members[0].ID != employeeUser.ID {
+		t.Errorf("Expected member ID %s, got %s", employeeUser.ID, members[0].ID)
+	}
+
+	// Verify ownership using owner_upns
+	owners, _, err := s.ListOwners(nil, groups[0].ID, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list owners: %v", err)
+	}
+	if len(owners) != 1 {
+		t.Errorf("Expected 1 owner, got %d", len(owners))
+	}
+	if owners[0].ID != managerUser.ID {
+		t.Errorf("Expected owner ID %s, got %s", managerUser.ID, owners[0].ID)
+	}
+}
+
+func TestSeedFromConfig_NestedGroups(t *testing.T) {
+	// Create a memory store
+	s := store.NewMemoryStore()
+
+	// Create a config with nested group membership
+	cfg := &SeedConfig{
+		Clients: []SeedClient{
+			{
+				ClientID:     "test-client-id",
+				ClientSecret: "test-client-secret",
+				TenantID:     "test-tenant-id",
+			},
+		},
+		Users: []SeedUser{
+			{
+				Email:       "user@example.com",
+				DisplayName: "Test User",
+				Password:    "TestPassword123!",
+			},
+		},
+		Groups: []SeedGroup{
+			{
+				DisplayName: "Sub Group",
+				Description: "A sub group",
+				MemberUPNs:  []string{"user@example.com"},
+			},
+			{
+				DisplayName:        "Parent Group",
+				Description:         "A parent group",
+				MemberGroupNames:    []string{"Sub Group"},
+			},
+		},
+	}
+
+	// Seed the store
+	err := SeedFromConfig(s, cfg)
+	if err != nil {
+		t.Fatalf("SeedFromConfig() failed: %v", err)
+	}
+
+	// Verify nested group membership
+	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list groups: %v", err)
+	}
+	if len(groups) != 2 {
+		t.Errorf("Expected 2 groups, got %d", len(groups))
+	}
+
+	// Find parent and sub groups
+	var parentGroup, subGroup model.Group
+	for _, g := range groups {
+		if g.DisplayName == "Parent Group" {
+			parentGroup = g
+		} else if g.DisplayName == "Sub Group" {
+			subGroup = g
+		}
+	}
+
+	// Verify parent group has sub group as member
+	parentMembers, _, err := s.ListMembers(nil, parentGroup.ID, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list parent group members: %v", err)
+	}
+	if len(parentMembers) != 1 {
+		t.Errorf("Expected 1 member in parent group, got %d", len(parentMembers))
+	}
+	if parentMembers[0].ID != subGroup.ID {
+		t.Errorf("Expected sub group ID %s as member, got %s", subGroup.ID, parentMembers[0].ID)
 	}
 }
 
@@ -849,5 +1150,177 @@ func TestSeedFromConfig_Idempotent(t *testing.T) {
 	err = SeedFromConfig(s, cfg)
 	if err != nil {
 		t.Errorf("Second SeedFromConfig() failed (should be idempotent): %v", err)
+	}
+}
+
+func TestSeedFromConfigNewSchema(t *testing.T) {
+	// Load the new-format seed.json
+	cfg, err := LoadFromFile("../../examples/seed.json")
+	if err != nil {
+		t.Fatalf("Failed to load seed.json: %v", err)
+	}
+
+	s := store.NewMemoryStore()
+	err = SeedFromConfig(s, cfg)
+	if err != nil {
+		t.Fatalf("SeedFromConfig() failed: %v", err)
+	}
+
+	// Verify all 11 users exist
+	users, _, err := s.ListUsers(nil, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list users: %v", err)
+	}
+	if len(users) != 11 {
+		t.Errorf("Expected 11 users, got %d", len(users))
+	}
+
+	// Verify all 5 groups exist
+	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list groups: %v", err)
+	}
+	if len(groups) != 5 {
+		t.Errorf("Expected 5 groups, got %d", len(groups))
+	}
+
+	// Verify manager chain is correct (Alice->Eve, Bob->Eve, Eve->Frank, Frank->Admin, Diana->Admin)
+	alice, err := s.GetUserByUPN(nil, "alice.smith@saldeti.local")
+	if err != nil {
+		t.Errorf("Failed to get Alice: %v", err)
+	}
+	bob, err := s.GetUserByUPN(nil, "bob.jones@saldeti.local")
+	if err != nil {
+		t.Errorf("Failed to get Bob: %v", err)
+	}
+	eve, err := s.GetUserByUPN(nil, "eve.wilson@saldeti.local")
+	if err != nil {
+		t.Errorf("Failed to get Eve: %v", err)
+	}
+	frank, err := s.GetUserByUPN(nil, "frank.miller@saldeti.local")
+	if err != nil {
+		t.Errorf("Failed to get Frank: %v", err)
+	}
+	admin, err := s.GetUserByUPN(nil, "admin@saldeti.local")
+	if err != nil {
+		t.Errorf("Failed to get Admin: %v", err)
+	}
+	diana, err := s.GetUserByUPN(nil, "diana.prince@saldeti.local")
+	if err != nil {
+		t.Errorf("Failed to get Diana: %v", err)
+	}
+
+	// Alice's manager is Eve
+	aliceManager, err := s.GetManager(nil, alice.ID)
+	if err != nil {
+		t.Errorf("Failed to get Alice's manager: %v", err)
+	}
+	if aliceManager.ID != eve.ID {
+		t.Errorf("Expected Alice's manager to be Eve (ID %s), got %s", eve.ID, aliceManager.ID)
+	}
+
+	// Bob's manager is Eve
+	bobManager, err := s.GetManager(nil, bob.ID)
+	if err != nil {
+		t.Errorf("Failed to get Bob's manager: %v", err)
+	}
+	if bobManager.ID != eve.ID {
+		t.Errorf("Expected Bob's manager to be Eve (ID %s), got %s", eve.ID, bobManager.ID)
+	}
+
+	// Eve's manager is Frank
+	eveManager, err := s.GetManager(nil, eve.ID)
+	if err != nil {
+		t.Errorf("Failed to get Eve's manager: %v", err)
+	}
+	if eveManager.ID != frank.ID {
+		t.Errorf("Expected Eve's manager to be Frank (ID %s), got %s", frank.ID, eveManager.ID)
+	}
+
+	// Frank's manager is Admin
+	frankManager, err := s.GetManager(nil, frank.ID)
+	if err != nil {
+		t.Errorf("Failed to get Frank's manager: %v", err)
+	}
+	if frankManager.ID != admin.ID {
+		t.Errorf("Expected Frank's manager to be Admin (ID %s), got %s", admin.ID, frankManager.ID)
+	}
+
+	// Diana's manager is Admin
+	dianaManager, err := s.GetManager(nil, diana.ID)
+	if err != nil {
+		t.Errorf("Failed to get Diana's manager: %v", err)
+	}
+	if dianaManager.ID != admin.ID {
+		t.Errorf("Expected Diana's manager to be Admin (ID %s), got %s", admin.ID, dianaManager.ID)
+	}
+
+	// Verify Engineering Team has correct members
+	engGroup, err := findGroupByName(groups, "Engineering Team")
+	if err != nil {
+		t.Errorf("Failed to find Engineering Team: %v", err)
+	}
+	engMembers, _, err := s.ListMembers(nil, engGroup.ID, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list Engineering Team members: %v", err)
+	}
+	// Should have Alice, Bob, Eve, Grace
+	expectedMembers := map[string]bool{
+		"alice.smith@saldeti.local":  false,
+		"bob.jones@saldeti.local":    false,
+		"eve.wilson@saldeti.local":   false,
+		"grace.lee@saldeti.local":    false,
+	}
+	for _, member := range engMembers {
+		user, err := s.GetUser(nil, member.ID)
+		if err != nil {
+			t.Errorf("Failed to get member by ID: %v", err)
+			continue
+		}
+		if _, ok := expectedMembers[user.UserPrincipalName]; !ok {
+			t.Errorf("Unexpected member in Engineering Team: %s", user.UserPrincipalName)
+		} else {
+			expectedMembers[user.UserPrincipalName] = true
+		}
+	}
+	for upn, found := range expectedMembers {
+		if !found {
+			t.Errorf("Expected member %s not found in Engineering Team", upn)
+		}
+	}
+
+	// Verify nested group membership (All Staff contains Engineering Team and Marketing Team)
+	allStaffGroup, err := findGroupByName(groups, "All Staff")
+	if err != nil {
+		t.Errorf("Failed to find All Staff: %v", err)
+	}
+	allStaffMembers, _, err := s.ListMembers(nil, allStaffGroup.ID, model.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list All Staff members: %v", err)
+	}
+	// Should contain Engineering Team and Marketing Team as group members
+	engGroup, err = findGroupByName(groups, "Engineering Team")
+	if err != nil {
+		t.Errorf("Failed to find Engineering Team: %v", err)
+	}
+	mktGroup, err := findGroupByName(groups, "Marketing Team")
+	if err != nil {
+		t.Errorf("Failed to find Marketing Team: %v", err)
+	}
+	foundEng := false
+	foundMkt := false
+	for _, member := range allStaffMembers {
+		if member.ID == engGroup.ID {
+			foundEng = true
+		}
+		if member.ID == mktGroup.ID {
+			foundMkt = true
+		}
+	}
+	if !foundEng {
+		t.Error("Expected Engineering Team to be a member of All Staff")
+	}
+	if !foundMkt {
+		t.Error("Expected Marketing Team to be a member of All Staff")
 	}
 }

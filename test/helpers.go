@@ -9,10 +9,23 @@ import (
 	"testing"
 
 	absser "github.com/microsoft/kiota-abstractions-go/serialization"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/saldeti/saldeti/internal/handler"
 	"github.com/saldeti/saldeti/internal/store"
 )
+
+// httpTransport wraps an http.Client to implement policy.Transporter
+type httpTransport struct {
+	client *http.Client
+}
+
+func (t *httpTransport) Do(req *http.Request) (*http.Response, error) {
+	return t.client.Do(req)
+}
 
 // TestServer wraps a test server with authentication helpers
 type TestServer struct {
@@ -35,31 +48,45 @@ func setupTestServer(t *testing.T) *TestServer {
 
 	router := handler.NewRouter(s)
 
-	ts := httptest.NewServer(router)
+	// Use TLS test server for HTTPS
+	ts := httptest.NewTLSServer(router)
 
-	// Create SDK client with custom HTTP client for httptest.Server compatibility
-	cred := NewSimulatorCredential(ts.URL, "sim-tenant-id", "sim-client-id", "sim-client-secret")
-	
-	// Create Kiota authentication provider
-	authProvider := NewKiotaAuthenticationProvider(cred)
-	
-	// Create a custom HTTP client that works with httptest.Server
-	customHTTPClient := &http.Client{}
-	
-	// Create a custom request adapter with the custom HTTP client
+	// Create azidentity credential pointing at test server
+	// Use test server's client transport which already trusts the test server's cert
+	cred, err := azidentity.NewClientSecretCredential(
+		"sim-tenant-id", "sim-client-id", "sim-client-secret",
+		&azidentity.ClientSecretCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloud.Configuration{
+					ActiveDirectoryAuthorityHost: ts.URL,
+				},
+				Transport: &httpTransport{client: ts.Client()},
+			},
+			DisableInstanceDiscovery: true,
+		},
+	)
+	if err != nil {
+		t.Fatalf("Failed to create credential: %v", err)
+	}
+
+	// Create Kiota auth provider
+	authProvider, err := kiotaauth.NewAzureIdentityAuthenticationProvider(cred)
+	if err != nil {
+		t.Fatalf("Failed to create auth provider: %v", err)
+	}
+
+	// Use test server's client for SDK calls (trusts the test server's cert)
 	adapter, err := msgraphsdk.NewGraphRequestAdapterWithParseNodeFactoryAndSerializationWriterFactoryAndHttpClient(
 		authProvider,
 		absser.DefaultParseNodeFactoryInstance,
 		absser.DefaultSerializationWriterFactoryInstance,
-		customHTTPClient,
+		ts.Client(),
 	)
 	if err != nil {
 		t.Fatalf("Failed to create SDK adapter: %v", err)
 	}
-	
-	// Create SDK client with custom adapter
+
 	sdkClient := msgraphsdk.NewGraphServiceClient(adapter)
-	// Set base URL without trailing slash
 	sdkClient.GetAdapter().SetBaseUrl(ts.URL + "/v1.0")
 
 	return &TestServer{

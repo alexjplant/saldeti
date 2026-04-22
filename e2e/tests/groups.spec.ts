@@ -1,11 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/ui/login');
-  await page.fill('input[name="username"]', 'admin@saldeti.local');
-  await page.fill('input[name="password"]', 'Simulator123!');
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(/\/ui$/);
+  await page.goto('/ui');
 });
 
 test.describe('Groups', () => {
@@ -17,7 +13,7 @@ test.describe('Groups', () => {
     await expect(page.locator('td', { hasText: 'Marketing Team' })).toBeVisible();
     await expect(page.locator('td', { hasText: 'All Staff' })).toBeVisible();
     await expect(page.locator('tr', { hasText: 'Leadership' }).locator('td').first()).toBeVisible();
-    await expect(page.locator('td', { hasText: 'Project Alpha' })).toBeVisible();
+    await expect(page.locator('tr', { hasText: 'Project Alpha' }).locator('td').first()).toBeVisible();
   });
 
   test('search groups', async ({ page }) => {

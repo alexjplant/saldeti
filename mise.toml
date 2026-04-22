@@ -1,6 +1,7 @@
 [tools]
 go = "1.26.1"
 node = "22"
+"npm:opencode-ai" = "latest"
 
 [env]
 _.file = ".env"
@@ -88,13 +89,76 @@ npm install
 npx playwright install --with-deps chromium
 """
 
+[tasks.ui-e2e-server]
+description = "Starts the saldeti server in daemon mode for E2E tests"
+depends = ["build"]
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+export NODE_TLS_REJECT_UNAUTHORIZED=0
+
+# Start the server in daemon mode
+bin/saldeti -daemon -port 9443 -seed examples/seed.json -pidfile /tmp/saldeti-e2e.pid -logfile /tmp/saldeti-e2e.log
+
+# Wait for the server to be ready
+echo "Waiting for server to be ready..."
+timeout=15
+elapsed=0
+while [ $elapsed -lt $timeout ]; do
+  if curl -sk https://localhost:9443/ui > /dev/null 2>&1; then
+    echo "Server is ready!"
+    exit 0
+  fi
+  sleep 1
+  elapsed=$((elapsed + 1))
+done
+
+echo "Server did not become ready within ${timeout}s"
+exit 1
+"""
+
+[tasks.ui-e2e-stop]
+description = "Stops the daemon server used for E2E tests"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ -f /tmp/saldeti-e2e.pid ]; then
+  pid=$(cat /tmp/saldeti-e2e.pid)
+  if kill "$pid" 2>/dev/null; then
+    echo "Stopping server (PID: $pid)..."
+    # Wait up to 5 seconds for graceful shutdown
+    timeout=5
+    elapsed=0
+    while [ $elapsed -lt $timeout ]; do
+      if ! kill -0 "$pid" 2>/dev/null; then
+        echo "Server stopped gracefully"
+        rm -f /tmp/saldeti-e2e.pid
+        exit 0
+      fi
+      sleep 1
+      elapsed=$((elapsed + 1))
+    done
+    # If still running, force kill
+    echo "Server did not stop gracefully, forcing..."
+    kill -9 "$pid" 2>/dev/null || true
+  fi
+  rm -f /tmp/saldeti-e2e.pid
+else
+  echo "No PID file found, server may not be running"
+fi
+"""
+
 [tasks.ui-e2e]
 description = "Runs Playwright E2E tests against the UI"
-depends = ["build"]
+depends = ["build", "ui-e2e-server"]
+env = { NODE_TLS_REJECT_UNAUTHORIZED = "0" }
 dir = "e2e"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'mise run ui-e2e-stop' EXIT
 npx playwright test "$@"
 """
 
