@@ -102,7 +102,7 @@ func structToMap(item interface{}) (map[string]interface{}, error) {
 		if jsonTag == "" || jsonTag == "-" {
 			continue
 		}
-		
+
 		// Remove omitempty suffix
 		jsonName := strings.Split(jsonTag, ",")[0]
 
@@ -133,11 +133,11 @@ func mapToStruct[T any](m map[string]interface{}) (T, error) {
 		if jsonTag == "" || jsonTag == "-" {
 			continue
 		}
-		
+
 		jsonName := strings.Split(jsonTag, ",")[0]
 		if val, ok := m[jsonName]; ok {
 			fieldValue := v.Field(i)
-			
+
 			if fieldValue.Kind() == reflect.Ptr {
 				if val == nil {
 					fieldValue.Set(reflect.Zero(fieldValue.Type()))
@@ -188,7 +188,7 @@ func applyFilter(items []map[string]interface{}, filter string) ([]map[string]in
 func parseFilterExpression(filter string) (*filterNode, error) {
 	// Remove whitespace
 	filter = strings.TrimSpace(filter)
-	
+
 	// Handle parentheses - check if entire expression is wrapped in parentheses
 	if strings.HasPrefix(filter, "(") {
 		parenCount := 0
@@ -228,13 +228,14 @@ func parseFilterExpression(filter string) (*filterNode, error) {
 }
 
 type filterNode struct {
-	operator string
-	left     *filterNode
-	right    *filterNode
-	value    interface{}
-	property string
-	function string
-	args     []*filterNode
+	operator   string
+	left       *filterNode
+	right      *filterNode
+	value      interface{}
+	property   string
+	function   string
+	args       []*filterNode
+	nestedPath string // for any() with nested property access, e.g., "skuId" from "a/skuId"
 }
 
 // parseLogicalExpression parses logical operators (and, or)
@@ -243,19 +244,15 @@ func parseLogicalExpression(expr string) *filterNode {
 	return parseOr(expr)
 }
 
-// parseOr parses expressions with OR operator, with proper precedence
+// parseOr scans for "or" at top level FIRST, then parses each side.
+// This ensures logical operators take precedence over greedy comparison regex.
 func parseOr(expr string) *filterNode {
 	expr = strings.TrimSpace(expr)
 	if expr == "" {
 		return nil
 	}
 
-	left := parseAnd(expr)
-	if left == nil {
-		return nil
-	}
-
-	// Look for " or " at the top level (outside parentheses)
+	// Scan for " or " at the top level (outside parentheses and quotes) FIRST
 	for i := 0; i < len(expr); i++ {
 		ch := expr[i]
 		if ch == '(' {
@@ -268,17 +265,28 @@ func parseOr(expr string) *filterNode {
 					depth--
 				}
 			}
-			// Find where the closing paren was
+			// Advance i past the closing paren
 			for j := i + 1; j < len(expr); j++ {
 				if expr[j] == ')' {
 					i = j
 					break
 				}
 			}
+		} else if ch == '\'' {
+			// Skip to matching close quote
+			for j := i + 1; j < len(expr); j++ {
+				if expr[j] == '\'' {
+					i = j
+					break
+				}
+			}
 		} else if i+4 <= len(expr) && strings.EqualFold(expr[i:i+4], " or ") {
-			// Found OR at top level
-			right := parseAnd(expr[i+4:])
-			if right != nil {
+			// Found OR at top level — split and parse each side
+			leftStr := strings.TrimSpace(expr[:i])
+			rightStr := strings.TrimSpace(expr[i+4:])
+			left := parseAnd(leftStr)
+			right := parseAnd(rightStr)
+			if left != nil && right != nil {
 				return &filterNode{
 					operator: "or",
 					left:     left,
@@ -288,22 +296,18 @@ func parseOr(expr string) *filterNode {
 		}
 	}
 
-	return left
+	// No "or" found at top level, delegate to parseAnd
+	return parseAnd(expr)
 }
 
-// parseAnd parses expressions with AND operator
+// parseAnd scans for "and" at top level FIRST, then parses each side.
 func parseAnd(expr string) *filterNode {
 	expr = strings.TrimSpace(expr)
 	if expr == "" {
 		return nil
 	}
 
-	left := parsePrimary(expr)
-	if left == nil {
-		return nil
-	}
-
-	// Look for " and " at the top level (outside parentheses)
+	// Scan for " and " at the top level (outside parentheses and quotes) FIRST
 	for i := 0; i < len(expr); i++ {
 		ch := expr[i]
 		if ch == '(' {
@@ -316,17 +320,27 @@ func parseAnd(expr string) *filterNode {
 					depth--
 				}
 			}
-			// Find where the closing paren was
 			for j := i + 1; j < len(expr); j++ {
 				if expr[j] == ')' {
 					i = j
 					break
 				}
 			}
+		} else if ch == '\'' {
+			// Skip to matching close quote
+			for j := i + 1; j < len(expr); j++ {
+				if expr[j] == '\'' {
+					i = j
+					break
+				}
+			}
 		} else if i+5 <= len(expr) && strings.EqualFold(expr[i:i+5], " and ") {
-			// Found AND at top level
-			right := parsePrimary(expr[i+5:])
-			if right != nil {
+			// Found AND at top level — split and parse each side
+			leftStr := strings.TrimSpace(expr[:i])
+			rightStr := strings.TrimSpace(expr[i+5:])
+			left := parsePrimary(leftStr)
+			right := parsePrimary(rightStr)
+			if left != nil && right != nil {
 				return &filterNode{
 					operator: "and",
 					left:     left,
@@ -336,7 +350,8 @@ func parseAnd(expr string) *filterNode {
 		}
 	}
 
-	return left
+	// No "and" found at top level, delegate to parsePrimary
+	return parsePrimary(expr)
 }
 
 // parsePrimary parses a primary expression (comparison, function call, or parenthesized expression)
@@ -385,15 +400,15 @@ func parseComparisonExpression(expr string) *filterNode {
 	pattern := `^(.+?)\s+(eq|ne|gt|ge|lt|le)\s+(.+)$`
 	re := regexp.MustCompile("(?i)" + pattern)
 	matches := re.FindStringSubmatch(expr)
-	
+
 	if matches == nil {
 		return nil
 	}
-	
+
 	property := strings.TrimSpace(matches[1])
 	operator := strings.ToLower(strings.TrimSpace(matches[2]))
 	valueStr := strings.TrimSpace(matches[3])
-	
+
 	// Parse value (case-insensitive for boolean and null)
 	var value interface{}
 	if strings.EqualFold(valueStr, "null") {
@@ -412,7 +427,7 @@ func parseComparisonExpression(expr string) *filterNode {
 		// Could be another property or unquoted string
 		value = valueStr
 	}
-	
+
 	return &filterNode{
 		operator: operator,
 		property: property,
@@ -507,8 +522,11 @@ func parseFunctionArgs(argsStr string) (property string, value string, err error
 }
 
 // parseAnyFunction parses any() function expressions
+// Supports both flat and nested lambda paths:
+//   - property/any(a:a eq 'value')               — flat
+//   - property/any(a:a/nestedProp eq 'value')     — nested
 func parseAnyFunction(expr string) *filterNode {
-	// Format: property/any(a:a eq 'value')
+	// Format: property/any(a:a eq 'value') or property/any(a:a/nested eq 'value')
 	parts := strings.SplitN(expr, "/any(", 2)
 	if len(parts) != 2 {
 		return nil
@@ -524,22 +542,31 @@ func parseAnyFunction(expr string) *filterNode {
 	innerExpr = innerExpr[:len(innerExpr)-1]
 
 	// Extract the lambda variable and condition
-	// Format: a:a eq 'value'
+	// Format: a:a eq 'value' or a:a/nestedProp eq 'value'
 	colonPos := strings.Index(innerExpr, ":")
 	if colonPos == -1 {
 		return nil
 	}
 
+	lambdaVar := strings.TrimSpace(innerExpr[:colonPos])
 	condition := strings.TrimSpace(innerExpr[colonPos+1:])
 
 	// Parse the inner comparison expression
 	comparisonNode := parseComparisonExpression(condition)
 	if comparisonNode != nil {
+		// Check if the property contains a nested path (e.g., "a/skuId")
+		nodeProperty := comparisonNode.property
+		var nestedPath string
+		if strings.HasPrefix(nodeProperty, lambdaVar+"/") {
+			nestedPath = nodeProperty[len(lambdaVar)+1:]
+		}
+
 		return &filterNode{
-			function: "any",
-			property: property,
-			value:    comparisonNode.value,
-			operator: comparisonNode.operator,
+			function:   "any",
+			property:   property,
+			value:      comparisonNode.value,
+			operator:   comparisonNode.operator,
+			nestedPath: nestedPath,
 		}
 	}
 
@@ -551,7 +578,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 	if node == nil {
 		return true, nil
 	}
-	
+
 	// Handle logical operators
 	switch node.operator {
 	case "and":
@@ -581,32 +608,22 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 		}
 		return left || right, nil
 	}
-	
-	// Handle comparison operators
-	if node.operator != "" {
-		itemValue, exists := item[node.property]
-		if !exists {
-			// Property doesn't exist in item
-			return false, nil
-		}
-		
-		return compareValues(itemValue, node.value, node.operator)
-	}
-	
-	// Handle function calls
+
+	// Handle function calls FIRST (before comparison operators)
+	// any() filterNodes have both operator and function set; function takes precedence
 	if node.function != "" {
 		itemValue, exists := item[node.property]
 		if !exists {
 			// Property doesn't exist in item
 			return false, nil
 		}
-		
+
 		// Handle any() function for array properties
 		if node.function == "any" {
 			// itemValue should be a slice for any() to work
 			switch v := itemValue.(type) {
 			case []string:
-				// Check if any element in the slice matches the value
+				// Flat string array: groupTypes/any(a:a eq 'Unified')
 				for _, elem := range v {
 					match, err := compareValues(elem, node.value, node.operator)
 					if err == nil && match {
@@ -615,7 +632,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 				}
 				return false, nil
 			case []interface{}:
-				// Check if any element in the slice matches the value
+				// Mixed array
 				for _, elem := range v {
 					match, err := compareValues(elem, node.value, node.operator)
 					if err == nil && match {
@@ -624,23 +641,58 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 				}
 				return false, nil
 			default:
-				// Property is not a slice
+				// Could be a typed slice of structs (e.g., []AssignedLicense)
+				// Use reflection to iterate and handle nested paths
+				rv := reflect.ValueOf(itemValue)
+				if rv.Kind() != reflect.Slice {
+					return false, nil
+				}
+				for i := 0; i < rv.Len(); i++ {
+					elem := rv.Index(i)
+					// Dereference pointer if needed
+					if elem.Kind() == reflect.Ptr {
+						elem = elem.Elem()
+					}
+					if elem.Kind() != reflect.Struct {
+						// Not a struct, try direct comparison
+						match, err := compareValues(elem.Interface(), node.value, node.operator)
+						if err == nil && match {
+							return true, nil
+						}
+						continue
+					}
+
+					if node.nestedPath != "" {
+						// Nested property access: e.g., a/skuId
+						propValue := getNestedFieldValue(elem, node.nestedPath)
+						match, err := compareValues(propValue, node.value, node.operator)
+						if err == nil && match {
+							return true, nil
+						}
+					} else {
+						// Flat comparison on struct - compare struct itself
+						match, err := compareValues(elem.Interface(), node.value, node.operator)
+						if err == nil && match {
+							return true, nil
+						}
+					}
+				}
 				return false, nil
 			}
 		}
-		
+
 		// Handle string functions
 		strValue, ok := itemValue.(string)
 		if !ok {
 			// Property is not a string
 			return false, nil
 		}
-		
+
 		funcValue, ok := node.value.(string)
 		if !ok {
 			return false, fmt.Errorf("function value must be string")
 		}
-		
+
 		switch node.function {
 		case "startswith":
 			return strings.HasPrefix(strValue, funcValue), nil
@@ -652,8 +704,69 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 			return false, fmt.Errorf("unknown function: %s", node.function)
 		}
 	}
-	
+
+	// Handle comparison operators (only if not a function call)
+	if node.operator != "" {
+		itemValue, exists := item[node.property]
+		if !exists {
+			// Property doesn't exist in item
+			return false, nil
+		}
+
+		return compareValues(itemValue, node.value, node.operator)
+	}
+
 	return false, fmt.Errorf("invalid filter node")
+}
+
+// getNestedFieldValue gets a field value from a struct by JSON tag name.
+// Supports dot-separated nested paths (e.g., "skuId" or "nested.prop").
+func getNestedFieldValue(v reflect.Value, jsonPath string) interface{} {
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+
+	// Split path for nested access (e.g., "a.b.c")
+	parts := strings.Split(jsonPath, ".")
+	if len(parts) == 0 {
+		return nil
+	}
+
+	// Find field by JSON tag name
+	targetField := parts[0]
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+		jsonName := strings.Split(jsonTag, ",")[0]
+		if jsonName == targetField {
+			fieldValue := v.Field(i)
+			if fieldValue.Kind() == reflect.Ptr {
+				if fieldValue.IsNil() {
+					return nil
+				}
+				fieldValue = fieldValue.Elem()
+			}
+
+			if len(parts) > 1 {
+				// Recurse for deeper paths
+				return getNestedFieldValue(fieldValue, strings.Join(parts[1:], "."))
+			}
+
+			if fieldValue.Kind() == reflect.String {
+				return fieldValue.String()
+			}
+			return fieldValue.Interface()
+		}
+	}
+
+	return nil
 }
 
 // compareValues compares two values using the specified operator
@@ -669,7 +782,7 @@ func compareValues(a, b interface{}, operator string) (bool, error) {
 			return false, fmt.Errorf("operator %s not supported for null values", operator)
 		}
 	}
-	
+
 	// Try to compare as strings first
 	strA, okA := a.(string)
 	strB, okB := b.(string)
@@ -689,7 +802,7 @@ func compareValues(a, b interface{}, operator string) (bool, error) {
 			return strings.ToLower(strA) <= strings.ToLower(strB), nil
 		}
 	}
-	
+
 	// Try to compare as booleans
 	boolA, okA := a.(bool)
 	boolB, okB := b.(bool)
@@ -703,7 +816,7 @@ func compareValues(a, b interface{}, operator string) (bool, error) {
 			return false, fmt.Errorf("operator %s not supported for boolean values", operator)
 		}
 	}
-	
+
 	// Try to compare as numbers
 	numA, okA := toFloat64(a)
 	numB, okB := toFloat64(b)
@@ -723,7 +836,7 @@ func compareValues(a, b interface{}, operator string) (bool, error) {
 			return numA <= numB, nil
 		}
 	}
-	
+
 	return false, fmt.Errorf("cannot compare values of type %T and %T with operator %s", a, b, operator)
 }
 
@@ -880,36 +993,158 @@ func compareValuesForOrder(a, b interface{}, ascending bool) int {
 	return 0
 }
 
-// applySearch applies OData search across displayName and userPrincipalName fields
+// applySearch applies OData $search with field-qualified syntax support.
+// Supports:
+//   - Unqualified: "alice" searches displayName, userPrincipalName, mail, mailNickname
+//   - Field-qualified: "displayName:alice" searches only displayName
+//   - Multiple terms (space-separated, implicit AND): "displayName:alice mail:saldeti"
+//   - Graph API style: "displayName:alice AND userType:Member"
 func applySearch(items []map[string]interface{}, search string) []map[string]interface{} {
 	if search == "" {
 		return items
 	}
-	
-	// Strip surrounding quotes if present (OData search terms may be quoted)
+
+	// Strip surrounding double-quotes (OData sends $search="..." with the quotes)
 	search = strings.Trim(search, `"`)
-	search = strings.ToLower(search)
+
+	// Parse search into individual terms
+	terms := parseSearchTerms(search)
+	if len(terms) == 0 {
+		return items
+	}
+
+	// Default fields searched when no field qualifier is given
+	defaultFields := []string{"displayName", "userPrincipalName", "mail", "mailNickname"}
+
 	result := make([]map[string]interface{}, 0)
-	
 	for _, item := range items {
-		// Check displayName
-		if displayName, ok := item["displayName"].(string); ok {
-			if strings.Contains(strings.ToLower(displayName), search) {
-				result = append(result, item)
-				continue
+		allMatch := true
+		for _, term := range terms {
+			if !matchesSearchTerm(item, term, defaultFields) {
+				allMatch = false
+				break
 			}
 		}
-		
-		// Check userPrincipalName
-		if upn, ok := item["userPrincipalName"].(string); ok {
-			if strings.Contains(strings.ToLower(upn), search) {
-				result = append(result, item)
-				continue
+		if allMatch {
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+// searchTerm represents a parsed $search term with optional field qualifier
+type searchTerm struct {
+	field string // empty means unqualified (search all default fields)
+	value string // the search value (lowercased)
+}
+
+// parseSearchTerms parses a search string into individual terms.
+// Handles:
+//   - "displayName:alice" → {field:"displayName", value:"alice"}
+//   - "mail:alice@" → {field:"mail", value:"alice@"}
+//   - "alice" → {field:"", value:"alice"}
+//   - "displayName:alice AND mail:saldeti" → two terms
+//   - Quoted values: "displayName:\"alice bob\"" → {field:"displayName", value:"alice bob"}
+func parseSearchTerms(search string) []searchTerm {
+	search = strings.TrimSpace(search)
+	if search == "" {
+		return nil
+	}
+
+	var terms []searchTerm
+
+	// Remove explicit AND/OR operators (Graph API uses them but we treat spaces as AND)
+	search = strings.ReplaceAll(search, " AND ", " ")
+	search = strings.ReplaceAll(search, " and ", " ")
+	search = strings.ReplaceAll(search, " OR ", " ")
+	search = strings.ReplaceAll(search, " or ", " ")
+
+	// Split by spaces, but respect quoted substrings
+	parts := splitSearchParts(search)
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Check for field qualifier (e.g., "displayName:alice")
+		if idx := strings.Index(part, ":"); idx > 0 {
+			field := part[:idx]
+			value := part[idx+1:]
+			// Strip surrounding quotes from value
+			value = strings.Trim(value, `"`)
+			if value != "" {
+				terms = append(terms, searchTerm{
+					field: field,
+					value: strings.ToLower(value),
+				})
+			}
+		} else {
+			// Unqualified term
+			value := strings.Trim(part, `"`)
+			if value != "" {
+				terms = append(terms, searchTerm{
+					field: "",
+					value: strings.ToLower(value),
+				})
 			}
 		}
 	}
-	
-	return result
+
+	return terms
+}
+
+// splitSearchParts splits a search string by spaces, respecting quoted substrings
+func splitSearchParts(s string) []string {
+	var parts []string
+	var current strings.Builder
+	inQuotes := false
+
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
+		if ch == '"' {
+			inQuotes = !inQuotes
+			current.WriteByte(ch)
+		} else if ch == ' ' && !inQuotes {
+			if current.Len() > 0 {
+				parts = append(parts, current.String())
+				current.Reset()
+			}
+		} else {
+			current.WriteByte(ch)
+		}
+	}
+	if current.Len() > 0 {
+		parts = append(parts, current.String())
+	}
+
+	return parts
+}
+
+// matchesSearchTerm checks if an item matches a single search term
+func matchesSearchTerm(item map[string]interface{}, term searchTerm, defaultFields []string) bool {
+	fields := defaultFields
+	if term.field != "" {
+		fields = []string{term.field}
+	}
+
+	for _, field := range fields {
+		val, ok := item[field]
+		if !ok {
+			continue
+		}
+		strVal, ok := val.(string)
+		if !ok {
+			continue
+		}
+		if strings.Contains(strings.ToLower(strVal), term.value) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // selectFields selects only the specified fields from a map

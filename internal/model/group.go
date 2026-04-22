@@ -3,8 +3,9 @@ package model
 import "time"
 
 type AssignedLicense struct {
-    DisabledPlans []string `json:"disabledPlans"`
-    SkuID         string   `json:"skuId"`
+	DisabledPlans []string `json:"disabledPlans,omitempty"`
+	SkuID         string   `json:"skuId,omitempty"`
+	SkuPartNumber string   `json:"skuPartNumber,omitempty"`
 }
 
 type Group struct {
