@@ -1,5 +1,7 @@
 package seed
 
+import "github.com/saldeti/saldeti/internal/model"
+
 // SeedConfig is the top-level structure for a seed JSON file.
 type SeedConfig struct {
 	Clients     []SeedClient      `json:"clients"`
@@ -24,10 +26,11 @@ type SeedUser struct {
 	GivenName   string `json:"given_name,omitempty"`
 	Surname     string `json:"surname,omitempty"`
 	JobTitle    string `json:"job_title,omitempty"`
-	Department  string `json:"department,omitempty"`
-	Enabled     *bool  `json:"enabled,omitempty"` // defaults to true if nil
-	IsGuest     bool   `json:"is_guest,omitempty"`
-	ManagerUPN  string `json:"manager_upn,omitempty"`
+	Department        string                  `json:"department,omitempty"`
+	Enabled           *bool                   `json:"enabled,omitempty"` // defaults to true if nil
+	IsGuest           bool                    `json:"is_guest,omitempty"`
+	ManagerUPN        string                  `json:"manager_upn,omitempty"`
+	AssignedLicenses  []model.SeedLicense     `json:"assigned_licenses,omitempty"`
 }
 
 type SeedGroup struct {

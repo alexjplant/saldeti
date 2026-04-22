@@ -2,6 +2,7 @@ package ui
 
 import (
 	"html/template"
+	"strings"
 	"time"
 )
 
@@ -36,5 +37,6 @@ func funcMap() template.FuncMap {
 		"formatDate": formatDate,
 		"truncate":   truncate,
 		"yesno":      yesno,
+		"join":       strings.Join,
 	}
 }

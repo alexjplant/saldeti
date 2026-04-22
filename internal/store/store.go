@@ -60,4 +60,8 @@ type Store interface {
 	// Delta query
 	GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error)
 	GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error)
+
+	// Licenses
+	ListSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error)
+	AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []model.LicenseRemoval) (*model.User, error)
 }

@@ -47,6 +47,9 @@ func NewRouter(st store.Store) *gin.Engine {
 
 		v1.GET("/me", meHandler(st))
 
+		// Subscribed SKUs
+		v1.GET("/subscribedSkus", listSubscribedSkusHandler(st))
+
 		// Users
 		// Add routes without trailing slash for SDK compatibility
 		v1.POST("/users", createUserHandler(st))
@@ -74,6 +77,7 @@ func NewRouter(st store.Store) *gin.Engine {
 				usersUID.GET("/directReports", listDirectReportsHandler(st))
 				usersUID.POST("/checkMemberGroups", checkUserMemberGroupsHandler(st))
 				usersUID.POST("/getMemberGroups", getUserMemberGroupsHandler(st))
+				usersUID.POST("/assignLicense", assignLicenseHandler(st))
 			}
 		}
 

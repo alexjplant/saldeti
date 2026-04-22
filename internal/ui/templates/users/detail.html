@@ -68,4 +68,48 @@
     </ul>
 </article>
 {{end}}
+
+{{if or .AssignedLicenses .AvailableSkus}}
+<article>
+    <header><strong>Licenses</strong></header>
+    {{if .AssignedLicenses}}
+    <table>
+        <thead>
+            <tr><th>SKU</th><th>Part Number</th><th>Disabled Plans</th><th></th></tr>
+        </thead>
+        <tbody>
+            {{range .AssignedLicenses}}
+            <tr>
+                <td>{{.SkuID}}</td>
+                <td><strong>{{.SkuPartNumber}}</strong></td>
+                <td>{{if .DisabledPlans}}{{join .DisabledPlans ", "}}{{else}}None{{end}}</td>
+                <td>
+                    <form method="POST" action="/ui/users/{{$.User.ID}}/licenses/{{.SkuID}}/remove" style="margin:0; display:inline;">
+                        <button type="submit" class="outline secondary" style="padding:0.2rem 0.5rem;" title="Remove license"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p><small>No licenses assigned.</small></p>
+    {{end}}
+
+    {{if .AvailableSkus}}
+    <details style="margin-top:1rem;">
+        <summary role="button" class="secondary">Add License</summary>
+        <form method="POST" action="/ui/users/{{.User.ID}}/licenses/add" style="margin-top:0.5rem;">
+            <select name="skuId" required>
+                <option value="" disabled selected>Select a license SKU...</option>
+                {{range .AvailableSkus}}
+                <option value="{{.SkuID}}">{{.SkuPartNumber}}</option>
+                {{end}}
+            </select>
+            <button type="submit">Assign</button>
+        </form>
+    </details>
+    {{end}}
+</article>
+{{end}}
 {{end}}

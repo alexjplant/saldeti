@@ -38,12 +38,32 @@ func UserDetailHandler(h *UIHandler) gin.HandlerFunc {
 			groupMemberships = []model.DirectoryObject{} // Empty slice on error
 		}
 
+		// Subscribed SKUs (for license dropdown)
+		subscribedSkus, err := h.fetchSubscribedSkus(ctx)
+		if err != nil {
+			subscribedSkus = []model.SubscribedSku{}
+		}
+
+		// Build available SKUs (not yet assigned to user)
+		assignedSkuIDs := make(map[string]bool)
+		for _, lic := range user.AssignedLicenses {
+			assignedSkuIDs[lic.SkuID] = true
+		}
+		availableSkus := make([]model.SubscribedSku, 0)
+		for _, sku := range subscribedSkus {
+			if !assignedSkuIDs[sku.SkuID] {
+				availableSkus = append(availableSkus, sku)
+			}
+		}
+
 		h.render(c, "templates/users/detail.html", gin.H{
 			"ActiveNav":        "users",
 			"User":             user,
 			"Manager":          manager,
 			"DirectReports":    directReports,
 			"GroupMemberships": groupMemberships,
+			"AssignedLicenses": user.AssignedLicenses,
+			"AvailableSkus":    availableSkus,
 		})
 	}
 }
