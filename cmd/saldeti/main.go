@@ -165,6 +165,21 @@ func main() {
 
 	// Daemon mode: fork child and exit
 	if *daemon && os.Getenv("SALDETI_CHILD") != "1" {
+		// Check if a daemon is already running by examining the PID file
+		if pidData, err := os.ReadFile(*pidfile); err == nil {
+			existingPID := strings.TrimSpace(string(pidData))
+			if pid, err := strconv.Atoi(existingPID); err == nil {
+				if proc, err := os.FindProcess(pid); err == nil {
+					if err := proc.Signal(syscall.Signal(0)); err == nil {
+						fmt.Fprintf(os.Stderr, "Daemon already running with PID %d (pidfile: %s)\n  Stop it first: %s -stop -pidfile %s\n",
+							pid, *pidfile, os.Args[0], *pidfile)
+						os.Exit(1)
+					}
+				}
+			}
+			// PID file exists but process is not running — stale pidfile, remove it
+			os.Remove(*pidfile)
+		}
 		lf, err := os.OpenFile(*logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to open log file: %v\n", err)
