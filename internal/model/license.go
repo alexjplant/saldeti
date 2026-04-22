@@ -315,3 +315,17 @@ func FindSkuBySkuID(skuId string) (skuPartNumber string, found bool) {
 	}
 	return "", false
 }
+
+// FindServicePlanID looks up a service plan ID by its skuPartNumber and planName from the default catalog
+func FindServicePlanID(skuPartNumber, planName string) (planID string, found bool) {
+	for _, sku := range DefaultSubscribedSkus() {
+		if sku.SkuPartNumber == skuPartNumber {
+			for _, plan := range sku.ServicePlans {
+				if plan.ServicePlanName == planName {
+					return plan.ServicePlanID, true
+				}
+			}
+		}
+	}
+	return "", false
+}

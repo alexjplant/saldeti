@@ -82,7 +82,7 @@
             <tr>
                 <td>{{.SkuID}}</td>
                 <td><strong>{{.SkuPartNumber}}</strong></td>
-                <td>{{if .DisabledPlans}}{{join .DisabledPlans ", "}}{{else}}None{{end}}</td>
+                <td>{{if .DisabledPlans}}{{join (planIDsToNames .DisabledPlans) ", "}}{{else}}None{{end}}</td>
                 <td>
                     <form method="POST" action="/ui/users/{{$.User.ID}}/licenses/{{.SkuID}}/remove" style="margin:0; display:inline;">
                         <button type="submit" class="outline secondary" style="padding:0.2rem 0.5rem;" title="Remove license"><i data-lucide="x" style="width:14px;height:14px;"></i></button>

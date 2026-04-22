@@ -218,9 +218,16 @@ func SeedFromConfig(s store.Store, cfg *SeedConfig) error {
 				if !found {
 					return fmt.Errorf("user[%d]: unknown skuPartNumber %q in assigned_licenses", i, sl.SkuPartNumber)
 				}
-				disabledPlans := sl.DisabledPlans
-				if disabledPlans == nil {
-					disabledPlans = []string{}
+				// Convert disabled plan names to GUIDs
+				disabledPlans := make([]string, 0)
+				if sl.DisabledPlans != nil {
+					for _, planName := range sl.DisabledPlans {
+						planID, found := model.FindServicePlanID(sl.SkuPartNumber, planName)
+						if !found {
+							return fmt.Errorf("user[%d]: unknown service plan name %q for sku %q", i, planName, sl.SkuPartNumber)
+						}
+						disabledPlans = append(disabledPlans, planID)
+					}
 				}
 				licenses = append(licenses, model.AssignedLicense{
 					SkuID:         skuID,

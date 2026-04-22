@@ -105,30 +105,23 @@ func sdkUserToModel(u models.Userable) model.User {
 		m.CreatedDateTime = v
 	}
 
-	// Extract assignedLicenses from additional data if present
-	if additionalData := u.GetAdditionalData(); additionalData != nil {
-		if al, ok := additionalData["assignedLicenses"]; ok {
-			if alSlice, ok := al.([]interface{}); ok {
-				for _, item := range alSlice {
-					if licMap, ok := item.(map[string]interface{}); ok {
-						lic := model.AssignedLicense{}
-						if skuId, ok := licMap["skuId"].(string); ok {
-							lic.SkuID = skuId
-						}
-						if skuPN, ok := licMap["skuPartNumber"].(string); ok {
-							lic.SkuPartNumber = skuPN
-						}
-						if dp, ok := licMap["disabledPlans"].([]interface{}); ok {
-							for _, p := range dp {
-								if s, ok := p.(string); ok {
-									lic.DisabledPlans = append(lic.DisabledPlans, s)
-								}
-							}
-						}
-						m.AssignedLicenses = append(m.AssignedLicenses, lic)
-					}
+	// Extract assignedLicenses from SDK native method
+	if licenses := u.GetAssignedLicenses(); licenses != nil {
+		for _, lic := range licenses {
+			al := model.AssignedLicense{}
+			if skuId := lic.GetSkuId(); skuId != nil {
+				al.SkuID = skuId.String()
+				// Look up skuPartNumber from the static catalog
+				if skuPN, found := model.FindSkuBySkuID(al.SkuID); found {
+					al.SkuPartNumber = skuPN
 				}
 			}
+			if disabledPlans := lic.GetDisabledPlans(); disabledPlans != nil {
+				for _, plan := range disabledPlans {
+					al.DisabledPlans = append(al.DisabledPlans, plan.String())
+				}
+			}
+			m.AssignedLicenses = append(m.AssignedLicenses, al)
 		}
 	}
 
