@@ -62,6 +62,8 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 	uiGroup.GET("/users/:id/edit", UserEditHandler(handler))
 	uiGroup.POST("/users/:id/edit", UserEditHandler(handler))
 	uiGroup.POST("/users/:id/delete", UserDeleteHandler(handler))
+	uiGroup.POST("/users/:id/licenses/add", UserAddLicenseHandler(handler))
+	uiGroup.POST("/users/:id/licenses/:skuId/remove", UserRemoveLicenseHandler(handler))
 
 	// Group routes
 	uiGroup.GET("/groups", GroupListHandler(handler))

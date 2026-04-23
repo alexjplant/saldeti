@@ -1516,3 +1516,53 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
+
+// License methods
+func (s *memoryStore) ListSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error) {
+	return model.DefaultSubscribedSkus(), nil
+}
+
+func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []model.LicenseRemoval) (*model.User, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, exists := s.users[userID]
+	if !exists {
+		return nil, ErrUserNotFound
+	}
+
+	// Build a map of current licenses by skuId for easy manipulation
+	currentLicenses := make(map[string]model.AssignedLicense)
+	for _, lic := range user.AssignedLicenses {
+		currentLicenses[lic.SkuID] = lic
+	}
+
+	// Remove licenses
+	for _, rem := range removeLicenses {
+		delete(currentLicenses, rem.SkuID)
+	}
+
+	// Add licenses (overwrite if already present)
+	for _, add := range addLicenses {
+		skuPartNumber, _ := model.FindSkuBySkuID(add.SkuID)
+		disabledPlans := add.DisabledPlans
+		if disabledPlans == nil {
+			disabledPlans = []string{}
+		}
+		currentLicenses[add.SkuID] = model.AssignedLicense{
+			SkuID:         add.SkuID,
+			SkuPartNumber: skuPartNumber,
+			DisabledPlans: disabledPlans,
+		}
+	}
+
+	// Convert back to slice
+	licenses := make([]model.AssignedLicense, 0, len(currentLicenses))
+	for _, lic := range currentLicenses {
+		licenses = append(licenses, lic)
+	}
+	user.AssignedLicenses = licenses
+
+	s.users[userID] = user
+	return &user, nil
+}

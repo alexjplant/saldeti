@@ -104,6 +104,27 @@ func sdkUserToModel(u models.Userable) model.User {
 	if v := u.GetCreatedDateTime(); v != nil {
 		m.CreatedDateTime = v
 	}
+
+	// Extract assignedLicenses from SDK native method
+	if licenses := u.GetAssignedLicenses(); licenses != nil {
+		for _, lic := range licenses {
+			al := model.AssignedLicense{}
+			if skuId := lic.GetSkuId(); skuId != nil {
+				al.SkuID = skuId.String()
+				// Look up skuPartNumber from the static catalog
+				if skuPN, found := model.FindSkuBySkuID(al.SkuID); found {
+					al.SkuPartNumber = skuPN
+				}
+			}
+			if disabledPlans := lic.GetDisabledPlans(); disabledPlans != nil {
+				for _, plan := range disabledPlans {
+					al.DisabledPlans = append(al.DisabledPlans, plan.String())
+				}
+			}
+			m.AssignedLicenses = append(m.AssignedLicenses, al)
+		}
+	}
+
 	return m
 }
 
@@ -288,4 +309,40 @@ func (h *UIHandler) fetchDirectoryObject(ctx context.Context, url string) (*mode
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 	return &obj, nil
+}
+
+// fetchSubscribedSkus fetches the subscribed SKU catalog from the API
+func (h *UIHandler) fetchSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error) {
+	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: []string{"https://graph.microsoft.com/.default"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", h.baseURL+"/v1.0/subscribedSkus", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token.Token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Value []model.SubscribedSku `json:"value"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+	return result.Value, nil
 }

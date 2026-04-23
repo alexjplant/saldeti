@@ -55,10 +55,57 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 			users = []model.User{}
 		}
 
+		// Handle $expand - convert users to maps with expanded properties
+		var responseValue interface{} = users
+		if len(opts.Expand) > 0 {
+			expandedUsers := make([]map[string]interface{}, 0, len(users))
+			for _, u := range users {
+				userMap := make(map[string]interface{})
+				// Serialize user to map
+				userJSON, err := json.Marshal(u)
+				if err != nil {
+					continue
+				}
+				json.Unmarshal(userJSON, &userMap)
+
+				// Add expanded properties
+				for _, prop := range opts.Expand {
+					prop = strings.TrimSpace(prop)
+					switch prop {
+					case "manager":
+						mgr, err := st.GetManager(c.Request.Context(), u.ID)
+						if err == nil && mgr != nil {
+							userMap["manager"] = mgr
+						} else {
+							userMap["manager"] = nil
+						}
+					case "directReports":
+						reports, _, err := st.ListDirectReports(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							if reports == nil {
+								reports = []model.DirectoryObject{}
+							}
+							userMap["directReports"] = reports
+						}
+					case "memberOf":
+						groups, _, err := st.ListUserMemberOf(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							if groups == nil {
+								groups = []model.DirectoryObject{}
+							}
+							userMap["memberOf"] = groups
+						}
+					}
+				}
+				expandedUsers = append(expandedUsers, userMap)
+			}
+			responseValue = expandedUsers
+		}
+
 		// Build response
 		response := model.ListResponse{
 			Context: "https://graph.microsoft.com/v1.0/$metadata#users",
-			Value:   users,
+			Value:   responseValue,
 		}
 
 		// Add count if requested
@@ -139,6 +186,39 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 
 		for k, v := range userMap {
 			response[k] = v
+		}
+
+		// Handle $expand
+		if expandStr := c.Request.URL.Query().Get("$expand"); expandStr != "" {
+			expandProps := strings.Split(expandStr, ",")
+			for _, prop := range expandProps {
+				prop = strings.TrimSpace(prop)
+				switch prop {
+				case "manager":
+					mgr, err := st.GetManager(c.Request.Context(), id)
+					if err == nil && mgr != nil {
+						response["manager"] = mgr
+					} else {
+						response["manager"] = nil
+					}
+				case "directReports":
+					reports, _, err := st.ListDirectReports(c.Request.Context(), id, model.ListOptions{Top: 999})
+					if err == nil {
+						if reports == nil {
+							reports = []model.DirectoryObject{}
+						}
+						response["directReports"] = reports
+					}
+				case "memberOf":
+					groups, _, err := st.ListUserMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+					if err == nil {
+						if groups == nil {
+							groups = []model.DirectoryObject{}
+						}
+						response["memberOf"] = groups
+					}
+				}
+			}
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -336,6 +416,11 @@ func parseListOptions(query url.Values) model.ListOptions {
 		if skip, err := strconv.Atoi(skipStr); err == nil && skip >= 0 {
 			opts.Skip = skip
 		}
+	}
+
+	// Parse $expand
+	if expandStr := query.Get("$expand"); expandStr != "" {
+		opts.Expand = strings.Split(expandStr, ",")
 	}
 
 	return opts

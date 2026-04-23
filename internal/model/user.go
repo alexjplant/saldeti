@@ -31,6 +31,7 @@ type User struct {
 	ConsentProvidedForMinor    string          `json:"consentProvidedForMinor,omitempty"`
 	LegalAgeGroupClassification string         `json:"legalAgeGroupClassification,omitempty"`
 	PasswordProfile            *PasswordProfile `json:"passwordProfile,omitempty"`
+	AssignedLicenses           []AssignedLicense `json:"assignedLicenses,omitempty"`
 	ModifiedAt                 time.Time        `json:"-"`
 }
 

@@ -210,6 +210,34 @@ func SeedFromConfig(s store.Store, cfg *SeedConfig) error {
 			},
 		}
 
+		// Process assigned licenses from seed
+		if len(user.AssignedLicenses) > 0 {
+			licenses := make([]model.AssignedLicense, 0, len(user.AssignedLicenses))
+			for _, sl := range user.AssignedLicenses {
+				skuID, found := model.FindSkuByPartNumber(sl.SkuPartNumber)
+				if !found {
+					return fmt.Errorf("user[%d]: unknown skuPartNumber %q in assigned_licenses", i, sl.SkuPartNumber)
+				}
+				// Convert disabled plan names to GUIDs
+				disabledPlans := make([]string, 0)
+				if sl.DisabledPlans != nil {
+					for _, planName := range sl.DisabledPlans {
+						planID, found := model.FindServicePlanID(sl.SkuPartNumber, planName)
+						if !found {
+							return fmt.Errorf("user[%d]: unknown service plan name %q for sku %q", i, planName, sl.SkuPartNumber)
+						}
+						disabledPlans = append(disabledPlans, planID)
+					}
+				}
+				licenses = append(licenses, model.AssignedLicense{
+					SkuID:         skuID,
+					SkuPartNumber: sl.SkuPartNumber,
+					DisabledPlans: disabledPlans,
+				})
+			}
+			u.AssignedLicenses = licenses
+		}
+
 		createdUser, err := s.CreateUser(ctx, u)
 		if err != nil {
 			if errors.Is(err, store.ErrDuplicateUPN) {

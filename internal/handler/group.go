@@ -55,10 +55,56 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 			groups = []model.Group{}
 		}
 
+		// Handle $expand - convert groups to maps with expanded properties
+		var responseValue interface{} = groups
+		if len(opts.Expand) > 0 {
+			expandedGroups := make([]map[string]interface{}, 0, len(groups))
+			for _, g := range groups {
+				groupMap := make(map[string]interface{})
+				groupJSON, err := json.Marshal(g)
+				if err != nil {
+					continue
+				}
+				json.Unmarshal(groupJSON, &groupMap)
+
+				for _, prop := range opts.Expand {
+					prop = strings.TrimSpace(prop)
+					switch prop {
+					case "members":
+						members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							if members == nil {
+								members = []model.DirectoryObject{}
+							}
+							groupMap["members"] = members
+						}
+					case "owners":
+						owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							if owners == nil {
+								owners = []model.DirectoryObject{}
+							}
+							groupMap["owners"] = owners
+						}
+					case "memberOf":
+						memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							if memberOf == nil {
+								memberOf = []model.DirectoryObject{}
+							}
+							groupMap["memberOf"] = memberOf
+						}
+					}
+				}
+				expandedGroups = append(expandedGroups, groupMap)
+			}
+			responseValue = expandedGroups
+		}
+
 		// Build response
 		response := model.ListResponse{
 			Context: "https://graph.microsoft.com/v1.0/$metadata#groups",
-			Value:   groups,
+			Value:   responseValue,
 		}
 
 		// Add count if requested
@@ -131,6 +177,40 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 
 		for k, v := range groupMap {
 			response[k] = v
+		}
+
+		// Handle $expand
+		if expandStr := c.Request.URL.Query().Get("$expand"); expandStr != "" {
+			expandProps := strings.Split(expandStr, ",")
+			for _, prop := range expandProps {
+				prop = strings.TrimSpace(prop)
+				switch prop {
+				case "members":
+					members, _, err := st.ListMembers(c.Request.Context(), id, model.ListOptions{Top: 999})
+					if err == nil {
+						if members == nil {
+							members = []model.DirectoryObject{}
+						}
+						response["members"] = members
+					}
+				case "owners":
+					owners, _, err := st.ListOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
+					if err == nil {
+						if owners == nil {
+							owners = []model.DirectoryObject{}
+						}
+						response["owners"] = owners
+					}
+				case "memberOf":
+					memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+					if err == nil {
+						if memberOf == nil {
+							memberOf = []model.DirectoryObject{}
+						}
+						response["memberOf"] = memberOf
+					}
+				}
+			}
 		}
 
 		writeJSON(c, http.StatusOK, response)

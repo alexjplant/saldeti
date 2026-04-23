@@ -8,6 +8,7 @@ type ListOptions struct {
     Count    bool
     Search   string
     Skip     int
+    Expand   []string
 }
 
 type ListResponse struct {

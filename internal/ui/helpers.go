@@ -2,8 +2,39 @@ package ui
 
 import (
 	"html/template"
+	"strings"
 	"time"
+
+	"github.com/saldeti/saldeti/internal/model"
 )
+
+// Build a map of service plan IDs to names from the default catalog
+var servicePlanIDToName = buildServicePlanMap()
+
+func buildServicePlanMap() map[string]string {
+	m := make(map[string]string)
+	for _, sku := range model.DefaultSubscribedSkus() {
+		for _, plan := range sku.ServicePlans {
+			m[plan.ServicePlanID] = plan.ServicePlanName
+		}
+	}
+	return m
+}
+
+func planIDToName(planID string) string {
+	if name, ok := servicePlanIDToName[planID]; ok {
+		return name
+	}
+	return planID // Return GUID if not found
+}
+
+func planIDsToNames(planIDs []string) []string {
+	names := make([]string, len(planIDs))
+	for i, id := range planIDs {
+		names[i] = planIDToName(id)
+	}
+	return names
+}
 
 func icon(name string) template.HTML {
 	return template.HTML("<i data-lucide=\"" + name + "\"></i>")
@@ -32,9 +63,12 @@ func yesno(b *bool) string {
 
 func funcMap() template.FuncMap {
 	return template.FuncMap{
-		"icon":       icon,
-		"formatDate": formatDate,
-		"truncate":   truncate,
-		"yesno":      yesno,
+		"icon":            icon,
+		"formatDate":      formatDate,
+		"truncate":        truncate,
+		"yesno":           yesno,
+		"join":            strings.Join,
+		"planIDToName":    planIDToName,
+		"planIDsToNames":  planIDsToNames,
 	}
 }
