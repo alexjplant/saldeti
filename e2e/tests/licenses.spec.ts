@@ -24,7 +24,7 @@ test.describe('Licenses', () => {
   test('licensed user shows multiple licenses', async ({ page }) => {
     // Navigate to Eve's detail page
     await page.goto('/ui/users');
-    await page.locator('tr', { hasText: 'Eve Miller' }).locator('a').first().click();
+    await page.locator('tr', { hasText: 'Eve Wilson' }).locator('a').first().click();
 
     // Assert the Licenses section is visible
     const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
@@ -126,9 +126,9 @@ test.describe('Licenses', () => {
     const addLicenseDetails = licensesSection.locator('details summary', { hasText: 'Add License' });
     await addLicenseDetails.click();
 
-    // Select INTUNE_A from dropdown
+    // Select O365_BUSINESS_ESSENTIALS from dropdown
     const select = licensesSection.locator('select[name="skuId"]');
-    await select.selectOption('061f9ace-7d42-4136-88ac-31dc755f143f');
+    await select.selectOption('3b555118-da6a-4418-894f-7df1e2096870');
 
     // Click Assign
     await licensesSection.locator('button', { hasText: 'Assign' }).click();
@@ -144,7 +144,7 @@ test.describe('Licenses', () => {
     await page.locator('tr', { hasText: 'Grace Lee' }).locator('a').first().click();
     await page.waitForLoadState('networkidle');
 
-    // Assert INTUNE_A is still there
-    await expect(page.locator('article').filter({ hasText: 'Licenses' }).locator('td', { hasText: 'INTUNE_A' })).toBeVisible();
+    // Assert O365_BUSINESS_ESSENTIALS is still there
+    await expect(page.locator('article').filter({ hasText: 'Licenses' }).locator('td', { hasText: 'O365_BUSINESS_ESSENTIALS' })).toBeVisible();
   });
 });
