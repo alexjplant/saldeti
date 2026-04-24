@@ -36,10 +36,6 @@ func planIDsToNames(planIDs []string) []string {
 	return names
 }
 
-func icon(name string) template.HTML {
-	return template.HTML("<i data-lucide=\"" + name + "\"></i>")
-}
-
 func formatDate(t time.Time) string {
 	return t.Format("Jan 02, 2006")
 }
@@ -63,12 +59,11 @@ func yesno(b *bool) string {
 
 func funcMap() template.FuncMap {
 	return template.FuncMap{
-		"icon":            icon,
-		"formatDate":      formatDate,
-		"truncate":        truncate,
-		"yesno":           yesno,
-		"join":            strings.Join,
-		"planIDToName":    planIDToName,
-		"planIDsToNames":  planIDsToNames,
+		"formatDate":     formatDate,
+		"truncate":       truncate,
+		"yesno":          yesno,
+		"join":           strings.Join,
+		"planIDToName":   planIDToName,
+		"planIDsToNames": planIDsToNames,
 	}
 }

@@ -50,7 +50,7 @@ test.describe('Navigation', () => {
 
     // Should land on Eve Wilson's page
     await expect(page).toHaveURL(/\/ui\/users\/[a-f0-9-]+$/);
-    await expect(page.locator('h1')).toHaveText('Eve Wilson');
+    await expect(page.locator('h2')).toHaveText('Eve Wilson');
   });
 
   test('direct reports link', async ({ page }) => {

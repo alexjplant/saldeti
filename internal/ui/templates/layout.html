@@ -5,32 +5,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{block "title" .}}Saldeti Admin{{end}}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.purple.min.css">
+    <style>
+        :root {
+            --pico-nav-breadcrumb-divider: '>';
+            --pico-primary: var(--pico-purple-600);
+            --pico-primary-background: var(--pico-purple-600);
+            --pico-primary-hover: var(--pico-purple-700);
+            --pico-primary-hover-background: var(--pico-purple-700);
+            --pico-primary-focus: rgba(var(--pico-purple-600), 0.125);
+            --pico-primary-inverse: #fff;
+        }
+
+        /* Danger variant */
+        .danger, .danger[role="button"] {
+            --pico-color: #dc3545;
+            --pico-border-color: #dc3545;
+        }
+        .danger:hover, .danger[role="button"]:hover {
+            --pico-background-color: #dc3545;
+            --pico-color: #fff;
+            --pico-border-color: #dc3545;
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        /* Compact Table Action Buttons */
+        [role="group"] > :is(button, [role="button"], input) {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+            margin-bottom: 0;
+        }
+
+        /* Flash message styling */
+        .flash-success { border-left: 4px solid var(--pico-jade-500); background: var(--pico-mark-background-color); padding: 1rem; border-radius: var(--pico-border-radius); }
+        .flash-danger  { border-left: 4px solid #e53935; background: var(--pico-mark-background-color); padding: 1rem; border-radius: var(--pico-border-radius); }
+        .flash-info    { border-left: 4px solid var(--pico-cyan-500); background: var(--pico-mark-background-color); padding: 1rem; border-radius: var(--pico-border-radius); }
+
+        body > header {
+            border-bottom: 1px solid var(--pico-muted-border-color);
+            margin-bottom: var(--pico-spacing);
+        }
+        
+        body > footer {
+            border-top: 1px solid var(--pico-muted-border-color);
+            margin-top: var(--pico-spacing);
+            padding: var(--pico-spacing) 0;
+            text-align: center;
+        }
+
+        /* htmx */
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        .htmx-request.htmx-indicator { display: inline-block; }
+    </style>
     {{block "head" .}}{{end}}
 </head>
 <body>
-    <nav>
-        <ul>
-            <li><strong><a href="/ui">Saldeti</a></strong></li>
-        </ul>
-        <ul>
-            <li><a href="/ui">Dashboard</a></li>
-            <li><a href="/ui/users">Users</a></li>
-            <li><a href="/ui/groups">Groups</a></li>
-        </ul>
-    </nav>
+    <header class="container">
+        <nav style="padding: 0;">
+            <ul style="padding: 0; margin: 0;">
+                <li style="padding: 0; margin: 0;">
+                    <a href="/ui" class="contrast" style="text-decoration: none; padding: 0; margin: 0; display: block;">
+                        <strong style="font-size: 2rem;">Saldeti</strong>
+                    </a>
+                </li>
+            </ul>
+            <ul style="padding: 0; margin: 0;">
+                <li><a href="/ui" {{if eq .ActiveNav "dashboard"}}aria-current="page"{{else}}class="secondary"{{end}}>Dashboard</a></li>
+                <li><a href="/ui/users" {{if eq .ActiveNav "users"}}aria-current="page"{{else}}class="secondary"{{end}}>Users</a></li>
+                <li style="padding-right: 0; margin-right: 0;"><a href="/ui/groups" {{if eq .ActiveNav "groups"}}aria-current="page"{{else}}class="secondary"{{end}} style="padding-right: 0; margin-right: 0;">Groups</a></li>
+            </ul>
+        </nav>
+    </header>
 
-    <main>
+    <main class="container">
         {{template "flash" .}}
         {{block "content" .}}{{end}}
     </main>
 
     <footer>
-        <small>Saldeti Graph API Simulator</small>
+        <div class="container" style="text-align: center;">
+            <small>Saldeti Graph API Simulator</small>
+        </div>
     </footer>
 
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>lucide.createIcons();</script>
+    <script src="/ui/static/htmx.min.js"></script>
     {{block "scripts" .}}{{end}}
 </body>
 </html>

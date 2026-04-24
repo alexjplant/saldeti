@@ -2,62 +2,103 @@
 
 {{define "content"}}
 <hgroup>
-    <h1>{{if .IsEdit}}Edit User{{else}}New User{{end}}</h1>
+    <h2>{{if .IsEdit}}Edit User{{else}}New User{{end}}</h2>
 </hgroup>
 
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/ui/users">Users</a></li>
+    {{if .IsEdit}}
+    <li><a href="/ui/users/{{.Form.ID}}">{{.Form.DisplayName}}</a></li>
+    <li>Edit</li>
+    {{else}}
+    <li>New</li>
+    {{end}}
+  </ul>
+</nav>
+
 {{if .Error}}
-<blockquote role="alert">
-    <p>{{.Error}}</p>
-</blockquote>
+<article class="flash-danger">
+    <p style="margin: 0;">{{.Error}}</p>
+</article>
 {{end}}
 
 <form method="POST" action="{{.FormAction}}">
-    <fieldset>
-        <label for="displayName">Display Name *
-            <input type="text" id="displayName" name="displayName" value="{{.Form.DisplayName}}" required>
-        </label>
-        <label for="userPrincipalName">User Principal Name *
-            <input type="text" id="userPrincipalName" name="userPrincipalName" value="{{.Form.UserPrincipalName}}" required>
-        </label>
-    </fieldset>
-    <fieldset>
-        <label for="givenName">Given Name
-            <input type="text" id="givenName" name="givenName" value="{{.Form.GivenName}}">
-        </label>
-        <label for="surname">Surname
-            <input type="text" id="surname" name="surname" value="{{.Form.Surname}}">
-        </label>
-    </fieldset>
-    <fieldset>
-        <label for="mail">Mail
-            <input type="email" id="mail" name="mail" value="{{.Form.Mail}}">
-        </label>
-        <label for="mailNickname">Mail Nickname
-            <input type="text" id="mailNickname" name="mailNickname" value="{{.Form.MailNickname}}">
-        </label>
-    </fieldset>
-    <fieldset>
-        <label for="jobTitle">Job Title
-            <input type="text" id="jobTitle" name="jobTitle" value="{{.Form.JobTitle}}">
-        </label>
-        <label for="department">Department
-            <input type="text" id="department" name="department" value="{{.Form.Department}}">
-        </label>
-    </fieldset>
-    <fieldset>
-        <label for="officeLocation">Office Location
-            <input type="text" id="officeLocation" name="officeLocation" value="{{.Form.OfficeLocation}}">
-        </label>
-        <label for="mobilePhone">Mobile Phone
-            <input type="text" id="mobilePhone" name="mobilePhone" value="{{.Form.MobilePhone}}">
-        </label>
-    </fieldset>
-    <label>
-        <input type="checkbox" name="accountEnabled" value="true" {{if .Form.AccountEnabled}}checked{{end}}>
-        Account Enabled
-    </label>
+    <div class="grid">
+        <fieldset>
+            <label for="displayName">Display Name *
+                <input type="text" id="displayName" name="displayName" value="{{.Form.DisplayName}}" required>
+            </label>
+        </fieldset>
+        <fieldset>
+            <label for="userPrincipalName">User Principal Name *
+                <input type="text" id="userPrincipalName" name="userPrincipalName" value="{{.Form.UserPrincipalName}}" required>
+            </label>
+        </fieldset>
+    </div>
+    
+    <div class="grid">
+        <fieldset>
+            <label for="givenName">Given Name
+                <input type="text" id="givenName" name="givenName" value="{{.Form.GivenName}}">
+            </label>
+        </fieldset>
+        <fieldset>
+            <label for="surname">Surname
+                <input type="text" id="surname" name="surname" value="{{.Form.Surname}}">
+            </label>
+        </fieldset>
+    </div>
 
-    <button type="submit">{{if .IsEdit}}Update User{{else}}Create User{{end}}</button>
-    <a href="{{.CancelURL}}" role="button" class="secondary">Cancel</a>
+    <div class="grid">
+        <fieldset>
+            <label for="mail">Mail
+                <input type="email" id="mail" name="mail" value="{{.Form.Mail}}">
+            </label>
+        </fieldset>
+        <fieldset>
+            <label for="mailNickname">Mail Nickname
+                <input type="text" id="mailNickname" name="mailNickname" value="{{.Form.MailNickname}}">
+            </label>
+        </fieldset>
+    </div>
+
+    <div class="grid">
+        <fieldset>
+            <label for="jobTitle">Job Title
+                <input type="text" id="jobTitle" name="jobTitle" value="{{.Form.JobTitle}}">
+            </label>
+        </fieldset>
+        <fieldset>
+            <label for="department">Department
+                <input type="text" id="department" name="department" value="{{.Form.Department}}">
+            </label>
+        </fieldset>
+    </div>
+
+    <div class="grid">
+        <fieldset>
+            <label for="officeLocation">Office Location
+                <input type="text" id="officeLocation" name="officeLocation" value="{{.Form.OfficeLocation}}">
+            </label>
+        </fieldset>
+        <fieldset>
+            <label for="mobilePhone">Mobile Phone
+                <input type="text" id="mobilePhone" name="mobilePhone" value="{{.Form.MobilePhone}}">
+            </label>
+        </fieldset>
+    </div>
+
+    <fieldset>
+        <label>
+            <input type="checkbox" name="accountEnabled" value="true" {{if .Form.AccountEnabled}}checked{{end}}>
+            Account Enabled
+        </label>
+    </fieldset>
+
+    <div role="group" style="margin-top: var(--pico-spacing);">
+        <button type="submit">{{if .IsEdit}}Update User{{else}}Create User{{end}}</button>
+        <a href="{{.CancelURL}}" role="button" class="secondary outline">Cancel</a>
+    </div>
 </form>
 {{end}}

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"html/template"
+	"io/fs"
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -50,6 +51,10 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 
 	uiGroup := engine.Group("/ui")
 
+	// Serve embedded static files
+	staticSub, _ := fs.Sub(staticFS, "static")
+	uiGroup.StaticFS("/static", http.FS(staticSub))
+
 	// Routes
 	uiGroup.GET("", DashboardHandler(handler))
 	uiGroup.GET("/", DashboardHandler(handler))
@@ -85,6 +90,8 @@ func parseBaseTemplates() *template.Template {
 	tmpl, err := t.ParseFS(templateFS,
 		"templates/partials/*.html",
 		"templates/layout.html",
+		"templates/users/_*.html",
+		"templates/groups/_*.html",
 	)
 	if err != nil {
 		panic("Failed to parse embedded base templates: " + err.Error())

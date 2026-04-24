@@ -6,6 +6,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -432,5 +433,91 @@ func TestLicenseAddAvailableSkusExcludesAssigned(t *testing.T) {
 	// Verify that the license section exists at all
 	if !strings.Contains(body, "Licenses") {
 		t.Error("License section should be present on user detail page")
+	}
+}
+
+func TestHtmxLicenseAdd(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	grace, err := st.GetUserByUPN(ctx, "grace.lee@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Grace: %v", err)
+	}
+
+	// Get INTUNE_A SKU ID
+	skuID, found := model.FindSkuByPartNumber("INTUNE_A")
+	if !found {
+		t.Fatal("INTUNE_A SKU not found")
+	}
+
+	formData := url.Values{}
+	formData.Set("skuId", skuID)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/users/"+grace.ID+"/licenses/add", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	// htmx request should return 200 with partial HTML, not 302 redirect
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d", http.StatusOK, w.Code)
+	}
+
+	body := w.Body.String()
+
+	// Should contain the licenses partial (no layout wrapper)
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("htmx response should not contain full HTML layout")
+	}
+	if !strings.Contains(body, `id="licenses"`) {
+		t.Error("htmx response should contain licenses partial with id")
+	}
+	// Should contain the OOB flash
+	if !strings.Contains(body, "License assigned successfully") {
+		t.Error("htmx response should contain flash message")
+	}
+	if !strings.Contains(body, "INTUNE_A") {
+		t.Error("htmx response should show INTUNE_A in assigned licenses")
+	}
+}
+
+func TestHtmxLicenseRemove(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	bob, err := st.GetUserByUPN(ctx, "bob.jones@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Bob: %v", err)
+	}
+
+	// Get Bob's SPE_E3 SKU ID
+	skuID, found := model.FindSkuByPartNumber("SPE_E3")
+	if !found {
+		t.Fatal("SPE_E3 SKU not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/users/"+bob.ID+"/licenses/"+skuID+"/remove", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d", http.StatusOK, w.Code)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("htmx response should not contain full HTML layout")
+	}
+	if !strings.Contains(body, `id="licenses"`) {
+		t.Error("htmx response should contain licenses partial")
+	}
+	if !strings.Contains(body, "License removed successfully") {
+		t.Error("htmx response should contain flash message")
 	}
 }

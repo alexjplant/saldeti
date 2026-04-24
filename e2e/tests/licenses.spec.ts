@@ -11,7 +11,7 @@ test.describe('Licenses', () => {
     await page.locator('tr', { hasText: 'Alice Smith' }).locator('a').first().click();
 
     // Assert the Licenses section is visible
-    const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
+    const licensesSection = page.locator('#licenses');
     await expect(licensesSection).toBeVisible();
 
     // Assert SPE_E3 appears in the license table
@@ -27,7 +27,7 @@ test.describe('Licenses', () => {
     await page.locator('tr', { hasText: 'Eve Wilson' }).locator('a').first().click();
 
     // Assert the Licenses section is visible
-    const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
+    const licensesSection = page.locator('#licenses');
     await expect(licensesSection).toBeVisible();
 
     // Assert both SPE_E5 and EMS appear in the license table
@@ -45,7 +45,7 @@ test.describe('Licenses', () => {
     await page.locator('tr', { hasText: 'Grace Lee' }).locator('a').first().click();
 
     // Assert "No licenses assigned" text appears
-    const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
+    const licensesSection = page.locator('#licenses');
     await expect(licensesSection.locator('p', { hasText: 'No licenses assigned' })).toBeVisible();
   });
 
@@ -54,7 +54,7 @@ test.describe('Licenses', () => {
     await page.goto('/ui/users');
     await page.locator('tr', { hasText: 'Grace Lee' }).locator('a').first().click();
 
-    const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
+    const licensesSection = page.locator('#licenses');
 
     // Expand the "Add License" details element
     const addLicenseDetails = licensesSection.locator('details summary', { hasText: 'Add License' });
@@ -64,14 +64,11 @@ test.describe('Licenses', () => {
     const select = licensesSection.locator('select[name="skuId"]');
     await select.selectOption('061f9ace-7d42-4136-88ac-31dc755f143f');
 
-    // Click Assign
-    await licensesSection.locator('button', { hasText: 'Assign' }).click();
+    // Click Assign (htmx will swap the licenses section)
+    await licensesSection.locator('input[value="Assign"]').click();
 
-    // Wait for page reload
-    await page.waitForLoadState('networkidle');
-
-    // Assert INTUNE_A now appears in the license table
-    await expect(licensesSection.locator('td', { hasText: 'INTUNE_A' })).toBeVisible();
+    // Wait for the license to appear via htmx swap (no full page reload)
+    await expect(licensesSection.locator('td', { hasText: 'INTUNE_A' })).toBeVisible({ timeout: 5000 });
   });
 
   test('remove license from user', async ({ page }) => {
@@ -79,20 +76,17 @@ test.describe('Licenses', () => {
     await page.goto('/ui/users');
     await page.locator('tr', { hasText: 'Bob Jones' }).locator('a').first().click();
 
-    const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
+    const licensesSection = page.locator('#licenses');
 
     // Find the SPE_E3 row
     const speE3Row = licensesSection.locator('tr', { hasText: 'SPE_E3' });
     await expect(speE3Row).toBeVisible();
 
-    // Click the remove button
+    // Click the remove button (htmx will swap the licenses section)
     await speE3Row.locator('button[title="Remove license"]').click();
 
-    // Wait for page reload
-    await page.waitForLoadState('networkidle');
-
-    // Assert SPE_E3 is gone
-    await expect(licensesSection.locator('td', { hasText: 'SPE_E3' })).not.toBeVisible();
+    // Wait for SPE_E3 to disappear via htmx swap
+    await expect(licensesSection.locator('td', { hasText: 'SPE_E3' })).not.toBeVisible({ timeout: 5000 });
 
     // Assert "No licenses assigned" appears
     await expect(licensesSection.locator('p', { hasText: 'No licenses assigned' })).toBeVisible();
@@ -103,7 +97,7 @@ test.describe('Licenses', () => {
     await page.goto('/ui/users');
     await page.locator('tr', { hasText: 'Admin User' }).locator('a').first().click();
 
-    const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
+    const licensesSection = page.locator('#licenses');
 
     // Expand "Add License"
     const addLicenseDetails = licensesSection.locator('details summary', { hasText: 'Add License' });
@@ -120,7 +114,7 @@ test.describe('Licenses', () => {
     await page.goto('/ui/users');
     await page.locator('tr', { hasText: 'Grace Lee' }).locator('a').first().click();
 
-    const licensesSection = page.locator('article').filter({ hasText: 'Licenses' });
+    const licensesSection = page.locator('#licenses');
 
     // Expand the "Add License" details element
     const addLicenseDetails = licensesSection.locator('details summary', { hasText: 'Add License' });
@@ -130,11 +124,11 @@ test.describe('Licenses', () => {
     const select = licensesSection.locator('select[name="skuId"]');
     await select.selectOption('3b555118-da6a-4418-894f-7df1e2096870');
 
-    // Click Assign
-    await licensesSection.locator('button', { hasText: 'Assign' }).click();
+    // Click Assign (htmx will swap the licenses section)
+    await licensesSection.locator('input[value="Assign"]').click();
 
-    // Wait for page reload
-    await page.waitForLoadState('networkidle');
+    // Wait for the license to appear via htmx swap
+    await expect(licensesSection.locator('td', { hasText: 'O365_BUSINESS_ESSENTIALS' })).toBeVisible({ timeout: 5000 });
 
     // Navigate away to user list
     await page.goto('/ui/users');

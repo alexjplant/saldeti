@@ -20,7 +20,7 @@ test.describe('Groups', () => {
     await page.goto('/ui/groups');
 
     await page.fill('input[name="search"]', 'Engineering');
-    await page.click('button[type="submit"]');
+    await page.press('input[name="search"]', 'Enter');
 
     await expect(page.locator('td', { hasText: 'Engineering Team' })).toBeVisible();
     await expect(page.locator('td', { hasText: 'Marketing Team' })).not.toBeVisible();
@@ -29,7 +29,7 @@ test.describe('Groups', () => {
   test('create group', async ({ page }) => {
     await page.goto('/ui/groups/new');
 
-    await expect(page.locator('h1')).toHaveText('New Group');
+    await expect(page.locator('h2')).toHaveText('New Group');
 
     await page.fill('input[name="displayName"]', 'E2E Test Group');
     await page.fill('textarea[name="description"]', 'Group created by E2E test');
@@ -41,7 +41,7 @@ test.describe('Groups', () => {
 
     // Should be redirected to detail
     await expect(page).toHaveURL(/\/ui\/groups\/[a-f0-9-]+$/);
-    await expect(page.locator('h1')).toHaveText('E2E Test Group');
+    await expect(page.locator('h2')).toHaveText('E2E Test Group');
     await expect(page.locator('dd', { hasText: 'Group created by E2E test' })).toBeVisible();
   });
 
@@ -49,7 +49,7 @@ test.describe('Groups', () => {
     await page.goto('/ui/groups/new');
 
     // Wait for page to be fully loaded
-    await expect(page.locator('h1')).toHaveText('New Group');
+    await expect(page.locator('h2')).toHaveText('New Group');
 
     // Remove required attributes to bypass HTML5 validation
     await page.evaluate(() => {
@@ -62,7 +62,7 @@ test.describe('Groups', () => {
     // Wait for form to re-render with error
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.locator('.flash-danger')).toBeVisible();
   });
 
   test('view group detail', async ({ page }) => {
@@ -71,7 +71,7 @@ test.describe('Groups', () => {
     // Click on Engineering Team
     await page.locator('tr', { hasText: 'Engineering Team' }).locator('a').first().click();
 
-    await expect(page.locator('h1')).toHaveText('Engineering Team');
+    await expect(page.locator('h2')).toHaveText('Engineering Team');
 
     // Should show members section (Alice, Bob, Eve, Grace are members)
     await expect(page.locator('article').filter({ hasText: 'Members' })).toBeVisible();
@@ -87,7 +87,7 @@ test.describe('Groups', () => {
     // Click Edit - wait for page to load and use href selector
     await page.waitForLoadState('networkidle');
     await page.locator('a[href*="/edit"]').click();
-    await expect(page.locator('h1')).toHaveText('Edit Group');
+    await expect(page.locator('h2')).toHaveText('Edit Group');
 
     await page.fill('textarea[name="description"]', 'Updated by E2E test');
     await page.click('button[type="submit"]');

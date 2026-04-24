@@ -685,3 +685,218 @@ func TestGroupRemoveOwner(t *testing.T) {
 		t.Error("Alice Smith should have been removed as owner")
 	}
 }
+
+func TestHtmxGroupAddMember(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	groups, _, _ := st.ListGroups(ctx, model.ListOptions{Top: 100})
+	var allStaffID string
+	for _, g := range groups {
+		if g.DisplayName == "All Staff" {
+			allStaffID = g.ID
+			break
+		}
+	}
+	if allStaffID == "" {
+		t.Fatal("All Staff group not found")
+	}
+
+	users, _, _ := st.ListUsers(ctx, model.ListOptions{Top: 100})
+	var ivanID string
+	for _, u := range users {
+		if u.UserPrincipalName == "ivan.guest@external.com" {
+			ivanID = u.ID
+			break
+		}
+	}
+	if ivanID == "" {
+		t.Fatal("Ivan Guest not found")
+	}
+
+	formData := url.Values{}
+	formData.Set("userId", ivanID)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/groups/"+allStaffID+"/members/add", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d", http.StatusOK, w.Code)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("htmx response should not contain full HTML layout")
+	}
+	if !strings.Contains(body, `id="members"`) {
+		t.Error("htmx response should contain members partial with id")
+	}
+	if !strings.Contains(body, "Member added successfully") {
+		t.Error("htmx response should contain flash message")
+	}
+}
+
+func TestHtmxGroupRemoveMember(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	groups, _, _ := st.ListGroups(ctx, model.ListOptions{Top: 100})
+	var engineeringTeamID string
+	for _, g := range groups {
+		if g.DisplayName == "Engineering Team" {
+			engineeringTeamID = g.ID
+			break
+		}
+	}
+	if engineeringTeamID == "" {
+		t.Fatal("Engineering Team not found")
+	}
+
+	users, _, _ := st.ListUsers(ctx, model.ListOptions{Top: 100})
+	var graceID string
+	for _, u := range users {
+		if u.UserPrincipalName == "grace.lee@saldeti.local" {
+			graceID = u.ID
+			break
+		}
+	}
+	if graceID == "" {
+		t.Fatal("Grace Lee not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/groups/"+engineeringTeamID+"/members/"+graceID+"/remove", nil)
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d", http.StatusOK, w.Code)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("htmx response should not contain full HTML layout")
+	}
+	if !strings.Contains(body, `id="members"`) {
+		t.Error("htmx response should contain members partial")
+	}
+}
+
+func TestHtmxGroupAddOwner(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	groups, _, _ := st.ListGroups(ctx, model.ListOptions{Top: 100})
+	var marketingTeamID string
+	for _, g := range groups {
+		if g.DisplayName == "Marketing Team" {
+			marketingTeamID = g.ID
+			break
+		}
+	}
+	if marketingTeamID == "" {
+		t.Fatal("Marketing Team not found")
+	}
+
+	users, _, _ := st.ListUsers(ctx, model.ListOptions{Top: 100})
+	var aliceID string
+	for _, u := range users {
+		if u.UserPrincipalName == "alice.smith@saldeti.local" {
+			aliceID = u.ID
+			break
+		}
+	}
+	if aliceID == "" {
+		t.Fatal("Alice Smith not found")
+	}
+
+	formData := url.Values{}
+	formData.Set("userId", aliceID)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/groups/"+marketingTeamID+"/owners/add", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d", http.StatusOK, w.Code)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("htmx response should not contain full HTML layout")
+	}
+	if !strings.Contains(body, `id="owners"`) {
+		t.Error("htmx response should contain owners partial with id")
+	}
+	if !strings.Contains(body, "Owner added successfully") {
+		t.Error("htmx response should contain flash message")
+	}
+}
+
+func TestHtmxGroupRemoveOwner(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+
+	// Create a group and add an owner for clean removal
+	mailEnabled := false
+	securityEnabled := true
+	now := time.Now()
+	testGroup := model.Group{
+		ODataType:       "#microsoft.graph.group",
+		DisplayName:     "HTMX Owner Test Group",
+		MailNickname:    "htmxownertest",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+		Visibility:      "Public",
+		CreatedDateTime: &now,
+	}
+	createdGroup, err := st.CreateGroup(ctx, testGroup)
+	if err != nil {
+		t.Fatalf("Failed to create test group: %v", err)
+	}
+
+	users, _, _ := st.ListUsers(ctx, model.ListOptions{Top: 100})
+	var aliceID string
+	for _, u := range users {
+		if u.UserPrincipalName == "alice.smith@saldeti.local" {
+			aliceID = u.ID
+			break
+		}
+	}
+	if aliceID == "" {
+		t.Fatal("Alice Smith not found")
+	}
+
+	// Add Alice as owner
+	err = st.AddOwner(ctx, createdGroup.ID, aliceID, "user")
+	if err != nil {
+		t.Fatalf("Failed to add Alice as owner: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/groups/"+createdGroup.ID+"/owners/"+aliceID+"/remove", nil)
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d", http.StatusOK, w.Code)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("htmx response should not contain full HTML layout")
+	}
+	if !strings.Contains(body, `id="owners"`) {
+		t.Error("htmx response should contain owners partial")
+	}
+}

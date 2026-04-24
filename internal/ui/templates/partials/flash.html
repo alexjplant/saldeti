@@ -1,7 +1,19 @@
 {{define "flash"}}
+<div id="flash">
 {{if .Flash}}
-<blockquote>
-    <p>{{.Flash.Message}}</p>
-</blockquote>
+    <blockquote class="flash-{{.Flash.Level}}">
+        <p>{{.Flash.Message}}</p>
+    </blockquote>
 {{end}}
+</div>
+{{end}}
+
+{{define "flash-oob"}}
+<div id="flash" hx-swap-oob="true">
+{{if .Flash}}
+    <blockquote class="flash-{{.Flash.Level}}">
+        <p>{{.Flash.Message}}</p>
+    </blockquote>
+{{end}}
+</div>
 {{end}}

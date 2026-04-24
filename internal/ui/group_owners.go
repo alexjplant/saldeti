@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
@@ -12,9 +11,9 @@ func GroupAddOwnerHandler(h *UIHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID := c.PostForm("userId")
+
 		if userID == "" {
-			SetFlash(c, FlashDanger, "No user selected")
-			c.Redirect(http.StatusFound, "/ui/groups/"+id)
+			h.handleOwnersResponse(c, id, FlashDanger, "No user selected")
 			return
 		}
 
@@ -25,13 +24,11 @@ func GroupAddOwnerHandler(h *UIHandler) gin.HandlerFunc {
 
 		err := h.client.Groups().ByGroupId(id).Owners().Ref().Post(c.Request.Context(), refBody, nil)
 		if err != nil {
-			SetFlash(c, FlashDanger, fmt.Sprintf("Failed to add owner: %v", err))
-			c.Redirect(http.StatusFound, "/ui/groups/"+id)
+			h.handleOwnersResponse(c, id, FlashDanger, fmt.Sprintf("Failed to add owner: %v", err))
 			return
 		}
 
-		SetFlash(c, FlashSuccess, "Owner added successfully")
-		c.Redirect(http.StatusFound, "/ui/groups/"+id)
+		h.handleOwnersResponse(c, id, FlashSuccess, "Owner added successfully")
 	}
 }
 
@@ -39,11 +36,11 @@ func GroupRemoveOwnerHandler(h *UIHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		ownerID := c.Param("ownerId")
+
 		if err := h.client.Groups().ByGroupId(id).Owners().ByDirectoryObjectId(ownerID).Ref().Delete(c.Request.Context(), nil); err != nil {
-			SetFlash(c, FlashDanger, "Failed to remove owner")
+			h.handleOwnersResponse(c, id, FlashDanger, "Failed to remove owner")
 		} else {
-			SetFlash(c, FlashSuccess, "Owner removed successfully")
+			h.handleOwnersResponse(c, id, FlashSuccess, "Owner removed successfully")
 		}
-		c.Redirect(http.StatusFound, "/ui/groups/"+id)
 	}
 }
