@@ -19,7 +19,7 @@ var httpClient = &http.Client{
 	},
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // InsecureSkipVerify: acceptable for local simulator
 		},
 	},
 }

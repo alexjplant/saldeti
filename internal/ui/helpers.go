@@ -57,6 +57,10 @@ func yesno(b *bool) string {
 	return "No"
 }
 
+func contains(s, substr string) bool {
+	return strings.Contains(s, substr)
+}
+
 func funcMap() template.FuncMap {
 	return template.FuncMap{
 		"formatDate":     formatDate,
@@ -65,5 +69,6 @@ func funcMap() template.FuncMap {
 		"join":           strings.Join,
 		"planIDToName":   planIDToName,
 		"planIDsToNames": planIDsToNames,
+		"contains":       contains,
 	}
 }

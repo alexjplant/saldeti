@@ -1,0 +1,153 @@
+{{define "title"}}Service Principal Detail — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>{{.SP.DisplayName}}</h2>
+    <p>{{.SP.AppID}}</p>
+</hgroup>
+
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/ui/servicePrincipals">Enterprise Apps</a></li>
+    <li>{{.SP.DisplayName}}</li>
+  </ul>
+</nav>
+
+<div role="group" style="margin-bottom: var(--pico-spacing);">
+    <a href="/ui/servicePrincipals/{{.SP.ID}}/edit" role="button" class="secondary outline">{{template "icon-pencil" .}} Edit</a>
+    <form id="delete-sp" method="POST" action="/ui/servicePrincipals/{{.SP.ID}}/delete" onsubmit="return confirm('Delete {{.SP.DisplayName}}?');" style="display: none;"></form>
+    <button form="delete-sp" type="submit" class="outline danger">{{template "icon-trash-2" .}} Delete</button>
+</div>
+
+<div class="grid">
+    <div>
+        <article>
+            <header>General Info</header>
+            <dl>
+                <dt>Object ID</dt><dd>{{.SP.ID}}</dd>
+                <dt>Application (Client) ID</dt><dd>{{.SP.AppID}}</dd>
+                <dt>Display Name</dt><dd>{{.SP.DisplayName}}</dd>
+                <dt>Description</dt><dd>{{if .SP.Description}}{{.SP.Description}}{{else}}—{{end}}</dd>
+                <dt>Type</dt><dd>{{if .SP.ServicePrincipalType}}{{.SP.ServicePrincipalType}}{{else}}Application{{end}}</dt>
+                <dt>Account Enabled</dt><dd>{{yesno .SP.AccountEnabled}}</dd>
+                <dt>Service Principal Names</dt>
+                <dd>
+                    {{if .SP.ServicePrincipalNames}}
+                    <ul style="margin:0; padding-left: 1rem;">
+                        {{range .SP.ServicePrincipalNames}}<li><small>{{.}}</small></li>{{end}}
+                    </ul>
+                    {{else}}None{{end}}
+                </dd>
+                <dt>Reply URLs</dt>
+                <dd>
+                    {{if .SP.ReplyUrls}}
+                    <ul style="margin:0; padding-left: 1rem;">
+                        {{range .SP.ReplyUrls}}<li><small>{{.}}</small></li>{{end}}
+                    </ul>
+                    {{else}}None{{end}}
+                </dd>
+                <dt>Homepage</dt><dd>{{if .SP.Homepage}}<a href="{{.SP.Homepage}}">{{.SP.Homepage}}</a>{{else}}—{{end}}</dd>
+                <dt>Login URL</dt><dd>{{if .SP.LoginURL}}<a href="{{.SP.LoginURL}}">{{.SP.LoginURL}}</a>{{else}}—{{end}}</dd>
+                <dt>Tags</dt>
+                <dd>
+                    {{if .SP.Tags}}
+                    {{range .SP.Tags}}<mark>{{.}}</mark> {{end}}
+                    {{else}}None{{end}}
+                </dd>
+            </dl>
+        </article>
+    </div>
+
+    <div>
+        {{template "sp-credentials-partial" .}}
+        {{template "sp-owners-partial" .}}
+    </div>
+</div>
+
+<article style="margin-top: var(--pico-spacing);">
+    <header>Member Of ({{len .MemberOf}})</header>
+    {{if .MemberOf}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Name</th><th>Type</th></tr></thead>
+            <tbody>
+                {{range .MemberOf}}
+                <tr>
+                    <td><a href="/ui/groups/{{.ID}}">{{.DisplayName}}</a></td>
+                    <td><small>{{.ODataType}}</small></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>Not a member of any groups.</p>
+    {{end}}
+</article>
+
+<article style="margin-top: var(--pico-spacing);">
+    <header>App Role Assignments ({{len .AppRoleAssignments}})</header>
+    {{if .AppRoleAssignments}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Resource</th><th>App Role ID</th></tr></thead>
+            <tbody>
+                {{range .AppRoleAssignments}}
+                <tr>
+                    <td>{{.ResourceDisplayName}}</td>
+                    <td><small>{{.AppRoleID}}</small></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No app role assignments.</p>
+    {{end}}
+</article>
+
+<article style="margin-top: var(--pico-spacing);">
+    <header>App Role Assigned To ({{len .AppRoleAssignedTo}})</header>
+    {{if .AppRoleAssignedTo}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Principal</th><th>Principal Type</th><th>App Role ID</th></tr></thead>
+            <tbody>
+                {{range .AppRoleAssignedTo}}
+                <tr>
+                    <td>{{.PrincipalDisplayName}}</td>
+                    <td><small>{{.PrincipalType}}</small></td>
+                    <td><small>{{.AppRoleID}}</small></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No app role assigned-to records.</p>
+    {{end}}
+</article>
+
+<article style="margin-top: var(--pico-spacing);">
+    <header>OAuth2 Permission Grants ({{len .OAuth2PermissionGrants}})</header>
+    {{if .OAuth2PermissionGrants}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Client ID</th><th>Resource ID</th><th>Scope</th><th>Consent Type</th></tr></thead>
+            <tbody>
+                {{range .OAuth2PermissionGrants}}
+                <tr>
+                    <td><small>{{.ClientID}}</small></td>
+                    <td><small>{{.ResourceID}}</small></td>
+                    <td>{{.Scope}}</td>
+                    <td><small>{{.ConsentType}}</small></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No OAuth2 permission grants.</p>
+    {{end}}
+</article>
+{{end}}

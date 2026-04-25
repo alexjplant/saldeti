@@ -1,0 +1,56 @@
+{{define "title"}}{{if .IsEdit}}Edit Application{{else}}New Application{{end}} — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>{{if .IsEdit}}Edit Application{{else}}New Application Registration{{end}}</h2>
+</hgroup>
+
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/ui/applications">App Registrations</a></li>
+    {{if .IsEdit}}
+    <li><a href="/ui/applications/{{.Form.ID}}">{{.Form.DisplayName}}</a></li>
+    <li>Edit</li>
+    {{else}}
+    <li>New</li>
+    {{end}}
+  </ul>
+</nav>
+
+{{if .Error}}
+<article class="flash-danger">
+    <p style="margin: 0;">{{.Error}}</p>
+</article>
+{{end}}
+
+<form method="POST" action="{{.FormAction}}">
+    <div class="grid">
+        <fieldset>
+            <label for="displayName">Display Name *
+                <input type="text" id="displayName" name="displayName" value="{{.Form.DisplayName}}" required>
+            </label>
+        </fieldset>
+        <fieldset>
+            <label for="signInAudience">Sign-in Audience
+                <select id="signInAudience" name="signInAudience">
+                    <option value="AzureADandPersonalMicrosoftAccount" {{if eq .Form.SignInAudience "AzureADandPersonalMicrosoftAccount"}}selected{{end}}>Accounts in any organizational directory and personal Microsoft accounts</option>
+                    <option value="AzureADMyOrg" {{if eq .Form.SignInAudience "AzureADMyOrg"}}selected{{end}}>Accounts in this organizational directory only</option>
+                    <option value="AzureADMultipleOrgs" {{if eq .Form.SignInAudience "AzureADMultipleOrgs"}}selected{{end}}>Accounts in any organizational directory</option>
+                    <option value="PersonalMicrosoftAccount" {{if eq .Form.SignInAudience "PersonalMicrosoftAccount"}}selected{{end}}>Personal Microsoft accounts only</option>
+                </select>
+            </label>
+        </fieldset>
+    </div>
+
+    <fieldset>
+        <label for="description">Description
+            <textarea id="description" name="description" rows="3">{{.Form.Description}}</textarea>
+        </label>
+    </fieldset>
+
+    <div role="group" style="margin-top: var(--pico-spacing);">
+        <button type="submit">{{if .IsEdit}}Update Application{{else}}Register Application{{end}}</button>
+        <a href="{{.CancelURL}}" role="button" class="secondary outline">Cancel</a>
+    </div>
+</form>
+{{end}}

@@ -25,7 +25,7 @@ func TestCreateGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Create group
@@ -76,7 +76,7 @@ func TestCreateGroupMissingDisplayName(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Try to create group without displayName
@@ -119,7 +119,7 @@ func TestGetGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get group by ID
@@ -153,7 +153,7 @@ func TestGetGroupNotFound(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get non-existent group
@@ -192,7 +192,7 @@ func TestListGroups(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test listing all groups
@@ -256,7 +256,7 @@ func TestListGroupsFilter(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Filter by securityEnabled eq true
@@ -308,7 +308,7 @@ func TestUpdateGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Update group
@@ -362,7 +362,7 @@ func TestDeleteGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Delete group
@@ -407,7 +407,7 @@ func TestCreateGroupWithMembers(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Create group with inline members using members@odata.bind
@@ -492,7 +492,7 @@ func TestAddMember(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Add member to group
@@ -571,7 +571,7 @@ func TestRemoveMember(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Remove member from group
@@ -642,7 +642,7 @@ func TestListMembers(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// List members
@@ -740,7 +740,7 @@ func TestTransitiveMembership(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get transitive members of A (should include user in C)
@@ -806,7 +806,7 @@ func TestAddOwner(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Add owner to group
@@ -885,7 +885,7 @@ func TestRemoveOwner(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Remove owner from group
@@ -960,7 +960,7 @@ func TestCheckMemberGroups(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Check member groups - group is in G1 and G2, not in G3
@@ -1054,7 +1054,7 @@ func TestGetMemberGroups(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get member groups for group C (should include both A and B transitively)
@@ -1135,7 +1135,7 @@ func TestGroupMemberOf(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get memberOf for group B (should return A)

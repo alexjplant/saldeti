@@ -41,7 +41,7 @@ func TestListUsers(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test listing all users
@@ -89,7 +89,7 @@ func TestListUsersWithFilter(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Filter by department
@@ -133,7 +133,7 @@ func TestListUsersWithSelect(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Select specific fields
@@ -185,7 +185,7 @@ func TestListUsersWithTop(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get only 5 users
@@ -236,7 +236,7 @@ func TestListUsersWithCount(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Request with count
@@ -280,7 +280,7 @@ func TestGetUserByID(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get user by ID
@@ -325,7 +325,7 @@ func TestGetUserByUPN(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get user by UPN
@@ -356,7 +356,7 @@ func TestGetUserNotFound(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get non-existent user
@@ -378,7 +378,7 @@ func TestCreateUser(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Create user
@@ -434,7 +434,7 @@ func TestCreateUserDuplicateUPN(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Try to create user with same UPN
@@ -463,7 +463,7 @@ func TestCreateUserMissingFields(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Try to create user without displayName
@@ -502,7 +502,7 @@ func TestUpdateUser(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Update user
@@ -553,7 +553,7 @@ func TestDeleteUser(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Delete user
@@ -601,7 +601,7 @@ func TestODataFilterStartsWith(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Filter names starting with 'A'
@@ -670,7 +670,7 @@ func TestODataFilterBoolean(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Filter enabled users
@@ -718,7 +718,7 @@ func TestODataOrderBy(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Order by displayName
@@ -769,7 +769,7 @@ func TestODataSearch(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Search for "Ali" (case-insensitive)
@@ -813,7 +813,7 @@ func TestODataInvalidFilter(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Send invalid filter syntax - using URL encoding for special characters

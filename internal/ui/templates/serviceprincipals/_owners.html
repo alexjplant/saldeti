@@ -1,0 +1,51 @@
+{{define "sp-owners-partial"}}
+<article id="sp-owners">
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+        <h4 style="margin: 0;">Owners ({{len .Owners}})</h4>
+    </header>
+
+    <details style="margin-bottom: var(--pico-spacing);">
+        <summary role="button" class="secondary outline">Add Owner</summary>
+        <form method="POST" action="/ui/servicePrincipals/{{.SP.ID}}/owners/add"
+              hx-post="/ui/servicePrincipals/{{.SP.ID}}/owners/add"
+              hx-target="#sp-owners" hx-swap="outerHTML" style="margin-top: var(--pico-spacing);">
+            <fieldset role="group">
+                <select name="userId" required style="flex: 1;">
+                    <option value="">Select user to add as owner...</option>
+                    {{range .AllUsers}}
+                    <option value="{{.ID}}">{{.DisplayName}} ({{.UserPrincipalName}})</option>
+                    {{end}}
+                </select>
+                <input type="submit" value="Add Owner" />
+            </fieldset>
+        </form>
+    </details>
+
+    {{if .Owners}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Name</th><th>Actions</th></tr></thead>
+            <tbody>
+                {{range .Owners}}
+                <tr>
+                    <td><a href="/ui/users/{{.ID}}">{{.DisplayName}}</a></td>
+                    <td>
+                        <div role="group">
+                            <form id="remove-sp-owner-{{.ID}}" method="POST" action="/ui/servicePrincipals/{{$.SP.ID}}/owners/{{.ID}}/remove"
+                                  hx-post="/ui/servicePrincipals/{{$.SP.ID}}/owners/{{.ID}}/remove"
+                                  hx-target="#sp-owners" hx-swap="outerHTML"
+                                  hx-confirm="Remove {{.DisplayName}} as owner?" style="display: none;"></form>
+                            <button form="remove-sp-owner-{{.ID}}" type="submit" title="Remove" aria-label="Remove" class="outline danger">{{template "icon-user-minus" .}}</button>
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No owners.</p>
+    {{end}}
+</article>
+{{if .IsPartial}}{{template "flash-oob" .}}{{end}}
+{{end}}

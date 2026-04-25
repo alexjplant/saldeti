@@ -137,4 +137,44 @@ test.describe('Groups', () => {
       }
     });
   });
+
+  test('shows transitive members', async ({ page }) => {
+    await page.goto('/ui/groups');
+
+    // Click on Engineering Team
+    await page.locator('tr', { hasText: 'Engineering Team' }).locator('a').first().click();
+    await expect(page).toHaveURL(/\/ui\/groups\/[a-f0-9-]+$/);
+
+    // Verify transitive members article
+    const transitiveArticle = page.locator('#group-transitivemembers');
+    await expect(transitiveArticle).toBeVisible();
+
+    // Verify header contains "Transitive Members"
+    await expect(transitiveArticle.locator('header')).toContainText('Transitive Members');
+
+    // Verify either a table is present or empty message is shown
+    const hasTable = await transitiveArticle.locator('table').count();
+    const hasEmptyText = await transitiveArticle.locator('p', { hasText: 'No transitive members.' }).count();
+    expect(hasTable + hasEmptyText).toBeGreaterThan(0);
+  });
+
+  test('shows app role assignments', async ({ page }) => {
+    await page.goto('/ui/groups');
+
+    // Click on Engineering Team
+    await page.locator('tr', { hasText: 'Engineering Team' }).locator('a').first().click();
+    await expect(page).toHaveURL(/\/ui\/groups\/[a-f0-9-]+$/);
+
+    // Verify app role assignments article
+    const approleArticle = page.locator('#group-approles');
+    await expect(approleArticle).toBeVisible();
+
+    // Verify header contains "App Role Assignments"
+    await expect(approleArticle.locator('header')).toContainText('App Role Assignments');
+
+    // Verify either a table is present or empty message is shown
+    const hasTable = await approleArticle.locator('table').count();
+    const hasEmptyText = await approleArticle.locator('p', { hasText: 'No app role assignments.' }).count();
+    expect(hasTable + hasEmptyText).toBeGreaterThan(0);
+  });
 });

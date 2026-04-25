@@ -1,0 +1,60 @@
+{{define "title"}}Enterprise Apps — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>Enterprise Apps</h2>
+    <p>{{.TotalCount}} total service principals</p>
+</hgroup>
+
+<nav style="margin-bottom: var(--pico-spacing);">
+    <ul>
+        <li>
+            <form method="GET" action="/ui/servicePrincipals" style="margin-bottom: 0;">
+                <fieldset role="group" style="margin-bottom: 0;">
+                    <input type="search" name="search" placeholder="Search service principals..." value="{{.Search}}" />
+                    <input type="submit" value="Search" />
+                </fieldset>
+            </form>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <a href="/ui/servicePrincipals/new" role="button">{{template "icon-plus" .}} New Service Principal</a>
+        </li>
+    </ul>
+</nav>
+{{if .Search}}<p><small>Filtered by "{{.Search}}" — <a href="/ui/servicePrincipals">Clear</a></small></p>{{end}}
+
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Display Name</th>
+                <th>Application (Client) ID</th>
+                <th>Type</th>
+                <th>Account Enabled</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .SPRows}}
+            <tr>
+                <td><a href="/ui/servicePrincipals/{{.SP.ID}}">{{.SP.DisplayName}}</a></td>
+                <td><small>{{.SP.AppID}}</small></td>
+                <td>{{if .SP.ServicePrincipalType}}{{.SP.ServicePrincipalType}}{{else}}Application{{end}}</td>
+                <td>{{yesno .SP.AccountEnabled}}</td>
+                <td>
+                    <div role="group">
+                        <a href="/ui/servicePrincipals/{{.SP.ID}}" role="button" class="outline secondary" title="View" aria-label="View">{{template "icon-eye" .}}</a>
+                    </div>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="5">No service principals found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+
+{{template "pagination" .}}
+{{end}}

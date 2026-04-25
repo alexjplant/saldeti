@@ -69,6 +69,8 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 	uiGroup.POST("/users/:id/delete", UserDeleteHandler(handler))
 	uiGroup.POST("/users/:id/licenses/add", UserAddLicenseHandler(handler))
 	uiGroup.POST("/users/:id/licenses/:skuId/remove", UserRemoveLicenseHandler(handler))
+	uiGroup.POST("/users/:id/manager/set", UserSetManagerHandler(handler))
+	uiGroup.POST("/users/:id/manager/remove", UserRemoveManagerHandler(handler))
 
 	// Group routes
 	uiGroup.GET("/groups", GroupListHandler(handler))
@@ -82,6 +84,38 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 	uiGroup.POST("/groups/:id/members/:memberId/remove", GroupRemoveMemberHandler(handler))
 	uiGroup.POST("/groups/:id/owners/add", GroupAddOwnerHandler(handler))
 	uiGroup.POST("/groups/:id/owners/:ownerId/remove", GroupRemoveOwnerHandler(handler))
+
+	// Application routes
+	uiGroup.GET("/applications", ApplicationListHandler(handler))
+	uiGroup.GET("/applications/new", ApplicationCreateHandler(handler))
+	uiGroup.POST("/applications/new", ApplicationCreateHandler(handler))
+	uiGroup.GET("/applications/:id", ApplicationDetailHandler(handler))
+	uiGroup.GET("/applications/:id/edit", ApplicationEditHandler(handler))
+	uiGroup.POST("/applications/:id/edit", ApplicationEditHandler(handler))
+	uiGroup.POST("/applications/:id/delete", ApplicationDeleteHandler(handler))
+	uiGroup.POST("/applications/:id/credentials/password/add", ApplicationAddPasswordHandler(handler))
+	uiGroup.POST("/applications/:id/credentials/password/:keyId/remove", ApplicationRemovePasswordHandler(handler))
+	uiGroup.POST("/applications/:id/credentials/key/add", ApplicationAddKeyHandler(handler))
+	uiGroup.POST("/applications/:id/credentials/key/:keyId/remove", ApplicationRemoveKeyHandler(handler))
+	uiGroup.POST("/applications/:id/owners/add", ApplicationAddOwnerHandler(handler))
+	uiGroup.POST("/applications/:id/owners/:ownerId/remove", ApplicationRemoveOwnerHandler(handler))
+	uiGroup.POST("/applications/:id/extensions/create", ApplicationCreateExtensionHandler(handler))
+	uiGroup.POST("/applications/:id/extensions/:extId/delete", ApplicationDeleteExtensionHandler(handler))
+
+	// Service Principal routes
+	uiGroup.GET("/servicePrincipals", SPListHandler(handler))
+	uiGroup.GET("/servicePrincipals/:id", SPDetailHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/owners/add", SPAddOwnerHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/owners/:ownerId/remove", SPRemoveOwnerHandler(handler))
+	uiGroup.GET("/servicePrincipals/new", SPCreateHandler(handler))
+	uiGroup.POST("/servicePrincipals/new", SPCreateHandler(handler))
+	uiGroup.GET("/servicePrincipals/:id/edit", SPEditHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/edit", SPEditHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/delete", SPDeleteHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/credentials/password/add", SPAddPasswordHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/credentials/password/:keyId/remove", SPRemovePasswordHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/credentials/key/add", SPAddKeyHandler(handler))
+	uiGroup.POST("/servicePrincipals/:id/credentials/key/:keyId/remove", SPRemoveKeyHandler(handler))
 }
 
 func parseBaseTemplates() *template.Template {
@@ -92,6 +126,8 @@ func parseBaseTemplates() *template.Template {
 		"templates/layout.html",
 		"templates/users/_*.html",
 		"templates/groups/_*.html",
+		"templates/applications/_*.html",
+		"templates/serviceprincipals/_*.html",
 	)
 	if err != nil {
 		panic("Failed to parse embedded base templates: " + err.Error())

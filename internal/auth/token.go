@@ -31,6 +31,12 @@ var knownScopes = map[string]bool{
 	"Group.ReadWrite.All":  true,
 	"Directory.Read.All":   true,
 	"Directory.ReadWrite.All": true,
+	"Application.Read.All":                  true,
+	"Application.ReadWrite.All":             true,
+	"AppRoleAssignment.Read.All":            true,
+	"AppRoleAssignment.ReadWrite.All":       true,
+	"DelegatedPermissionGrant.Read.All":     true,
+	"DelegatedPermissionGrant.ReadWrite.All": true,
 	"openid":               true,
 	"profile":              true,
 	"offline_access":       true,
@@ -42,6 +48,9 @@ type TokenClaims struct {
 	TenantID string   `json:"tid"`
 	ClientID string   `json:"appid"`
 	Subject  string   `json:"sub"`
+	OID      string   `json:"oid"`
+	Name     string   `json:"name,omitempty"`
+	UPN      string   `json:"upn,omitempty"`
 	Scopes   []string `json:"scp"`
 	Roles    []string `json:"roles"`
 	jwt.RegisteredClaims
@@ -71,7 +80,7 @@ func SetSigningKey(key []byte) {
 	}
 }
 
-func MintToken(tenantID, clientID, subject string, scopes []string, roles []string, lifetime time.Duration) (string, error) {
+func MintToken(tenantID, clientID, subject string, scopes []string, roles []string, lifetime time.Duration, displayName string, userPrincipalName string) (string, error) {
 	if signingKey == nil {
 		return "", errors.New("JWT signing key not configured")
 	}
@@ -80,10 +89,13 @@ func MintToken(tenantID, clientID, subject string, scopes []string, roles []stri
 		TenantID: tenantID,
 		ClientID: clientID,
 		Subject:  subject,
+		OID:      subject,
+		Name:     displayName,
+		UPN:      userPrincipalName,
 		Scopes:   scopes,
 		Roles:    roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "https://sts.windows.net/" + tenantID + "/",
+			Issuer:    "https://login.microsoftonline.com/" + tenantID + "/v2.0",
 			Audience:  jwt.ClaimStrings{"https://graph.microsoft.com"},
 			Subject:   subject,
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -213,13 +225,13 @@ func handleClientCredentials(c *gin.Context, store store.Store, tenant string) {
 	scopes = FilterKnownScopes(scopes)
 
 	// Mint token
-	token, err := MintToken(tenant, clientID, clientID, scopes, []string{"Application"}, time.Hour)
+	token, err := MintToken(tenant, clientID, clientID, scopes, []string{"Application"}, time.Hour, "", "")
 	if err != nil {
 		writeTokenError(c, "server_error", "Failed to mint token")
 		return
 	}
 
-	writeTokenResponse(c, token)
+	writeTokenResponse(c, token, time.Hour)
 }
 
 func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
@@ -232,9 +244,11 @@ func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
 		return
 	}
 
-	// Validate client exists
-	_, _, clientTenantID, err := store.GetClient(c.Request.Context(), clientID)
-	if err != nil || clientTenantID != tenant {
+	clientSecret := c.Request.FormValue("client_secret")
+
+	// Validate client exists and secret matches
+	_, storedSecret, clientTenantID, err := store.GetClient(c.Request.Context(), clientID)
+	if err != nil || storedSecret != clientSecret || clientTenantID != tenant {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}
@@ -270,7 +284,7 @@ func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
 	}
 
 	// Mint token with real user subject
-	token, err := MintToken(tenant, clientID, subject, scopes, []string{"User"}, time.Hour)
+	token, err := MintToken(tenant, clientID, subject, scopes, []string{"User"}, time.Hour, user.DisplayName, user.UserPrincipalName)
 	if err != nil {
 		writeTokenError(c, "server_error", "Failed to mint token")
 		return
@@ -283,7 +297,7 @@ func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
 		return
 	}
 
-	writeTokenResponse(c, token, refreshToken)
+	writeTokenResponse(c, token, time.Hour, refreshToken)
 }
 
 func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
@@ -345,7 +359,7 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 	delete(refreshTokens, refreshToken)
 
 	// Mint new access token
-	token, err := MintToken(claims.TenantID, claims.ClientID, claims.Subject, finalScopes, claims.Roles, time.Hour)
+	token, err := MintToken(claims.TenantID, claims.ClientID, claims.Subject, finalScopes, claims.Roles, time.Hour, "", "")
 	if err != nil {
 		writeTokenError(c, "server_error", "Failed to mint token")
 		return
@@ -358,7 +372,7 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 		return
 	}
 
-	writeTokenResponse(c, token, newRefreshToken)
+	writeTokenResponse(c, token, time.Hour, newRefreshToken)
 }
 
 func writeTokenError(c *gin.Context, errorCode, errorDescription string) {
@@ -368,11 +382,11 @@ func writeTokenError(c *gin.Context, errorCode, errorDescription string) {
 	})
 }
 
-func writeTokenResponse(c *gin.Context, accessToken string, refreshToken ...string) {
+func writeTokenResponse(c *gin.Context, accessToken string, lifetime time.Duration, refreshToken ...string) {
 	resp := gin.H{
 		"token_type":     "Bearer",
-		"expires_in":     3600,
-		"ext_expires_in": 3600,
+		"expires_in":     int(lifetime.Seconds()),
+		"ext_expires_in": int(lifetime.Seconds()),
 		"access_token":   accessToken,
 	}
 	if len(refreshToken) > 0 && refreshToken[0] != "" {

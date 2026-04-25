@@ -1,0 +1,31 @@
+{{define "approles-partial"}}
+{{if .App.AppRoles}}
+<article>
+    <header>App Roles ({{len .App.AppRoles}})</header>
+    <figure>
+        <table class="striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Value</th>
+                    <th>Allowed Members</th>
+                    <th>Enabled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .App.AppRoles}}
+                <tr>
+                    <td>{{.DisplayName}}</td>
+                    <td>{{truncate .Description 60}}</td>
+                    <td><code>{{.Value}}</code></td>
+                    <td>{{if .AllowedMemberTypes}}{{join .AllowedMemberTypes ", "}}{{else}}—{{end}}</td>
+                    <td>{{yesno .IsEnabled}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+</article>
+{{end}}
+{{end}}

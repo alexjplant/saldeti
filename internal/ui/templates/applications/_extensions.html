@@ -1,0 +1,67 @@
+{{define "extensions-partial"}}
+<article id="extensions">
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+        <h4 style="margin: 0;">Extension Properties</h4>
+    </header>
+
+    <details style="margin-bottom: var(--pico-spacing);">
+        <summary role="button" class="secondary outline">New Extension Property</summary>
+        <form method="POST" action="/ui/applications/{{.App.ID}}/extensions/create"
+              hx-post="/ui/applications/{{.App.ID}}/extensions/create"
+              hx-target="#extensions" hx-swap="outerHTML" style="margin-top: var(--pico-spacing);">
+            <div class="grid">
+                <fieldset>
+                    <label>Name <input type="text" name="name" placeholder="extension_xxx" required /></label>
+                </fieldset>
+                <fieldset>
+                    <label>Data Type
+                    <select name="dataType" required>
+                        <option value="String">String</option>
+                        <option value="Binary">Binary</option>
+                        <option value="Boolean">Boolean</option>
+                        <option value="DateTime">DateTime</option>
+                        <option value="Integer">Integer</option>
+                        <option value="LargeString">LargeString</option>
+                    </select>
+                    </label>
+                </fieldset>
+                <fieldset>
+                    <label>Target Objects (comma-separated, e.g. User,Group)
+                    <input type="text" name="targetObjects" placeholder="User,Group,Device" />
+                    </label>
+                </fieldset>
+            </div>
+            <input type="submit" value="Create Extension Property" />
+        </form>
+    </details>
+
+    {{if .ExtensionProperties}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Name</th><th>Data Type</th><th>Target Objects</th><th>Actions</th></tr></thead>
+            <tbody>
+                {{range .ExtensionProperties}}
+                <tr>
+                    <td>{{.Name}}</td>
+                    <td><mark>{{.DataType}}</mark></td>
+                    <td>{{if .TargetObjects}}{{range $i, $t := .TargetObjects}}{{if $i}}, {{end}}{{$t}}{{end}}{{else}}—{{end}}</td>
+                    <td>
+                        <div role="group">
+                            <form id="delete-ext-{{.ID}}" method="POST" action="/ui/applications/{{$.App.ID}}/extensions/{{.ID}}/delete"
+                                  hx-post="/ui/applications/{{$.App.ID}}/extensions/{{.ID}}/delete"
+                                  hx-target="#extensions" hx-swap="outerHTML"
+                                  hx-confirm="Delete extension property '{{.Name}}'?" style="display: none;"></form>
+                            <button form="delete-ext-{{.ID}}" type="submit" title="Delete" aria-label="Delete" class="outline danger">{{template "icon-trash-2" .}}</button>
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No extension properties.</p>
+    {{end}}
+</article>
+{{if .IsPartial}}{{template "flash-oob" .}}{{end}}
+{{end}}

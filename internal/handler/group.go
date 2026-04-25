@@ -101,6 +101,34 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 			responseValue = expandedGroups
 		}
 
+		// Apply $select if specified
+		if len(opts.Select) > 0 {
+			if len(opts.Expand) > 0 {
+				// Items are already maps from expand handling
+				maps := responseValue.([]map[string]interface{})
+				for i, m := range maps {
+					maps[i] = applySelect(m, opts.Select)
+				}
+			} else {
+				// Items are structs, serialize to maps first
+				filteredItems := make([]map[string]interface{}, 0, len(groups))
+				for i := range groups {
+					itemJSON, err := json.Marshal(groups[i])
+					if err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					var itemMap map[string]interface{}
+					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					filteredItems = append(filteredItems, applySelect(itemMap, opts.Select))
+				}
+				responseValue = filteredItems
+			}
+		}
+
 		// Build response
 		response := model.ListResponse{
 			Context: "https://graph.microsoft.com/v1.0/$metadata#groups",
@@ -119,18 +147,8 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -211,6 +229,12 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 					}
 				}
 			}
+		}
+
+		// Apply $select if specified
+		opts := parseListOptions(c.Request.URL.Query())
+		if len(opts.Select) > 0 {
+			response = applySelect(response, opts.Select)
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -441,18 +465,8 @@ func listMembersHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -590,18 +604,8 @@ func listTransitiveMembersHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -653,18 +657,8 @@ func listOwnersHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -801,18 +795,8 @@ func listGroupMemberOfHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -864,18 +848,8 @@ func listGroupTransitiveMemberOfHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -1050,3 +1024,40 @@ func listOwnersByTypeHandler(st store.Store, objectType string) gin.HandlerFunc 
 		writeJSON(c, http.StatusOK, response)
 	}
 }
+
+// getMemberObjectsHandler handles POST /v1.0/groups/{id}/getMemberObjects
+func getMemberObjectsHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		if id == "" {
+			writeError(c, http.StatusBadRequest, "InvalidRequest", "Group ID is required")
+			return
+		}
+
+		var requestBody struct {
+			SecurityEnabledOnly bool `json:"securityEnabledOnly"`
+		}
+		if err := json.NewDecoder(c.Request.Body).Decode(&requestBody); err != nil {
+			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
+			return
+		}
+
+		memberObjects, err := st.GetMemberGroups(c.Request.Context(), id, requestBody.SecurityEnabledOnly)
+		if err != nil {
+			if errors.Is(err, store.ErrObjectNotFound) {
+				writeError(c, http.StatusNotFound, "ResourceNotFound", "Object not found")
+			} else {
+				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to get member objects")
+			}
+			return
+		}
+
+		response := map[string]interface{}{
+			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(Edm.String)",
+			"value":          memberObjects,
+		}
+
+		writeJSON(c, http.StatusOK, response)
+	}
+}
+
