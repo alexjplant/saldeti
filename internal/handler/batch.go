@@ -43,6 +43,11 @@ func batchHandler(engine *gin.Engine) gin.HandlerFunc {
 			return
 		}
 
+		if len(req.Requests) > 20 {
+			writeError(c, http.StatusBadRequest, "BadRequest", "Batch request exceeds maximum of 20 individual requests")
+			return
+		}
+
 		responses := make([]BatchSubResponse, 0, len(req.Requests))
 		for _, sub := range req.Requests {
 			// Create internal request
@@ -66,7 +71,9 @@ func batchHandler(engine *gin.Engine) gin.HandlerFunc {
 			engine.ServeHTTP(w, req)
 
 			var responseBody map[string]interface{}
-			json.Unmarshal(w.Body.Bytes(), &responseBody)
+			if w.Body.Len() > 0 {
+				json.Unmarshal(w.Body.Bytes(), &responseBody)
+			}
 
 			responses = append(responses, BatchSubResponse{
 				ID:     sub.ID,

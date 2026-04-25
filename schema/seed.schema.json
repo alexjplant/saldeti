@@ -1,0 +1,405 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/saldeti/saldeti/internal/seed/seed-config",
+  "$ref": "#/$defs/SeedConfig",
+  "$defs": {
+    "SeedAppRole": {
+      "properties": {
+        "allowed_member_types": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "description": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "is_enabled": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "allowed_member_types",
+        "description",
+        "display_name",
+        "is_enabled",
+        "value"
+      ]
+    },
+    "SeedAppRoleAssignment": {
+      "properties": {
+        "principal_index": {
+          "type": "integer"
+        },
+        "principal_type": {
+          "type": "string"
+        },
+        "principal_name": {
+          "type": "string"
+        },
+        "resource_app_id": {
+          "type": "string"
+        },
+        "role_value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "resource_app_id",
+        "role_value"
+      ]
+    },
+    "SeedApplication": {
+      "properties": {
+        "display_name": {
+          "type": "string"
+        },
+        "app_id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sign_in_audience": {
+          "type": "string"
+        },
+        "identifier_uris": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "app_roles": {
+          "items": {
+            "$ref": "#/$defs/SeedAppRole"
+          },
+          "type": "array"
+        },
+        "owner_upns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "display_name"
+      ]
+    },
+    "SeedClient": {
+      "properties": {
+        "client_id": {
+          "type": "string"
+        },
+        "client_secret": {
+          "type": "string"
+        },
+        "tenant_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "client_id",
+        "client_secret",
+        "tenant_id"
+      ]
+    },
+    "SeedConfig": {
+      "properties": {
+        "clients": {
+          "items": {
+            "$ref": "#/$defs/SeedClient"
+          },
+          "type": "array"
+        },
+        "users": {
+          "items": {
+            "$ref": "#/$defs/SeedUser"
+          },
+          "type": "array"
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/$defs/SeedGroup"
+          },
+          "type": "array"
+        },
+        "memberships": {
+          "items": {
+            "$ref": "#/$defs/SeedMembership"
+          },
+          "type": "array"
+        },
+        "ownerships": {
+          "items": {
+            "$ref": "#/$defs/SeedOwnership"
+          },
+          "type": "array"
+        },
+        "managers": {
+          "items": {
+            "$ref": "#/$defs/SeedManager"
+          },
+          "type": "array"
+        },
+        "applications": {
+          "items": {
+            "$ref": "#/$defs/SeedApplication"
+          },
+          "type": "array"
+        },
+        "service_principals": {
+          "items": {
+            "$ref": "#/$defs/SeedServicePrincipal"
+          },
+          "type": "array"
+        },
+        "app_role_assignments": {
+          "items": {
+            "$ref": "#/$defs/SeedAppRoleAssignment"
+          },
+          "type": "array"
+        },
+        "oauth2_grants": {
+          "items": {
+            "$ref": "#/$defs/SeedOAuth2Grant"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "clients"
+      ]
+    },
+    "SeedGroup": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mail_nickname": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string"
+        },
+        "group_types": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "member_upns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "member_group_names": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "member_sp_app_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "owner_upns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "display_name"
+      ]
+    },
+    "SeedLicense": {
+      "properties": {
+        "skuPartNumber": {
+          "type": "string"
+        },
+        "disabledPlans": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "skuPartNumber"
+      ]
+    },
+    "SeedManager": {
+      "properties": {
+        "user_index": {
+          "type": "integer"
+        },
+        "manager_index": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "user_index",
+        "manager_index"
+      ]
+    },
+    "SeedMembership": {
+      "properties": {
+        "user_index": {
+          "type": "integer"
+        },
+        "group_index": {
+          "type": "integer"
+        },
+        "member_group_index": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "SeedOAuth2Grant": {
+      "properties": {
+        "client_app_id": {
+          "type": "string"
+        },
+        "resource_app_id": {
+          "type": "string"
+        },
+        "principal_upn": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "consent_type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "client_app_id",
+        "resource_app_id",
+        "scope",
+        "consent_type"
+      ]
+    },
+    "SeedOwnership": {
+      "properties": {
+        "user_index": {
+          "type": "integer"
+        },
+        "group_index": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "user_index",
+        "group_index"
+      ]
+    },
+    "SeedServicePrincipal": {
+      "properties": {
+        "app_id": {
+          "type": "string"
+        },
+        "owner_upns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "app_id"
+      ]
+    },
+    "SeedUser": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "given_name": {
+          "type": "string"
+        },
+        "surname": {
+          "type": "string"
+        },
+        "job_title": {
+          "type": "string"
+        },
+        "department": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "is_guest": {
+          "type": "boolean"
+        },
+        "manager_upn": {
+          "type": "string"
+        },
+        "assigned_licenses": {
+          "items": {
+            "$ref": "#/$defs/SeedLicense"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "email",
+        "display_name",
+        "password"
+      ]
+    }
+  }
+}

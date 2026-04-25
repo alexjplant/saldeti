@@ -25,7 +25,7 @@ func TestCreateGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Create group
@@ -76,7 +76,7 @@ func TestCreateGroupMissingDisplayName(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Try to create group without displayName
@@ -119,7 +119,7 @@ func TestGetGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get group by ID
@@ -153,7 +153,7 @@ func TestGetGroupNotFound(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get non-existent group
@@ -192,7 +192,7 @@ func TestListGroups(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test listing all groups
@@ -256,7 +256,7 @@ func TestListGroupsFilter(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Filter by securityEnabled eq true
@@ -308,7 +308,7 @@ func TestUpdateGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Update group
@@ -362,7 +362,7 @@ func TestDeleteGroup(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Delete group
@@ -407,7 +407,7 @@ func TestCreateGroupWithMembers(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Create group with inline members using members@odata.bind
@@ -492,7 +492,7 @@ func TestAddMember(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Add member to group
@@ -571,7 +571,7 @@ func TestRemoveMember(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Remove member from group
@@ -642,7 +642,7 @@ func TestListMembers(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// List members
@@ -740,7 +740,7 @@ func TestTransitiveMembership(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get transitive members of A (should include user in C)
@@ -806,7 +806,7 @@ func TestAddOwner(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Add owner to group
@@ -885,7 +885,7 @@ func TestRemoveOwner(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.ReadWrite.All", "User.ReadWrite.All"}, []string{"Group", "User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Remove owner from group
@@ -960,7 +960,7 @@ func TestCheckMemberGroups(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Check member groups - group is in G1 and G2, not in G3
@@ -1054,7 +1054,7 @@ func TestGetMemberGroups(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get member groups for group C (should include both A and B transitively)
@@ -1135,7 +1135,7 @@ func TestGroupMemberOf(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Get memberOf for group B (should return A)
@@ -1163,4 +1163,230 @@ func TestGroupMemberOf(t *testing.T) {
 	assert.Equal(t, createdGroupA.ID, member["id"])
 	assert.Equal(t, "#microsoft.graph.group", member["@odata.type"])
 	assert.Equal(t, "Group A", member["displayName"])
+}
+
+func TestListMembersByTypeWithCount(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	// Create a group
+	securityEnabled := true
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		SecurityEnabled: &securityEnabled,
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	// Create 2 users and add as members
+	var userIDs []string
+	for i := 1; i <= 2; i++ {
+		accountEnabled := true
+		user := model.User{
+			DisplayName:       fmt.Sprintf("User %d", i),
+			UserPrincipalName: fmt.Sprintf("user%d@example.com", i),
+			Mail:              fmt.Sprintf("user%d@example.com", i),
+			AccountEnabled:    &accountEnabled,
+		}
+		createdUser, err := store.CreateUser(ctx, user)
+		require.NoError(t, err)
+		userIDs = append(userIDs, createdUser.ID)
+		err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
+		require.NoError(t, err)
+	}
+
+	// Create 1 subgroup and add as member
+	subGroup := model.Group{
+		DisplayName:     "Sub Group",
+		MailNickname:    "subgroup",
+		SecurityEnabled: &securityEnabled,
+	}
+	createdSubGroup, err := store.CreateGroup(ctx, subGroup)
+	require.NoError(t, err)
+	err = store.AddMember(ctx, createdGroup.ID, createdSubGroup.ID, "group")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// List members filtered to user type with $count=true
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups/"+createdGroup.ID+"/members/microsoft.graph.user?$count=true", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("ConsistencyLevel", "eventual")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var result map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &result)
+	require.NoError(t, err)
+
+	value, ok := result["value"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, value, 2) // Only user members, not the subgroup
+
+	// The critical assertion: @odata.count should be 2 (filtered), not 3 (total)
+	count, ok := result["@odata.count"].(float64)
+	require.True(t, ok, "response should contain @odata.count")
+	assert.Equal(t, float64(2), count, "@odata.count should reflect filtered count, not total")
+}
+
+func TestListOwnersByTypeWithCount(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	// Create a group
+	securityEnabled := true
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		SecurityEnabled: &securityEnabled,
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	// Create 2 users and add as owners
+	for i := 1; i <= 2; i++ {
+		accountEnabled := true
+		user := model.User{
+			DisplayName:       fmt.Sprintf("Owner %d", i),
+			UserPrincipalName: fmt.Sprintf("owner%d@example.com", i),
+			Mail:              fmt.Sprintf("owner%d@example.com", i),
+			AccountEnabled:    &accountEnabled,
+		}
+		createdUser, err := store.CreateUser(ctx, user)
+		require.NoError(t, err)
+		err = store.AddOwner(ctx, createdGroup.ID, createdUser.ID, "user")
+		require.NoError(t, err)
+	}
+
+	// Create 1 subgroup and add as owner
+	subGroup := model.Group{
+		DisplayName:     "Sub Group",
+		MailNickname:    "subgroup",
+		SecurityEnabled: &securityEnabled,
+	}
+	createdSubGroup, err := store.CreateGroup(ctx, subGroup)
+	require.NoError(t, err)
+	err = store.AddOwner(ctx, createdGroup.ID, createdSubGroup.ID, "group")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// List owners filtered to user type with $count=true
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups/"+createdGroup.ID+"/owners/microsoft.graph.user?$count=true", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("ConsistencyLevel", "eventual")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var result map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &result)
+	require.NoError(t, err)
+
+	value, ok := result["value"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, value, 2) // Only user owners, not the subgroup
+
+	// The critical assertion: @odata.count should be 2 (filtered), not 3 (total)
+	count, ok := result["@odata.count"].(float64)
+	require.True(t, ok, "response should contain @odata.count")
+	assert.Equal(t, float64(2), count, "@odata.count should reflect filtered count, not total")
+}
+
+func TestGetMemberObjects(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	// Create nested groups: A -> B -> C
+	securityEnabled := true
+
+	groupC := model.Group{
+		DisplayName:     "Group C",
+		MailNickname:    "groupc",
+		SecurityEnabled: &securityEnabled,
+	}
+	createdGroupC, err := store.CreateGroup(ctx, groupC)
+	require.NoError(t, err)
+
+	groupB := model.Group{
+		DisplayName:     "Group B",
+		MailNickname:    "groupb",
+		SecurityEnabled: &securityEnabled,
+	}
+	createdGroupB, err := store.CreateGroup(ctx, groupB)
+	require.NoError(t, err)
+
+	groupA := model.Group{
+		DisplayName:     "Group A",
+		MailNickname:    "groupa",
+		SecurityEnabled: &securityEnabled,
+	}
+	createdGroupA, err := store.CreateGroup(ctx, groupA)
+	require.NoError(t, err)
+
+	// Add C to B, B to A
+	err = store.AddMember(ctx, createdGroupB.ID, createdGroupC.ID, "group")
+	require.NoError(t, err)
+	err = store.AddMember(ctx, createdGroupA.ID, createdGroupB.ID, "group")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"GroupMember.Read.All"}, []string{"Group"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Get member objects for group C (should include both A and B transitively)
+	getJSON := `{"securityEnabledOnly": false}`
+	req, err := http.NewRequest("POST", server.URL+"/v1.0/groups/"+createdGroupC.ID+"/getMemberObjects", strings.NewReader(getJSON))
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var result map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &result)
+	require.NoError(t, err)
+
+	value := result["value"].([]interface{})
+	assert.Len(t, value, 2) // Should include A and B
+
+	returnedIDs := make([]string, 0, 2)
+	for _, v := range value {
+		returnedIDs = append(returnedIDs, v.(string))
+	}
+	assert.Contains(t, returnedIDs, createdGroupA.ID)
+	assert.Contains(t, returnedIDs, createdGroupB.ID)
 }

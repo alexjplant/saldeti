@@ -1,0 +1,22 @@
+{{define "user-approles-partial"}}
+<article id="user-approles">
+    <header>App Role Assignments ({{len .AppRoleAssignments}})</header>
+    {{if .AppRoleAssignments}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Resource</th><th>App Role ID</th></tr></thead>
+            <tbody>
+                {{range .AppRoleAssignments}}
+                <tr>
+                    <td>{{.ResourceDisplayName}}</td>
+                    <td><small>{{.AppRoleID}}</small></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No app role assignments.</p>
+    {{end}}
+</article>
+{{end}}

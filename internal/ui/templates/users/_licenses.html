@@ -17,7 +17,9 @@
                         <div role="group">
                             <form id="remove-license-{{.SkuID}}" method="POST" action="/ui/users/{{$.User.ID}}/licenses/{{.SkuID}}/remove"
                                   hx-post="/ui/users/{{$.User.ID}}/licenses/{{.SkuID}}/remove"
-                                  hx-target="#licenses" hx-swap="outerHTML" style="display: none;"></form>
+                                  hx-target="#licenses" hx-swap="outerHTML" style="display: none;">
+                                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                            </form>
                             <button form="remove-license-{{.SkuID}}" type="submit" class="outline danger" title="Remove license" aria-label="Remove license">{{template "icon-x" .}}</button>
                         </div>
                     </td>
@@ -36,6 +38,7 @@
         <form method="POST" action="/ui/users/{{.User.ID}}/licenses/add"
               hx-post="/ui/users/{{.User.ID}}/licenses/add"
               hx-target="#licenses" hx-swap="outerHTML" style="margin-top: var(--pico-spacing);">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <fieldset role="group">
                 <select name="skuId" required style="flex: 1;">
                     <option value="" disabled selected>Select a license SKU...</option>

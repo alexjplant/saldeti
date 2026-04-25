@@ -3,6 +3,7 @@ package store
 import (
 	"testing"
 
+	"github.com/saldeti/saldeti/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -317,4 +318,124 @@ func TestApplyFilter_NullAssignedLicenses(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "Alice", result[0]["displayName"])
+}
+
+// ============================================================================
+// mapToStruct tests — type coercion (float64→int)
+// ============================================================================
+
+// testItemWithInts is a test-only struct with integer fields
+// used to verify mapToStruct handles float64→int conversions safely.
+type testItemWithInts struct {
+	ID      string `json:"id,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Count   int    `json:"count,omitempty"`
+	Balance int64  `json:"balance,omitempty"`
+	Flag    *bool  `json:"flag,omitempty"`
+}
+
+func TestMapToStruct_Float64ToIntConversion(t *testing.T) {
+	// Simulate a map produced by JSON unmarshaling where numbers are float64
+	m := map[string]interface{}{
+		"id":      "abc-123",
+		"name":    "Test Item",
+		"count":   float64(42),
+		"balance": float64(999),
+	}
+
+	result, err := mapToStruct[testItemWithInts](m)
+	require.NoError(t, err)
+	assert.Equal(t, "abc-123", result.ID)
+	assert.Equal(t, "Test Item", result.Name)
+	assert.Equal(t, 42, result.Count)
+	assert.Equal(t, int64(999), result.Balance)
+}
+
+func TestMapToStruct_NilAndIncompatibleValues(t *testing.T) {
+	m := map[string]interface{}{
+		"id":    "xyz",
+		"name":  "Another",
+		"count": "not-a-number", // string targeting int — should be skipped
+		"flag":  nil,             // nil for *bool — should be zero
+	}
+
+	result, err := mapToStruct[testItemWithInts](m)
+	require.NoError(t, err)
+	assert.Equal(t, "xyz", result.ID)
+	assert.Equal(t, "Another", result.Name)
+	assert.Equal(t, 0, result.Count) // zero value — skipped
+	assert.Nil(t, result.Flag)        // nil — zeroed
+}
+
+func TestApplyOData_SelectThenFilter_NoPanic(t *testing.T) {
+	items := []testItemWithInts{
+		{ID: "1", Name: "Alpha", Count: 10, Balance: 100},
+		{ID: "2", Name: "Beta", Count: 20, Balance: 200},
+		{ID: "3", Name: "Gamma", Count: 30, Balance: 300},
+	}
+
+	opts := model.ListOptions{
+		Filter: "name eq 'Beta'",
+		Select: []string{"id", "name"},
+	}
+
+	// This must not panic
+	result, totalCount, err := ApplyOData(items, opts)
+	require.NoError(t, err)
+	assert.Equal(t, 1, totalCount)
+	require.Len(t, result, 1)
+	assert.Equal(t, "2", result[0].ID)
+	assert.Equal(t, "Beta", result[0].Name)
+}
+
+func TestApplyFilter_NestedParentheses(t *testing.T) {
+	items := []map[string]interface{}{
+		{"displayName": "Test", "accountEnabled": true},
+		{"displayName": "Other", "accountEnabled": true},
+		{"displayName": "Third", "accountEnabled": false},
+	}
+
+	// Double-nested parentheses with OR inside AND
+	// Without the fix, the second loop in parseOr finds the FIRST ')' instead
+	// of the matching ')', causing the inner "or" to be detected at the top level.
+	result, err := applyFilter(items, "((displayName eq 'Test') or (displayName eq 'Other')) and accountEnabled eq true")
+	require.NoError(t, err)
+	assert.Len(t, result, 2)
+	assert.Equal(t, "Test", result[0]["displayName"])
+	assert.Equal(t, "Other", result[1]["displayName"])
+
+	// Simple double-nested parens around a single comparison
+	result, err = applyFilter(items, "((displayName eq 'Test'))")
+	require.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "Test", result[0]["displayName"])
+}
+
+func TestApplySelect_PreservesId(t *testing.T) {
+	item := map[string]interface{}{
+		"id":          "abc-123",
+		"displayName": "Test User",
+		"mail":        "test@example.com",
+	}
+
+	result := selectFields(item, []string{"displayName"})
+
+	// id must always be preserved per MS Graph API behavior
+	assert.Equal(t, "abc-123", result["id"], "id should always be preserved")
+	assert.Equal(t, "Test User", result["displayName"])
+	_, hasMail := result["mail"]
+	assert.False(t, hasMail, "mail should not be included when not in $select")
+
+	// When id is explicitly in select, it should still be there
+	result = selectFields(item, []string{"id", "displayName"})
+	assert.Equal(t, "abc-123", result["id"])
+	assert.Equal(t, "Test User", result["displayName"])
+
+	// When id is not present in source map, nothing should be added
+	itemNoId := map[string]interface{}{
+		"displayName": "NoId",
+	}
+	result = selectFields(itemNoId, []string{"displayName"})
+	_, hasId := result["id"]
+	assert.False(t, hasId, "id should not be fabricated if not in source")
 }

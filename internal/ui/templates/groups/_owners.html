@@ -9,6 +9,7 @@
         <form method="POST" action="/ui/groups/{{.Group.ID}}/owners/add"
               hx-post="/ui/groups/{{.Group.ID}}/owners/add"
               hx-target="#owners" hx-swap="outerHTML" style="margin-top: var(--pico-spacing);">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <fieldset role="group">
                 <select name="userId" required style="flex: 1;">
                     <option value="">Select user to add as owner...</option>
@@ -34,7 +35,9 @@
                             <form id="remove-owner-{{.ID}}" method="POST" action="/ui/groups/{{$.Group.ID}}/owners/{{.ID}}/remove"
                                   hx-post="/ui/groups/{{$.Group.ID}}/owners/{{.ID}}/remove"
                                   hx-target="#owners" hx-swap="outerHTML"
-                                  hx-confirm="Remove {{.DisplayName}} as owner?" style="display: none;"></form>
+                                  data-confirm="Remove {{.DisplayName}} as owner?" style="display: none;">
+                                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                            </form>
                             <button form="remove-owner-{{.ID}}" type="submit" title="Remove" aria-label="Remove" class="outline danger">{{template "icon-user-minus" .}}</button>
                         </div>
                     </td>

@@ -3,12 +3,12 @@ package ui
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 )
 
 // UserAddLicenseHandler handles POST /ui/users/:id/licenses/add
@@ -28,7 +28,8 @@ func UserAddLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			Scopes: []string{"https://graph.microsoft.com/.default"},
 		})
 		if err != nil {
-			h.handleLicenseResponse(c, id, FlashDanger, "Failed to authenticate: "+err.Error())
+			log.Error().Err(err).Msg("Failed to authenticate for license assignment")
+			h.handleLicenseResponse(c, id, FlashDanger, "Failed to authenticate. Please try again.")
 			return
 		}
 
@@ -54,14 +55,16 @@ func UserAddLicenseHandler(h *UIHandler) gin.HandlerFunc {
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			h.handleLicenseResponse(c, id, FlashDanger, "Failed to assign license: "+err.Error())
+			log.Error().Err(err).Msg("Failed to assign license")
+			h.handleLicenseResponse(c, id, FlashDanger, "Failed to assign license. Please try again.")
 			return
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)
-			h.handleLicenseResponse(c, id, FlashDanger, fmt.Sprintf("Failed to assign license (%d): %s", resp.StatusCode, string(respBody)))
+			log.Error().Int("status", resp.StatusCode).Str("body", string(respBody)).Msg("Failed to assign license")
+			h.handleLicenseResponse(c, id, FlashDanger, "Failed to assign license. Please try again.")
 			return
 		}
 
@@ -85,7 +88,8 @@ func UserRemoveLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			Scopes: []string{"https://graph.microsoft.com/.default"},
 		})
 		if err != nil {
-			h.handleLicenseResponse(c, id, FlashDanger, "Failed to authenticate: "+err.Error())
+			log.Error().Err(err).Msg("Failed to authenticate for license removal")
+			h.handleLicenseResponse(c, id, FlashDanger, "Failed to authenticate. Please try again.")
 			return
 		}
 
@@ -109,14 +113,16 @@ func UserRemoveLicenseHandler(h *UIHandler) gin.HandlerFunc {
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			h.handleLicenseResponse(c, id, FlashDanger, "Failed to remove license: "+err.Error())
+			log.Error().Err(err).Msg("Failed to remove license")
+			h.handleLicenseResponse(c, id, FlashDanger, "Failed to remove license. Please try again.")
 			return
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)
-			h.handleLicenseResponse(c, id, FlashDanger, fmt.Sprintf("Failed to remove license (%d): %s", resp.StatusCode, string(respBody)))
+			log.Error().Int("status", resp.StatusCode).Str("body", string(respBody)).Msg("Failed to remove license")
+			h.handleLicenseResponse(c, id, FlashDanger, "Failed to remove license. Please try again.")
 			return
 		}
 

@@ -15,7 +15,9 @@
 
 <div role="group" style="margin-bottom: var(--pico-spacing);">
     <a href="/ui/groups/{{.Group.ID}}/edit" role="button" class="secondary outline">{{template "icon-pencil" .}} Edit</a>
-    <form id="delete-group" method="POST" action="/ui/groups/{{.Group.ID}}/delete" onsubmit="return confirm('Delete {{.Group.DisplayName}}?');" style="display: none;"></form>
+    <form id="delete-group" method="POST" action="/ui/groups/{{.Group.ID}}/delete" data-confirm="Delete {{.Group.DisplayName}}?" style="display: none;">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    </form>
     <button form="delete-group" type="submit" class="outline danger">{{template "icon-trash-2" .}} Delete</button>
 </div>
 
@@ -44,6 +46,17 @@
             </ul>
         </article>
         {{end}}
+
+        {{if .TransitiveMemberOf}}
+        <article>
+            <header>Transitive Member Of</header>
+            <ul>
+                {{range .TransitiveMemberOf}}
+                <li><a href="/ui/groups/{{.ID}}">{{.DisplayName}}</a></li>
+                {{end}}
+            </ul>
+        </article>
+        {{end}}
     </div>
     
     <div>
@@ -51,4 +64,7 @@
         {{template "owners-partial" .}}
     </div>
 </div>
+
+{{template "group-transitivemembers-partial" .}}
+{{template "group-approles-partial" .}}
 {{end}}

@@ -173,4 +173,97 @@ test.describe('Users', () => {
     const enabledCell = graceRow.locator('td').nth(4);
     await expect(enabledCell).toBeVisible();
   });
+
+  test('set manager', async ({ page }) => {
+    await page.goto('/ui/users');
+
+    // Click on Bob Jones row link
+    await page.locator('tr', { hasText: 'Bob Jones' }).locator('a').first().click();
+    await expect(page).toHaveURL(/\/ui\/users\/[a-f0-9-]+$/);
+
+    // Find manager article
+    const managerArticle = page.locator('#user-manager');
+    await expect(managerArticle).toBeVisible();
+
+    // Expand "Set Manager" details
+    await managerArticle.locator('details').locator('summary').click();
+
+    // Select a non-empty option from the dropdown
+    const select = managerArticle.locator('select[name="managerId"]');
+    const options = await select.locator('option').all();
+    let selectedValue = '';
+    for (const option of options) {
+      const val = await option.getAttribute('value');
+      if (val && val !== '' && !(await option.isDisabled())) {
+        selectedValue = val;
+        break;
+      }
+    }
+    if (selectedValue) {
+      await select.selectOption(selectedValue);
+
+      // Submit and wait for HTMX response
+      const responsePromise = page.waitForResponse(
+        resp => resp.url().includes('/manager/set') && resp.status() === 200
+      );
+      await managerArticle.locator('input[type="submit"][value="Set"]').click();
+      await responsePromise;
+
+      // Verify success flash
+      await expect(page.locator('.flash-success')).toBeVisible();
+
+      // Verify the manager link appears in #user-manager
+      await expect(page.locator('#user-manager a')).toBeVisible();
+    }
+  });
+
+  test('remove manager', async ({ page }) => {
+    await page.goto('/ui/users');
+
+    // Click on Bob Jones row link
+    await page.locator('tr', { hasText: 'Bob Jones' }).locator('a').first().click();
+    await expect(page).toHaveURL(/\/ui\/users\/[a-f0-9-]+$/);
+
+    const managerArticle = page.locator('#user-manager');
+    await expect(managerArticle).toBeVisible();
+
+    // If no manager assigned, set one first
+    const noManagerVisible = await managerArticle.locator('small', { hasText: 'No manager assigned.' }).isVisible();
+    if (noManagerVisible) {
+      await managerArticle.locator('details').locator('summary').click();
+      const select = managerArticle.locator('select[name="managerId"]');
+      const options = await select.locator('option').all();
+      let selectedValue = '';
+      for (const option of options) {
+        const val = await option.getAttribute('value');
+        if (val && val !== '' && !(await option.isDisabled())) {
+          selectedValue = val;
+          break;
+        }
+      }
+      if (selectedValue) {
+        await select.selectOption(selectedValue);
+        const setResponse = page.waitForResponse(
+          resp => resp.url().includes('/manager/set') && resp.status() === 200
+        );
+        await managerArticle.locator('input[type="submit"][value="Set"]').click();
+        await setResponse;
+        await expect(page.locator('.flash-success')).toBeVisible();
+      }
+    }
+
+    // Now remove the manager
+    page.once('dialog', dialog => dialog.accept());
+    const removeResponse = page.waitForResponse(
+      resp => resp.url().includes('/manager/remove') && resp.status() === 200
+    );
+    await page.locator('button[form="remove-manager"]').click();
+    await removeResponse;
+
+    // Verify success flash
+    await expect(page.locator('.flash-success')).toBeVisible();
+
+    // Verify "No manager assigned." is visible
+    await expect(page.locator('#user-manager')).toContainText('No manager assigned.');
+  });
 });

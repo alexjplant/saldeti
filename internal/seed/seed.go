@@ -19,6 +19,29 @@ func Seed(s store.Store) error {
 				TenantID:     "sim-tenant-id",
 			},
 		},
+		Applications: []SeedApplication{
+			{
+				DisplayName:    "Saldeti Simulator App",
+				AppID:          "sim-client-id",
+				Description:    "Default simulator application registration",
+				SignInAudience: "AzureADandPersonalMicrosoftAccount",
+				AppRoles: []SeedAppRole{
+					{
+						AllowedMemberTypes: []string{"Application"},
+						Description:        "Allows the application to read all applications",
+						DisplayName:        "Application.Read.All",
+						IsEnabled:          true,
+						Value:              "Application.Read.All",
+					},
+				},
+			},
+			{
+				DisplayName:    "Backup Service",
+				AppID:          "x-backup-service-app-id",
+				Description:    "Backup service application",
+				SignInAudience: "AzureADandPersonalMicrosoftAccount",
+			},
+		},
 		Users: []SeedUser{
 			// Admin user (index 0)
 			{
@@ -167,11 +190,12 @@ func Seed(s store.Store) error {
 		},
 		Groups: []SeedGroup{
 			{
-				DisplayName:  "Engineering Team",
-				Description:  "Engineering department",
-				MailNickname: "engineeringteam",
-				Visibility:   "Public",
-				MemberUPNs:   []string{"alice.smith@saldeti.local", "bob.jones@saldeti.local", "eve.wilson@saldeti.local", "grace.lee@saldeti.local"},
+				DisplayName:    "Engineering Team",
+				Description:    "Engineering department",
+				MailNickname:   "engineeringteam",
+				Visibility:     "Public",
+				MemberUPNs:     []string{"alice.smith@saldeti.local", "bob.jones@saldeti.local", "eve.wilson@saldeti.local", "grace.lee@saldeti.local"},
+				MemberSPAppIDs: []string{"x-backup-service-app-id"},
 			},
 			{
 				DisplayName:  "Marketing Team",
@@ -181,11 +205,11 @@ func Seed(s store.Store) error {
 				MemberUPNs:   []string{"charlie.brown@saldeti.local", "julia.roberts@saldeti.local"},
 			},
 			{
-				DisplayName:       "All Staff",
-				Description:       "All employees",
-				MailNickname:      "allstaff",
-				Visibility:        "Public",
-				MemberUPNs:        []string{"alice.smith@saldeti.local", "bob.jones@saldeti.local", "charlie.brown@saldeti.local", "diana.prince@saldeti.local", "eve.wilson@saldeti.local", "frank.miller@saldeti.local", "henry.taylor@saldeti.local", "julia.roberts@saldeti.local"},
+				DisplayName:      "All Staff",
+				Description:      "All employees",
+				MailNickname:     "allstaff",
+				Visibility:       "Public",
+				MemberUPNs:       []string{"alice.smith@saldeti.local", "bob.jones@saldeti.local", "charlie.brown@saldeti.local", "diana.prince@saldeti.local", "eve.wilson@saldeti.local", "frank.miller@saldeti.local", "henry.taylor@saldeti.local", "julia.roberts@saldeti.local"},
 				MemberGroupNames: []string{"Engineering Team", "Marketing Team"},
 			},
 			{
@@ -202,6 +226,27 @@ func Seed(s store.Store) error {
 				Visibility:   "Public",
 				GroupTypes:   []string{"Unified"},
 				MemberUPNs:   []string{"alice.smith@saldeti.local", "charlie.brown@saldeti.local", "eve.wilson@saldeti.local"},
+			},
+		},
+		AppRoleAssignments: []SeedAppRoleAssignment{
+			{
+				PrincipalIndex: 0, // Admin User
+				ResourceAppID:  "sim-client-id",
+				RoleValue:      "Application.Read.All",
+			},
+			{
+				PrincipalType: "group",
+				PrincipalName: "Engineering Team",
+				ResourceAppID: "sim-client-id",
+				RoleValue:     "Application.Read.All",
+			},
+		},
+		OAuth2Grants: []SeedOAuth2Grant{
+			{
+				ClientAppID:   "sim-client-id",
+				ResourceAppID: "sim-client-id",
+				Scope:         "User.Read",
+				ConsentType:   "AllPrincipals",
 			},
 		},
 	}

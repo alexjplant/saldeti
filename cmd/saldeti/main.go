@@ -80,6 +80,8 @@ func main() {
 	debug := flag.Bool("debug", false, "Enable debug logging")
 	domain := flag.String("domain", "saldeti.local", "Default directory domain (used for admin user UPN and seeded users without an @)")
 	stop := flag.Bool("stop", false, "Stop a running daemon")
+	baseURLFlag := flag.String("base-url", "", "External base URL (e.g. https://example.com). When set, X-Forwarded-Host/Proto headers are ignored.")
+	trustForwarded := flag.Bool("trust-forwarded-headers", false, "Trust X-Forwarded-Host/Proto headers for base URL detection")
 
 	// Admin credential flags
 	adminClientID := flag.String("admin-client-id", "", "Admin app client ID (default: random UUID; if set, -admin-client-secret and -admin-tenant-id must also be set)")
@@ -140,14 +142,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Configure default HTTP transport to trust self-signed cert.
-	// This is a local dev simulator that only talks to itself on localhost.
-	if transport, ok := http.DefaultTransport.(*http.Transport); ok {
-		transport.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
-
 	// Validate admin credential flags: all-or-nothing
 	adminFlagsSet := 0
 	if *adminClientID != "" {
@@ -185,6 +179,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Failed to open log file: %v\n", err)
 			os.Exit(1)
 		}
+		defer lf.Close()
 
 		cmd := exec.Command(os.Args[0], os.Args[1:]...)
 		cmd.Env = append(os.Environ(), "SALDETI_CHILD=1")
@@ -217,6 +212,11 @@ func main() {
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
+
+	if *baseURLFlag != "" {
+		handler.SetBaseURL(*baseURLFlag)
+	}
+	handler.SetTrustForwardedHeaders(*trustForwarded)
 
 	log.Info().Str("domain", *domain).Msg("Directory domain")
 

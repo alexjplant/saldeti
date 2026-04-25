@@ -11,7 +11,7 @@ test.describe('Membership', () => {
     await page.locator('tr', { hasText: 'All Staff' }).locator('a').first().click();
 
     // Add Ivan Guest as member - target the select in the Members section
-    const membersSection = page.locator('article').filter({ hasText: 'Members' });
+    const membersSection = page.locator('#members');
     await membersSection.locator('summary').click();
     const select = membersSection.locator('select[name="userId"]');
     const ivanOption = select.locator('option', { hasText: 'Ivan Guest' });
@@ -20,7 +20,7 @@ test.describe('Membership', () => {
     await membersSection.locator('input[value="Add Member"]').click();
 
     // Wait for Ivan to appear via htmx swap (no full page reload)
-    await expect(page.locator('article').filter({ hasText: 'Members' }).locator('td', { hasText: 'Ivan Guest' })).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#members').locator('td', { hasText: 'Ivan Guest' })).toBeVisible({ timeout: 5000 });
   });
 
   test('remove member', async ({ page }) => {
@@ -29,7 +29,7 @@ test.describe('Membership', () => {
     await page.locator('tr', { hasText: 'All Staff' }).locator('a').first().click();
 
     // First add Ivan Guest so we have a known member to remove
-    const membersSection = page.locator('article').filter({ hasText: 'Members' });
+    const membersSection = page.locator('#members');
     const ivanInMembers = membersSection.locator('td', { hasText: 'Ivan Guest' });
     if (!await ivanInMembers.isVisible()) {
       await membersSection.locator('summary').click();
@@ -49,7 +49,7 @@ test.describe('Membership', () => {
     await ivanRow.locator('button[title="Remove"]').click();
 
     // Wait for Ivan to disappear via htmx swap
-    await expect(page.locator('article').filter({ hasText: 'Members' }).locator('td', { hasText: 'Ivan Guest' })).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#members').locator('td', { hasText: 'Ivan Guest' })).not.toBeVisible({ timeout: 5000 });
   });
 
   test('add owner', async ({ page }) => {
@@ -105,7 +105,7 @@ test.describe('Membership', () => {
     await page.locator('tr', { hasText: 'Engineering Team' }).locator('a').first().click();
 
     // Target the select in the Members section
-    const membersSection = page.locator('article').filter({ hasText: 'Members' });
+    const membersSection = page.locator('#members');
     await membersSection.locator('summary').click();
     const select = membersSection.locator('select[name="userId"]');
     const henryOption = select.locator('option', { hasText: 'Henry Taylor' });
@@ -130,7 +130,7 @@ test.describe('Membership', () => {
     await page.locator('tr', { hasText: 'Engineering Team' }).locator('a').first().click();
 
     // Add Ivan Guest to Engineering Team
-    const membersArticle = page.locator('article').filter({ hasText: 'Members' });
+    const membersArticle = page.locator('#members');
     const ivanInMembers = membersArticle.locator('td', { hasText: 'Ivan Guest' });
     if (!await ivanInMembers.isVisible()) {
       await membersArticle.locator('summary').click();

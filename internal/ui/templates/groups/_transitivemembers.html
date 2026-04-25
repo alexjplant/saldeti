@@ -1,0 +1,22 @@
+{{define "group-transitivemembers-partial"}}
+<article id="group-transitivemembers">
+    <header>Transitive Members ({{len .TransitiveMembers}})</header>
+    {{if .TransitiveMembers}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Name</th><th>Type</th></tr></thead>
+            <tbody>
+                {{range .TransitiveMembers}}
+                <tr>
+                    <td>{{if contains .ODataType "group"}}<a href="/ui/groups/{{.ID}}">{{.DisplayName}}</a>{{else}}<a href="/ui/users/{{.ID}}">{{.DisplayName}}</a>{{end}}</td>
+                    <td><small>{{.ODataType}}</small></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No transitive members.</p>
+    {{end}}
+</article>
+{{end}}

@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/gin-gonic/gin"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/rs/zerolog/log"
 )
 
 func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
@@ -185,12 +186,13 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 			}
 		}
 		if err != nil {
+			log.Error().Err(err).Msg("Failed to create user")
 			h.render(c, "templates/users/form.html", gin.H{
 				"ActiveNav":  "users",
 				"IsEdit":     false,
 				"FormAction": "/ui/users/new",
 				"CancelURL":  "/ui/users",
-				"Error":      fmt.Sprintf("Failed to create user: %v", err),
+				"Error":      "Failed to create user. Please try again.",
 				"Form": map[string]interface{}{
 					"DisplayName":       c.PostForm("displayName"),
 					"UserPrincipalName": c.PostForm("userPrincipalName"),
