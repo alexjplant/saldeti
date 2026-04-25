@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"bytes"
 	"crypto/tls"
 	"html/template"
 	"net/http"
@@ -69,4 +70,36 @@ func (h *UIHandler) render(c *gin.Context, pageFile string, data gin.H) {
 	if err := t.ExecuteTemplate(c.Writer, "layout", data); err != nil {
 		http.Error(c.Writer, "Template execute error: "+err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// isHtmx checks if the request was initiated by htmx
+func isHtmx(c *gin.Context) bool {
+	return c.GetHeader("HX-Request") == "true"
+}
+
+// renderPartial renders a template without the layout wrapper.
+// It sets IsPartial=true so partials can include OOB flash for htmx.
+// The caller must set data["Flash"] before calling this method.
+func (h *UIHandler) renderPartial(c *gin.Context, templateName string, data gin.H) {
+	if data == nil {
+		data = gin.H{}
+	}
+	data["IsPartial"] = true
+
+	t, err := h.baseTmpl.Clone()
+	if err != nil {
+		http.Error(c.Writer, "Template clone error", http.StatusInternalServerError)
+		return
+	}
+
+	// Buffer the output so we can catch template errors before writing headers
+	var buf bytes.Buffer
+	if err := t.ExecuteTemplate(&buf, templateName, data); err != nil {
+		http.Error(c.Writer, "Template execute error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	c.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+	c.Writer.WriteHeader(http.StatusOK)
+	buf.WriteTo(c.Writer)
 }

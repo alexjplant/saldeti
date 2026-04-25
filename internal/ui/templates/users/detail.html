@@ -2,114 +2,80 @@
 
 {{define "content"}}
 <hgroup>
-    <h1>{{.User.DisplayName}}</h1>
+    <h2>{{.User.DisplayName}}</h2>
     <p>{{.User.UserPrincipalName}}</p>
 </hgroup>
 
-<p>
-    <a href="/ui/users/{{.User.ID}}/edit" role="button" class="secondary"><i data-lucide="pencil"></i> Edit</a>
-    <a href="/ui/users" role="button" class="secondary"><i data-lucide="arrow-left"></i> Back to Users</a>
-    <form method="POST" action="/ui/users/{{.User.ID}}/delete" onsubmit="return confirm('Delete {{.User.DisplayName}}?');">
-        <button type="submit" class="outline contrast"><i data-lucide="trash-2"></i> Delete</button>
-    </form>
-</p>
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/ui/users">Users</a></li>
+    <li>{{.User.DisplayName}}</li>
+  </ul>
+</nav>
 
-<div role="group">
-    <article>
-        <header><strong>General</strong></header>
-        <dl>
-            <dt>ID</dt><dd>{{.User.ID}}</dd>
-            <dt>Display Name</dt><dd>{{.User.DisplayName}}</dd>
-            <dt>Given Name</dt><dd>{{.User.GivenName}}</dd>
-            <dt>Surname</dt><dd>{{.User.Surname}}</dd>
-            <dt>UPN</dt><dd>{{.User.UserPrincipalName}}</dd>
-            <dt>Mail</dt><dd>{{.User.Mail}}</dd>
-            <dt>Mail Nickname</dt><dd>{{.User.MailNickname}}</dd>
-        </dl>
-    </article>
-    <article>
-        <header><strong>Work</strong></header>
-        <dl>
-            <dt>Job Title</dt><dd>{{.User.JobTitle}}</dd>
-            <dt>Department</dt><dd>{{.User.Department}}</dd>
-            <dt>Office Location</dt><dd>{{.User.OfficeLocation}}</dd>
-            <dt>Mobile Phone</dt><dd>{{.User.MobilePhone}}</dd>
-            <dt>Account Enabled</dt><dd>{{yesno .User.AccountEnabled}}</dd>
-            <dt>User Type</dt><dd>{{.User.UserType}}</dd>
-        </dl>
-    </article>
+<div role="group" style="margin-bottom: var(--pico-spacing);">
+    <a href="/ui/users/{{.User.ID}}/edit" role="button" class="secondary outline">{{template "icon-pencil" .}} Edit</a>
+    <form id="delete-user" method="POST" action="/ui/users/{{.User.ID}}/delete" onsubmit="return confirm('Delete {{.User.DisplayName}}?');" style="display: none;"></form>
+    <button form="delete-user" type="submit" class="outline danger">{{template "icon-trash-2" .}} Delete</button>
 </div>
 
-{{if .Manager}}
-<article>
-    <header><strong>Manager</strong></header>
-    <p><a href="/ui/users/{{.Manager.ID}}">{{.Manager.DisplayName}}</a></p>
-</article>
-{{end}}
+<div class="grid">
+    <div>
+        <article>
+            <header>General</header>
+            <dl>
+                <dt>ID</dt><dd>{{.User.ID}}</dd>
+                <dt>Given Name</dt><dd>{{.User.GivenName}}</dd>
+                <dt>Surname</dt><dd>{{.User.Surname}}</dd>
+                <dt>Mail</dt><dd>{{.User.Mail}}</dd>
+                <dt>Mail Nickname</dt><dd>{{.User.MailNickname}}</dd>
+            </dl>
+        </article>
 
-{{if .DirectReports}}
-<article>
-    <header><strong>Direct Reports</strong></header>
-    <ul>
-        {{range .DirectReports}}
-        <li><a href="/ui/users/{{.ID}}">{{.DisplayName}}</a></li>
+        {{if .Manager}}
+        <article>
+            <header>Manager</header>
+            <p><a href="/ui/users/{{.Manager.ID}}">{{.Manager.DisplayName}}</a></p>
+        </article>
         {{end}}
-    </ul>
-</article>
-{{end}}
 
-{{if .GroupMemberships}}
-<article>
-    <header><strong>Group Memberships</strong></header>
-    <ul>
-        {{range .GroupMemberships}}
-        <li><a href="/ui/groups/{{.ID}}">{{.DisplayName}}</a></li>
-        {{end}}
-    </ul>
-</article>
-{{end}}
-
-{{if or .AssignedLicenses .AvailableSkus}}
-<article>
-    <header><strong>Licenses</strong></header>
-    {{if .AssignedLicenses}}
-    <table>
-        <thead>
-            <tr><th>SKU</th><th>Part Number</th><th>Disabled Plans</th><th></th></tr>
-        </thead>
-        <tbody>
-            {{range .AssignedLicenses}}
-            <tr>
-                <td>{{.SkuID}}</td>
-                <td><strong>{{.SkuPartNumber}}</strong></td>
-                <td>{{if .DisabledPlans}}{{join (planIDsToNames .DisabledPlans) ", "}}{{else}}None{{end}}</td>
-                <td>
-                    <form method="POST" action="/ui/users/{{$.User.ID}}/licenses/{{.SkuID}}/remove" style="margin:0; display:inline;">
-                        <button type="submit" class="outline secondary" style="padding:0.2rem 0.5rem;" title="Remove license"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
-                    </form>
-                </td>
-            </tr>
-            {{end}}
-        </tbody>
-    </table>
-    {{else}}
-    <p><small>No licenses assigned.</small></p>
-    {{end}}
-
-    {{if .AvailableSkus}}
-    <details style="margin-top:1rem;">
-        <summary role="button" class="secondary">Add License</summary>
-        <form method="POST" action="/ui/users/{{.User.ID}}/licenses/add" style="margin-top:0.5rem;">
-            <select name="skuId" required>
-                <option value="" disabled selected>Select a license SKU...</option>
-                {{range .AvailableSkus}}
-                <option value="{{.SkuID}}">{{.SkuPartNumber}}</option>
+        {{if .DirectReports}}
+        <article>
+            <header>Direct Reports</header>
+            <ul>
+                {{range .DirectReports}}
+                <li><a href="/ui/users/{{.ID}}">{{.DisplayName}}</a></li>
                 {{end}}
-            </select>
-            <button type="submit">Assign</button>
-        </form>
-    </details>
-    {{end}}
-</article>
-{{end}}
+            </ul>
+        </article>
+        {{end}}
+
+        {{if .GroupMemberships}}
+        <article>
+            <header>Group Memberships</header>
+            <ul>
+                {{range .GroupMemberships}}
+                <li><a href="/ui/groups/{{.ID}}">{{.DisplayName}}</a></li>
+                {{end}}
+            </ul>
+        </article>
+        {{end}}
+    </div>
+    
+    <div>
+        <article>
+            <header>Work</header>
+            <dl>
+                <dt>Job Title</dt><dd>{{.User.JobTitle}}</dd>
+                <dt>Department</dt><dd>{{.User.Department}}</dd>
+                <dt>Office Location</dt><dd>{{.User.OfficeLocation}}</dd>
+                <dt>Mobile Phone</dt><dd>{{.User.MobilePhone}}</dd>
+                <dt>Account Enabled</dt><dd>{{yesno .User.AccountEnabled}}</dd>
+                <dt>User Type</dt><dd>{{.User.UserType}}</dd>
+            </dl>
+        </article>
+        
+        {{template "licenses-partial" .}}
+    </div>
+</div>
 {{end}}

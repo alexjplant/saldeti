@@ -22,7 +22,7 @@ test.describe('Users', () => {
 
     // Type Alice in search
     await page.fill('input[name="search"]', 'Alice');
-    await page.click('button[type="submit"]');
+    await page.press('input[name="search"]', 'Enter');
 
     // Assert only Alice rows shown
     await expect(page.locator('td', { hasText: 'Alice Smith' })).toBeVisible();
@@ -36,7 +36,7 @@ test.describe('Users', () => {
   test('create user', async ({ page }) => {
     await page.goto('/ui/users/new');
 
-    await expect(page.locator('h1')).toHaveText('New User');
+    await expect(page.locator('h2')).toHaveText('New User');
 
     const suffix = Date.now().toString(36);
     // Fill form
@@ -52,7 +52,7 @@ test.describe('Users', () => {
 
     // Should be redirected to detail page
     await expect(page).toHaveURL(/\/ui\/users\/[a-f0-9-]+$/);
-    await expect(page.locator('h1')).toHaveText('E2E Test User');
+    await expect(page.locator('h2')).toHaveText('E2E Test User');
     await expect(page.locator('dd').filter({ hasText: 'QA' }).first()).toBeVisible();
   });
 
@@ -60,7 +60,7 @@ test.describe('Users', () => {
     await page.goto('/ui/users/new');
 
     // Wait for page to be fully loaded
-    await expect(page.locator('h1')).toHaveText('New User');
+    await expect(page.locator('h2')).toHaveText('New User');
 
     // Remove required attributes to bypass HTML5 validation
     await page.evaluate(() => {
@@ -74,8 +74,8 @@ test.describe('Users', () => {
     await page.waitForLoadState('networkidle');
 
     // Assert error message for required fields
-    await expect(page.getByRole('alert')).toBeVisible();
-    await expect(page.getByRole('alert')).toContainText('required');
+    await expect(page.locator('.flash-danger')).toBeVisible();
+    await expect(page.locator('.flash-danger')).toContainText('required');
   });
 
   test('view user detail', async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe('Users', () => {
     await page.locator('tr', { hasText: 'Alice Smith' }).locator('a').first().click();
 
     // Assert detail page shows fields
-    await expect(page.locator('h1')).toHaveText('Alice Smith');
+    await expect(page.locator('h2')).toHaveText('Alice Smith');
     await expect(page.locator('dd').filter({ hasText: 'alice.smith@saldeti.local' }).first()).toBeVisible();
     await expect(page.locator('dd').filter({ hasText: 'Software Engineer' }).first()).toBeVisible();
     await expect(page.locator('dd').filter({ hasText: 'Engineering' }).first()).toBeVisible();
@@ -105,7 +105,7 @@ test.describe('Users', () => {
     // Click Edit - wait for page to load and use href selector
     await page.waitForLoadState('networkidle');
     await page.locator('a[href*="/edit"]').click();
-    await expect(page.locator('h1')).toHaveText('Edit User');
+    await expect(page.locator('h2')).toHaveText('Edit User');
 
     // Change department and job title
     await page.fill('input[name="department"]', 'DevOps');

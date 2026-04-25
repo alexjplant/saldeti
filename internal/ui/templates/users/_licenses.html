@@ -1,0 +1,53 @@
+{{define "licenses-partial"}}
+<article id="licenses">
+    <header>Licenses</header>
+    {{if .AssignedLicenses}}
+    <figure>
+        <table class="striped">
+            <thead>
+                <tr><th>SKU</th><th>Part Number</th><th>Disabled Plans</th><th></th></tr>
+            </thead>
+            <tbody>
+                {{range .AssignedLicenses}}
+                <tr>
+                    <td>{{.SkuID}}</td>
+                    <td><strong>{{.SkuPartNumber}}</strong></td>
+                    <td>{{if .DisabledPlans}}{{join (planIDsToNames .DisabledPlans) ", "}}{{else}}None{{end}}</td>
+                    <td>
+                        <div role="group">
+                            <form id="remove-license-{{.SkuID}}" method="POST" action="/ui/users/{{$.User.ID}}/licenses/{{.SkuID}}/remove"
+                                  hx-post="/ui/users/{{$.User.ID}}/licenses/{{.SkuID}}/remove"
+                                  hx-target="#licenses" hx-swap="outerHTML" style="display: none;"></form>
+                            <button form="remove-license-{{.SkuID}}" type="submit" class="outline danger" title="Remove license" aria-label="Remove license">{{template "icon-x" .}}</button>
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p><small>No licenses assigned.</small></p>
+    {{end}}
+
+    {{if .AvailableSkus}}
+    <details style="margin-bottom: 0;">
+        <summary role="button" class="secondary outline">Add License</summary>
+        <form method="POST" action="/ui/users/{{.User.ID}}/licenses/add"
+              hx-post="/ui/users/{{.User.ID}}/licenses/add"
+              hx-target="#licenses" hx-swap="outerHTML" style="margin-top: var(--pico-spacing);">
+            <fieldset role="group">
+                <select name="skuId" required style="flex: 1;">
+                    <option value="" disabled selected>Select a license SKU...</option>
+                    {{range .AvailableSkus}}
+                    <option value="{{.SkuID}}">{{.SkuPartNumber}}</option>
+                    {{end}}
+                </select>
+                <input type="submit" value="Assign" />
+            </fieldset>
+        </form>
+    </details>
+    {{end}}
+</article>
+{{if .IsPartial}}{{template "flash-oob" .}}{{end}}
+{{end}}

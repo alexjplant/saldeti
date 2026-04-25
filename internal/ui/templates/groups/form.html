@@ -2,25 +2,47 @@
 
 {{define "content"}}
 <hgroup>
-    <h1>{{if .IsEdit}}Edit Group{{else}}New Group{{end}}</h1>
+    <h2>{{if .IsEdit}}Edit Group{{else}}New Group{{end}}</h2>
 </hgroup>
 
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/ui/groups">Groups</a></li>
+    {{if .IsEdit}}
+    <li><a href="/ui/groups/{{.Form.ID}}">{{.Form.DisplayName}}</a></li>
+    <li>Edit</li>
+    {{else}}
+    <li>New</li>
+    {{end}}
+  </ul>
+</nav>
+
 {{if .Error}}
-<blockquote role="alert">
-    <p>{{.Error}}</p>
-</blockquote>
+<article class="flash-danger">
+    <p style="margin: 0;">{{.Error}}</p>
+</article>
 {{end}}
 
 <form method="POST" action="{{.FormAction}}">
-    <label for="displayName">Display Name *
-        <input type="text" id="displayName" name="displayName" value="{{.Form.DisplayName}}" required>
-    </label>
-    <label for="description">Description
-        <textarea id="description" name="description" rows="3">{{.Form.Description}}</textarea>
-    </label>
-    <label for="mailNickname">Mail Nickname
-        <input type="text" id="mailNickname" name="mailNickname" value="{{.Form.MailNickname}}">
-    </label>
+    <div class="grid">
+        <fieldset>
+            <label for="displayName">Display Name *
+                <input type="text" id="displayName" name="displayName" value="{{.Form.DisplayName}}" required>
+            </label>
+        </fieldset>
+        <fieldset>
+            <label for="mailNickname">Mail Nickname
+                <input type="text" id="mailNickname" name="mailNickname" value="{{.Form.MailNickname}}">
+            </label>
+        </fieldset>
+    </div>
+
+    <fieldset>
+        <label for="description">Description
+            <textarea id="description" name="description" rows="3">{{.Form.Description}}</textarea>
+        </label>
+    </fieldset>
+
     <fieldset>
         <label>
             <input type="checkbox" name="securityEnabled" value="true" {{if eq .Form.SecurityEnabled "true"}}checked{{end}}>
@@ -30,20 +52,25 @@
             <input type="checkbox" name="mailEnabled" value="true" {{if eq .Form.MailEnabled "true"}}checked{{end}}>
             Mail Enabled
         </label>
+        <label>
+            <input type="checkbox" name="unified" value="true" {{if eq .Form.Unified "true"}}checked{{end}}>
+            Unified (M365 Group)
+        </label>
     </fieldset>
-    <label>
-        <input type="checkbox" name="unified" value="true" {{if eq .Form.Unified "true"}}checked{{end}}>
-        Unified (M365 Group)
-    </label>
-    <label for="visibility">Visibility
-        <select id="visibility" name="visibility">
-            <option value="Public" {{if eq .Form.Visibility "Public"}}selected{{end}}>Public</option>
-            <option value="Private" {{if eq .Form.Visibility "Private"}}selected{{end}}>Private</option>
-            <option value="HiddenMembership" {{if eq .Form.Visibility "HiddenMembership"}}selected{{end}}>HiddenMembership</option>
-        </select>
-    </label>
+    
+    <fieldset>
+        <label for="visibility">Visibility
+            <select id="visibility" name="visibility">
+                <option value="Public" {{if eq .Form.Visibility "Public"}}selected{{end}}>Public</option>
+                <option value="Private" {{if eq .Form.Visibility "Private"}}selected{{end}}>Private</option>
+                <option value="HiddenMembership" {{if eq .Form.Visibility "HiddenMembership"}}selected{{end}}>HiddenMembership</option>
+            </select>
+        </label>
+    </fieldset>
 
-    <button type="submit">{{if .IsEdit}}Update Group{{else}}Create Group{{end}}</button>
-    <a href="{{.CancelURL}}" role="button" class="secondary">Cancel</a>
+    <div role="group" style="margin-top: var(--pico-spacing);">
+        <button type="submit">{{if .IsEdit}}Update Group{{else}}Create Group{{end}}</button>
+        <a href="{{.CancelURL}}" role="button" class="secondary outline">Cancel</a>
+    </div>
 </form>
 {{end}}

@@ -1,14 +1,21 @@
 {{define "pagination"}}
 {{if .HasPagination}}
-<nav aria-label="Pagination">
-    <ul>
-        {{if .PrevPage}}
-        <li><a href="?page={{.PrevPage}}&per_page={{.PerPage}}">← Previous</a></li>
-        {{end}}
-        {{if .NextPage}}
-        <li><a href="?page={{.NextPage}}&per_page={{.PerPage}}">Next →</a></li>
-        {{end}}
-    </ul>
-</nav>
+<footer style="margin-top: var(--pico-spacing);">
+    <nav aria-label="Pagination">
+        <ul>
+            {{if .PrevPage}}
+            <li><a href="?page={{.PrevPage}}&per_page={{.PerPage}}" role="button" class="outline secondary">← Previous</a></li>
+            {{end}}
+        </ul>
+        <ul>
+            <li><small>Page {{.CurrentPage}} of {{.TotalPages}}</small></li>
+        </ul>
+        <ul>
+            {{if .NextPage}}
+            <li><a href="?page={{.NextPage}}&per_page={{.PerPage}}" role="button" class="outline secondary">Next →</a></li>
+            {{end}}
+        </ul>
+    </nav>
+</footer>
 {{end}}
 {{end}}

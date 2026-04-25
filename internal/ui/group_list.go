@@ -2,6 +2,7 @@ package ui
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/microsoftgraph/msgraph-sdk-go/groups"
@@ -38,7 +39,8 @@ func GroupListHandler(h *UIHandler) gin.HandlerFunc {
 		}
 		if search != "" {
 			// Use $filter instead of $search for better compatibility
-			config.QueryParameters.Filter = ptrString("startswith(displayName,'" + search + "')")
+			escapedSearch := strings.ReplaceAll(search, "'", "''")
+			config.QueryParameters.Filter = ptrString("startswith(displayName,'" + escapedSearch + "')")
 		}
 
 		result, err := h.client.Groups().Get(ctx, config)

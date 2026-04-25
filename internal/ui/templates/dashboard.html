@@ -2,41 +2,39 @@
 
 {{define "content"}}
 <hgroup>
-    <h1>Dashboard</h1>
+    <h2>Dashboard</h2>
     <p>Graph API Simulator overview</p>
 </hgroup>
 
-<div role="group">
+<div class="grid">
     <article>
-        <header style="text-align:center;">
-            <h2>{{.TotalUsers}}</h2>
+        <header>
+            <h3 style="margin-bottom: 0;">{{.TotalUsers}}</h3>
         </header>
-        <footer style="text-align:center;">
-            <p><a href="/ui/users">Total Users</a></p>
+        Total Users
+        <footer>
+            <a href="/ui/users" role="button" class="outline contrast" style="width: 100%;">View Users</a>
         </footer>
     </article>
     <article>
-        <header style="text-align:center;">
-            <h2>{{.EnabledUsers}}</h2>
+        <header>
+            <h3 style="margin-bottom: 0;">{{.EnabledUsers}}</h3>
         </header>
-        <footer style="text-align:center;">
-            <p>Enabled Users</p>
-        </footer>
+        Enabled Users
     </article>
     <article>
-        <header style="text-align:center;">
-            <h2>{{.DisabledUsers}}</h2>
+        <header>
+            <h3 style="margin-bottom: 0;">{{.DisabledUsers}}</h3>
         </header>
-        <footer style="text-align:center;">
-            <p>Disabled Users</p>
-        </footer>
+        Disabled Users
     </article>
     <article>
-        <header style="text-align:center;">
-            <h2>{{.TotalGroups}}</h2>
+        <header>
+            <h3 style="margin-bottom: 0;">{{.TotalGroups}}</h3>
         </header>
-        <footer style="text-align:center;">
-            <p><a href="/ui/groups">Total Groups</a></p>
+        Total Groups
+        <footer>
+            <a href="/ui/groups" role="button" class="outline contrast" style="width: 100%;">View Groups</a>
         </footer>
     </article>
 </div>

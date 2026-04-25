@@ -2,55 +2,66 @@
 
 {{define "content"}}
 <hgroup>
-    <h1>Groups</h1>
+    <h2>Groups</h2>
     <p>{{.TotalCount}} total groups</p>
 </hgroup>
 
-<div role="group">
-    <form method="GET" action="/ui/groups">
-        <input type="search" name="search" placeholder="Search groups..." value="{{.Search}}">
-        <button type="submit">Search</button>
-        {{if .Search}}<a href="/ui/groups">Clear</a>{{end}}
-    </form>
-    <div>
-        <a href="/ui/groups/new" role="button"><i data-lucide="plus"></i> New Group</a>
-    </div>
-</div>
+<nav style="margin-bottom: var(--pico-spacing);">
+    <ul>
+        <li>
+            <form method="GET" action="/ui/groups" style="margin-bottom: 0;">
+                <fieldset role="group" style="margin-bottom: 0;">
+                    <input type="search" name="search" placeholder="Search groups..." value="{{.Search}}" />
+                    <input type="submit" value="Search" />
+                </fieldset>
+            </form>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <a href="/ui/groups/new" role="button">{{template "icon-plus" .}} New Group</a>
+        </li>
+    </ul>
+</nav>
+{{if .Search}}<p><small>Filtered by "{{.Search}}" — <a href="/ui/groups">Clear</a></small></p>{{end}}
 
-<table>
-    <thead>
-        <tr>
-            <th>Display Name</th>
-            <th>Description</th>
-            <th>Mail Nickname</th>
-            <th>Type</th>
-            <th>Members</th>
-            <th>Visibility</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{range .GroupRows}}
-        <tr>
-            <td><a href="/ui/groups/{{.Group.ID}}">{{.Group.DisplayName}}</a></td>
-            <td>{{truncate .Group.Description 50}}</td>
-            <td>{{.Group.MailNickname}}</td>
-            <td>{{.TypeLabel}}</td>
-            <td>{{.MemberCount}}</td>
-            <td>{{.Group.Visibility}}</td>
-            <td>
-                <a href="/ui/groups/{{.Group.ID}}" title="View"><i data-lucide="eye"></i></a>
-                <a href="/ui/groups/{{.Group.ID}}/edit" title="Edit"><i data-lucide="pencil"></i></a>
-                <form method="POST" action="/ui/groups/{{.Group.ID}}/delete" onsubmit="return confirm('Delete {{.Group.DisplayName}}?');">
-                    <button type="submit" title="Delete"><i data-lucide="trash-2"></i></button>
-                </form>
-            </td>
-        </tr>
-        {{else}}
-        <tr><td colspan="7">No groups found.</td></tr>
-        {{end}}
-    </tbody>
-</table>
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Display Name</th>
+                <th>Description</th>
+                <th>Mail Nickname</th>
+                <th>Type</th>
+                <th>Members</th>
+                <th>Visibility</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .GroupRows}}
+            <tr>
+                <td><a href="/ui/groups/{{.Group.ID}}">{{.Group.DisplayName}}</a></td>
+                <td>{{truncate .Group.Description 50}}</td>
+                <td>{{.Group.MailNickname}}</td>
+                <td>{{.TypeLabel}}</td>
+                <td>{{.MemberCount}}</td>
+                <td>{{.Group.Visibility}}</td>
+                <td>
+                    <div role="group">
+                        <a href="/ui/groups/{{.Group.ID}}" role="button" class="outline secondary" title="View" aria-label="View">{{template "icon-eye" .}}</a>
+                        <a href="/ui/groups/{{.Group.ID}}/edit" role="button" class="outline secondary" title="Edit" aria-label="Edit">{{template "icon-pencil" .}}</a>
+                        <form id="delete-group-{{.Group.ID}}" method="POST" action="/ui/groups/{{.Group.ID}}/delete" onsubmit="return confirm('Delete {{.Group.DisplayName}}?');" style="display: none;"></form>
+                        <button form="delete-group-{{.Group.ID}}" type="submit" title="Delete" aria-label="Delete" class="outline danger">{{template "icon-trash-2" .}}</button>
+                    </div>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="7">No groups found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
 
 {{template "pagination" .}}
 {{end}}
