@@ -377,9 +377,11 @@ func TestServicePrincipalValidation(t *testing.T) {
 	ctx := context.Background()
 	s := NewMemoryStore()
 
-	// No app exists for this appId
-	_, err := s.CreateServicePrincipal(ctx, model.ServicePrincipal{AppID: "nonexistent"})
-	assert.ErrorIs(t, err, ErrApplicationNotFound)
+	// No app exists for this appId — store is permissive, SP is created anyway
+	sp, err := s.CreateServicePrincipal(ctx, model.ServicePrincipal{AppID: "nonexistent"})
+	require.NoError(t, err)
+	assert.Equal(t, "nonexistent", sp.AppID)
+	assert.NotEmpty(t, sp.ID)
 
 	// Empty appId
 	_, err = s.CreateServicePrincipal(ctx, model.ServicePrincipal{})

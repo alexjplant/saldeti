@@ -379,7 +379,7 @@ func TestServicePrincipalCreateNoAppId(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
-func TestServicePrincipalCreateAppNotFound(t *testing.T) {
+func TestServicePrincipalCreateWithoutApplication(t *testing.T) {
 	st := store.NewMemoryStore()
 	router := NewRouter(st)
 
@@ -400,7 +400,16 @@ func TestServicePrincipalCreateAppNotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	require.NoError(t, json.Unmarshal(body, &result))
+
+	assert.NotEmpty(t, result["id"], "created SP should have an id")
+	assert.Equal(t, "nonexistent", result["appId"])
 }
 
 func TestServicePrincipalUpdate(t *testing.T) {

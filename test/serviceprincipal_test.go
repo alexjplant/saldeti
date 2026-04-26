@@ -133,12 +133,14 @@ func TestServicePrincipal_Validation(t *testing.T) {
 	_, err := tss.SDKClient.ServicePrincipals().Post(ctx, sp, nil)
 	require.Error(t, err, "Expected error creating SP without appId")
 
-	// 2. Try to create SP with non-existent appId
+	// 2. Create SP with non-existent appId — store is permissive, so this succeeds
 	nonExistentAppId := "00000000-0000-0000-0000-000000000000"
 	sp2 := models.NewServicePrincipal()
 	sp2.SetAppId(&nonExistentAppId)
-	_, err = tss.SDKClient.ServicePrincipals().Post(ctx, sp2, nil)
-	require.Error(t, err, "Expected error creating SP with non-existent appId")
+	createdSP2, err := tss.SDKClient.ServicePrincipals().Post(ctx, sp2, nil)
+	require.NoError(t, err, "Expected SP creation to succeed even without matching app")
+	assert.Equal(t, nonExistentAppId, *createdSP2.GetAppId())
+	assert.NotEmpty(t, *createdSP2.GetId(), "Created SP should have an id")
 
 	// 3. Create an application (which auto-creates a SP), then try creating a duplicate SP
 	app := createTestApplicationSDK(t, tss, "Duplicate SP Test App")
