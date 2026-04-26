@@ -607,7 +607,7 @@ func (s *memoryStore) CreateServicePrincipal(ctx context.Context, sp model.Servi
 		return model.ServicePrincipal{}, fmt.Errorf("appId is required")
 	}
 
-	// Find matching application
+	// Find matching application (optional — if found, we enrich the SP from it)
 	var app *model.Application
 	for _, a := range s.applications {
 		if a.AppID == sp.AppID {
@@ -615,9 +615,7 @@ func (s *memoryStore) CreateServicePrincipal(ctx context.Context, sp model.Servi
 			break
 		}
 	}
-	if app == nil {
-		return model.ServicePrincipal{}, ErrApplicationNotFound
-	}
+	// app may be nil — that's OK, we create the SP anyway
 
 	// Check for duplicate
 	for _, existing := range s.servicePrincipals {
@@ -632,15 +630,19 @@ func (s *memoryStore) CreateServicePrincipal(ctx context.Context, sp model.Servi
 	if sp.ODataType == "" {
 		sp.ODataType = "#microsoft.graph.servicePrincipal"
 	}
-	if sp.DisplayName == "" {
-		sp.DisplayName = app.DisplayName
-	}
-	if sp.Description == "" {
-		sp.Description = app.Description
-	}
-	sp.AppRoles = app.AppRoles
-	if app.API != nil {
-		sp.OAuth2PermissionScopes = app.API.OAuth2PermissionScopes
+
+	// If a matching application was found, enrich the SP with app fields
+	if app != nil {
+		if sp.DisplayName == "" {
+			sp.DisplayName = app.DisplayName
+		}
+		if sp.Description == "" {
+			sp.Description = app.Description
+		}
+		sp.AppRoles = app.AppRoles
+		if app.API != nil {
+			sp.OAuth2PermissionScopes = app.API.OAuth2PermissionScopes
+		}
 	}
 	if sp.ServicePrincipalNames == nil {
 		sp.ServicePrincipalNames = []string{sp.AppID}

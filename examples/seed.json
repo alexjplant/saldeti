@@ -205,5 +205,22 @@
         "eve.wilson@saldeti.local"
       ]
     }
+  ],
+  "applications": [
+    {
+      "display_name": "Saldeti Simulator App",
+      "app_id": "sim-client-id",
+      "description": "Default simulator application registration",
+      "sign_in_audience": "AzureADandPersonalMicrosoftAccount",
+      "app_roles": [
+        {
+          "allowed_member_types": ["Application"],
+          "description": "Allows the application to read all applications",
+          "display_name": "Application.Read.All",
+          "is_enabled": true,
+          "value": "Application.Read.All"
+        }
+      ]
+    }
   ]
 }

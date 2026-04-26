@@ -25,17 +25,18 @@ A full roadmap is available in [`docs/roadmap.md`](docs/roadmap.md).
 # Build
 mise run build
 
-# Run (empty store)
+# Run with empty store (admin client credentials are logged at startup)
 ./bin/saldeti -port 9443
 
 # Run with sample seed data (persists changes on shutdown)
 ./bin/saldeti -port 9443 -seed examples/seed.json -dump snapshot.json
 
-# Get a token (requires seed data or manually created client)
-curl -X POST http://localhost:9443/sim-tenant-id/oauth2/v2.0/token \
+# Get a token using the admin client credentials logged at startup
+# (With -seed examples/seed.json, the built-in client is sim-client-id / sim-client-secret)
+curl -X POST http://localhost:9443/<tenant-id>/oauth2/v2.0/token \
   -d "grant_type=client_credentials" \
-  -d "client_id=sim-client-id" \
-  -d "client_secret=sim-client-secret" \
+  -d "client_id=<admin-client-id>" \
+  -d "client_secret=<admin-client-secret>" \
   -d "scope=User.Read.All Group.Read.All"
 
 # List users
@@ -53,25 +54,19 @@ curl -X POST http://localhost:9443/v1.0/users \
 
 The simulator can start in two modes:
 
-**Without `-seed` flag** (default): the server starts with an **empty store** — no users, groups, or clients. This allows you to create exactly the data you need via the API.
+**Without `-seed` flag** (default): the server starts with a **completely empty store** — no users, no groups, no applications, no sample data of any kind. The UI shows empty lists and you create everything yourself via the API or UI.
 
-However, for backward compatibility, the Go default seed (`internal/seed/seed.go`) provides a built-in dataset when no seed file is specified. This includes:
+The only thing automatically created is an **admin OAuth client** (along with its service principal) that the management UI uses to authenticate. Its credentials (client ID, client secret, and tenant ID) are logged at startup. By default these are random UUIDs; you can override them with the `-admin-client-id`, `-admin-client-secret`, and `-admin-tenant-id` flags.
 
-- **Client**: `sim-client-id` / `sim-client-secret`, tenant `sim-tenant-id`
-- **Admin user**: `admin@saldeti.local` with password `Simulator123!`
-- **10 sample users**: Alice Smith, Bob Jones, Charlie Brown, Diana Prince, Eve Wilson, Frank Miller, Grace Lee (disabled), Henry Taylor, Ivan Guest (external), Julia Roberts
-- **5 sample groups**: Engineering Team, Marketing Team, All Staff, Leadership (Private), Project Alpha (Unified/M365)
-- **Pre-configured memberships and manager hierarchy**
-- **Application**: Default "Saldeti Simulator App" with an AppRole
-- **App Role Assignment**: One default assignment
-- **OAuth2 Permission Grant**: One default grant
-
-**With `-seed` flag**: loads data from the specified JSON file. The sample `examples/seed.json` includes:
+**With `-seed file.json`**: all data from the specified JSON file is loaded — clients, users, groups, applications, memberships, managers, owners, app role assignments, and OAuth2 grants. The sample `examples/seed.json` includes:
 
 - **Client**: `sim-client-id` / `sim-client-secret`, tenant `sim-tenant-id`
 - **Admin user**: `admin@saldeti.local` with password `Simulator123!`
 - **10 sample users** with inline manager relationships (via `manager_upn` fields)
 - **5 sample groups** with inline memberships (via `member_upns`) and nested groups (via `member_group_names`)
+- **Application**: "Saldeti Simulator App" with an AppRole
+- **App Role Assignment**: One assignment
+- **OAuth2 Permission Grant**: One grant
 
 ### Seed File Format
 

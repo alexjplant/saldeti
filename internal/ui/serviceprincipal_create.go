@@ -10,16 +10,27 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/gin-gonic/gin"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/saldeti/saldeti/internal/model"
 )
 
 func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == "GET" {
+			// Fetch applications for dropdown
+			appResult, _ := h.client.Applications().Get(c.Request.Context(), nil)
+			var appRows []model.Application
+			if appResult != nil {
+				for _, a := range appResult.GetValue() {
+					appRows = append(appRows, sdkApplicationToModel(a))
+				}
+			}
+
 			h.render(c, "templates/serviceprincipals/form.html", gin.H{
-				"ActiveNav":  "serviceprincipals",
-				"IsEdit":     false,
-				"FormAction": "/ui/servicePrincipals/new",
-				"CancelURL":  "/ui/servicePrincipals",
+				"ActiveNav":    "serviceprincipals",
+				"IsEdit":       false,
+				"FormAction":   "/ui/servicePrincipals/new",
+				"CancelURL":    "/ui/servicePrincipals",
+				"Applications": appRows,
 				"Form": map[string]interface{}{
 					"DisplayName": "",
 					"AppId":       "",
@@ -32,14 +43,24 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 		// POST - handle form submission
 		displayName := c.PostForm("displayName")
 
+		// Fetch applications list for dropdown (used in error re-renders)
+		appResult, _ := h.client.Applications().Get(c.Request.Context(), nil)
+		var appRows []model.Application
+		if appResult != nil {
+			for _, a := range appResult.GetValue() {
+				appRows = append(appRows, sdkApplicationToModel(a))
+			}
+		}
+
 		// Validation
 		if displayName == "" {
 			h.render(c, "templates/serviceprincipals/form.html", gin.H{
-				"ActiveNav":  "serviceprincipals",
-				"IsEdit":     false,
-				"FormAction": "/ui/servicePrincipals/new",
-				"CancelURL":  "/ui/servicePrincipals",
-				"Error":      "Display Name is required",
+				"ActiveNav":    "serviceprincipals",
+				"IsEdit":       false,
+				"FormAction":   "/ui/servicePrincipals/new",
+				"CancelURL":    "/ui/servicePrincipals",
+				"Error":        "Display Name is required",
+				"Applications": appRows,
 				"Form": map[string]interface{}{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),
@@ -49,13 +70,30 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
+		// Validate appId is provided from dropdown
+		appId := c.PostForm("appId")
+		if appId == "" {
+			h.render(c, "templates/serviceprincipals/form.html", gin.H{
+				"ActiveNav":    "serviceprincipals",
+				"IsEdit":       false,
+				"FormAction":   "/ui/servicePrincipals/new",
+				"CancelURL":    "/ui/servicePrincipals",
+				"Error":        "Application is required",
+				"Applications": appRows,
+				"Form": map[string]interface{}{
+					"DisplayName": c.PostForm("displayName"),
+					"AppId":       "",
+					"Notes":       c.PostForm("notes"),
+				},
+			})
+			return
+		}
+
 		// Create service principal via SDK
 		newSP := models.NewServicePrincipal()
 		newSP.SetDisplayName(&displayName)
+		newSP.SetAppId(&appId)
 
-		if appId := c.PostForm("appId"); appId != "" {
-			newSP.SetAppId(&appId)
-		}
 		if notes := c.PostForm("notes"); notes != "" {
 			newSP.SetDescription(&notes)
 		}
@@ -73,9 +111,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 					"displayName": displayName,
 					"@odata.type": "#microsoft.graph.servicePrincipal",
 				}
-				if appId := c.PostForm("appId"); appId != "" {
-					spPayload["appId"] = appId
-				}
+				spPayload["appId"] = appId
 				if notes := c.PostForm("notes"); notes != "" {
 					spPayload["description"] = notes
 				}
@@ -122,11 +158,12 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 		if err != nil {
 			h.render(c, "templates/serviceprincipals/form.html", gin.H{
-				"ActiveNav":  "serviceprincipals",
-				"IsEdit":     false,
-				"FormAction": "/ui/servicePrincipals/new",
-				"CancelURL":  "/ui/servicePrincipals",
-				"Error":      fmt.Sprintf("Failed to create service principal: %v", err),
+				"ActiveNav":    "serviceprincipals",
+				"IsEdit":       false,
+				"FormAction":   "/ui/servicePrincipals/new",
+				"CancelURL":    "/ui/servicePrincipals",
+				"Error":        fmt.Sprintf("Failed to create service principal: %v", err),
+				"Applications": appRows,
 				"Form": map[string]interface{}{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),
@@ -138,11 +175,12 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 		if created == nil {
 			h.render(c, "templates/serviceprincipals/form.html", gin.H{
-				"ActiveNav":  "serviceprincipals",
-				"IsEdit":     false,
-				"FormAction": "/ui/servicePrincipals/new",
-				"CancelURL":  "/ui/servicePrincipals",
-				"Error":      "Service principal was created but response was empty",
+				"ActiveNav":    "serviceprincipals",
+				"IsEdit":       false,
+				"FormAction":   "/ui/servicePrincipals/new",
+				"CancelURL":    "/ui/servicePrincipals",
+				"Error":        "Service principal was created but response was empty",
+				"Applications": appRows,
 				"Form": map[string]interface{}{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),
@@ -164,11 +202,12 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 		if spObjID == "" {
 			h.render(c, "templates/serviceprincipals/form.html", gin.H{
-				"ActiveNav":  "serviceprincipals",
-				"IsEdit":     false,
-				"FormAction": "/ui/servicePrincipals/new",
-				"CancelURL":  "/ui/servicePrincipals",
-				"Error":      "Service principal was created but ID was not returned in response",
+				"ActiveNav":    "serviceprincipals",
+				"IsEdit":       false,
+				"FormAction":   "/ui/servicePrincipals/new",
+				"CancelURL":    "/ui/servicePrincipals",
+				"Error":        "Service principal was created but ID was not returned in response",
+				"Applications": appRows,
 				"Form": map[string]interface{}{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),

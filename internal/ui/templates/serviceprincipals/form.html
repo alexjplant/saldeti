@@ -28,8 +28,13 @@
 
     {{if not .IsEdit}}
     <fieldset>
-        <label for="appId">Application ID (optional — to link to existing app)
-            <input type="text" id="appId" name="appId" value="{{.Form.AppId}}" placeholder="Leave empty to create a new application">
+        <label for="appId">Application *
+            <select id="appId" name="appId" required>
+                <option value="">— Select an application —</option>
+                {{range .Applications}}
+                <option value="{{.AppID}}" {{if eq .AppID $.Form.AppId}}selected{{end}}>{{.DisplayName}} ({{.AppID}})</option>
+                {{end}}
+            </select>
         </label>
     </fieldset>
     {{end}}
