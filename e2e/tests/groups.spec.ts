@@ -74,8 +74,8 @@ test.describe('Groups', () => {
     await expect(page.locator('h2')).toHaveText('Engineering Team');
 
     // Should show members section (Alice, Bob, Eve, Grace are members)
-    await expect(page.locator('article').filter({ hasText: 'Members' })).toBeVisible();
-    await expect(page.locator('article').filter({ hasText: 'Members' }).locator('td', { hasText: 'Alice Smith' })).toBeVisible();
+    await expect(page.locator('#members')).toBeVisible();
+    await expect(page.locator('#members').locator('td', { hasText: 'Alice Smith' })).toBeVisible();
   });
 
   test('edit group', async ({ page }) => {

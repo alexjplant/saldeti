@@ -12,7 +12,7 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/groups\//);
 
     // Verify members
-    const membersArticle = page.locator('article').filter({ hasText: 'Members' });
+    const membersArticle = page.locator('#members');
     await expect(membersArticle.locator('td', { hasText: 'Alice Smith' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Bob Jones' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Eve Wilson' })).toBeVisible();
@@ -24,7 +24,7 @@ test.describe('Seed Data Relationships', () => {
     await page.getByRole('link', { name: 'Marketing Team' }).click();
     await expect(page).toHaveURL(/\/ui\/groups\//);
 
-    const membersArticle = page.locator('article').filter({ hasText: 'Members' });
+    const membersArticle = page.locator('#members');
     await expect(membersArticle.locator('td', { hasText: 'Charlie Brown' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Julia Roberts' })).toBeVisible();
   });
@@ -34,7 +34,7 @@ test.describe('Seed Data Relationships', () => {
     await page.getByRole('link', { name: 'All Staff' }).click();
     await expect(page).toHaveURL(/\/ui\/groups\//);
 
-    const membersArticle = page.locator('article').filter({ hasText: 'Members' });
+    const membersArticle = page.locator('#members');
     // Should contain the nested groups
     await expect(membersArticle.getByText('Engineering Team')).toBeVisible();
     await expect(membersArticle.getByText('Marketing Team')).toBeVisible();
@@ -47,7 +47,7 @@ test.describe('Seed Data Relationships', () => {
     await page.getByRole('link', { name: 'Leadership' }).click();
     await expect(page).toHaveURL(/\/ui\/groups\//);
 
-    const membersArticle = page.locator('article').filter({ hasText: 'Members' });
+    const membersArticle = page.locator('#members');
     await expect(membersArticle.locator('td', { hasText: 'Diana Prince' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Frank Miller' })).toBeVisible();
   });
@@ -57,7 +57,7 @@ test.describe('Seed Data Relationships', () => {
     await page.getByRole('link', { name: 'Project Alpha' }).click();
     await expect(page).toHaveURL(/\/ui\/groups\//);
 
-    const membersArticle = page.locator('article').filter({ hasText: 'Members' });
+    const membersArticle = page.locator('#members');
     await expect(membersArticle.locator('td', { hasText: 'Alice Smith' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Charlie Brown' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Eve Wilson' })).toBeVisible();
@@ -69,7 +69,7 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     const managerArticle = page.locator('article').filter({ hasText: 'Manager' });
-    await expect(managerArticle.getByText('Eve Wilson')).toBeVisible();
+    await expect(managerArticle.locator('a', { hasText: 'Eve Wilson' })).toBeVisible();
   });
 
   test('Bob has Eve as manager', async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     const managerArticle = page.locator('article').filter({ hasText: 'Manager' });
-    await expect(managerArticle.getByText('Eve Wilson')).toBeVisible();
+    await expect(managerArticle.locator('a', { hasText: 'Eve Wilson' })).toBeVisible();
   });
 
   test('Eve has Frank as manager', async ({ page }) => {
@@ -87,7 +87,7 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     const managerArticle = page.locator('article').filter({ hasText: 'Manager' });
-    await expect(managerArticle.getByText('Frank Miller')).toBeVisible();
+    await expect(managerArticle.locator('a', { hasText: 'Frank Miller' })).toBeVisible();
   });
 
   test('Frank has Admin as manager', async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     const managerArticle = page.locator('article').filter({ hasText: 'Manager' });
-    await expect(managerArticle.getByText('Admin User')).toBeVisible();
+    await expect(managerArticle.locator('a', { hasText: 'Admin User' })).toBeVisible();
   });
 
   test('Diana has Admin as manager', async ({ page }) => {
@@ -105,7 +105,7 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     const managerArticle = page.locator('article').filter({ hasText: 'Manager' });
-    await expect(managerArticle.getByText('Admin User')).toBeVisible();
+    await expect(managerArticle.locator('a', { hasText: 'Admin User' })).toBeVisible();
   });
 
   test('Eve has direct reports Alice and Bob', async ({ page }) => {
@@ -146,10 +146,10 @@ test.describe('Seed Data Relationships', () => {
 
     // Click manager link to navigate to Admin
     const managerArticle = page.locator('article').filter({ hasText: 'Manager' });
-    await managerArticle.getByText('Admin User').click();
+    await managerArticle.locator('a', { hasText: 'Admin User' }).click();
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     // Admin should not have a manager (top of chain)
-    await expect(page.locator('article').filter({ hasText: 'Manager' })).not.toBeVisible();
+    await expect(page.locator('#manager').filter({ hasText: 'No manager assigned.' })).toBeVisible();
   });
 });
