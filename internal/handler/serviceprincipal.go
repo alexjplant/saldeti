@@ -936,17 +936,19 @@ func spAddPasswordHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		var req model.PasswordCredential
+		var req struct {
+			PasswordCredential model.PasswordCredential `json:"passwordCredential"`
+		}
 		if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
 
 		// Capture request fields for use inside the callback
-		displayName := req.DisplayName
+		displayName := req.PasswordCredential.DisplayName
 		var providedEndDateTime *time.Time
-		if req.EndDateTime != nil {
-			providedEndDateTime = req.EndDateTime
+		if req.PasswordCredential.EndDateTime != nil {
+			providedEndDateTime = req.PasswordCredential.EndDateTime
 		}
 
 		var resultCred model.PasswordCredential
@@ -1069,23 +1071,25 @@ func spAddKeyHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		var cred model.KeyCredential
-		if err := json.NewDecoder(c.Request.Body).Decode(&cred); err != nil {
+		var req struct {
+			KeyCredential model.KeyCredential `json:"keyCredential"`
+		}
+		if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
 
 		var resultCred model.KeyCredential
 		err := st.UpdateSPCredentials(c.Request.Context(), id, func(sp *model.ServicePrincipal) error {
-			if cred.KeyID == "" {
-				cred.KeyID = uuid.New().String()
+			if req.KeyCredential.KeyID == "" {
+				req.KeyCredential.KeyID = uuid.New().String()
 			}
-			if cred.StartDateTime == nil {
+			if req.KeyCredential.StartDateTime == nil {
 				now := time.Now()
-				cred.StartDateTime = &now
+				req.KeyCredential.StartDateTime = &now
 			}
-			sp.KeyCredentials = append(sp.KeyCredentials, cred)
-			resultCred = cred
+			sp.KeyCredentials = append(sp.KeyCredentials, req.KeyCredential)
+			resultCred = req.KeyCredential
 			return nil
 		})
 		if err != nil {

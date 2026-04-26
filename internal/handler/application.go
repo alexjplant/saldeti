@@ -375,13 +375,15 @@ func addPasswordHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		var cred model.PasswordCredential
-		if err := json.NewDecoder(c.Request.Body).Decode(&cred); err != nil {
+		var req struct {
+			PasswordCredential model.PasswordCredential `json:"passwordCredential"`
+		}
+		if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
 
-		addedCred, err := st.AddApplicationPassword(c.Request.Context(), id, cred)
+		addedCred, err := st.AddApplicationPassword(c.Request.Context(), id, req.PasswordCredential)
 		if err != nil {
 			if errors.Is(err, store.ErrApplicationNotFound) {
 				writeError(c, http.StatusNotFound, "ResourceNotFound", "Application not found")
@@ -455,13 +457,15 @@ func addKeyHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		var cred model.KeyCredential
-		if err := json.NewDecoder(c.Request.Body).Decode(&cred); err != nil {
+		var req struct {
+			KeyCredential model.KeyCredential `json:"keyCredential"`
+		}
+		if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
 
-		addedCred, err := st.AddApplicationKey(c.Request.Context(), id, cred)
+		addedCred, err := st.AddApplicationKey(c.Request.Context(), id, req.KeyCredential)
 		if err != nil {
 			if errors.Is(err, store.ErrApplicationNotFound) {
 				writeError(c, http.StatusNotFound, "ResourceNotFound", "Application not found")
