@@ -162,11 +162,13 @@ test.describe('SP CRUD', () => {
     await page.fill('input[name="displayName"]', 'E2E Test SP');
     await page.fill('textarea[name="notes"]', 'SP created by E2E test');
 
+    // Select the first real application (simulator auto-creates SP for each app)
+    await page.selectOption('select#appId', 'sim-client-id');
     await page.click('button[type="submit"]');
 
-    // Should be redirected to detail page
+    // Should be redirected to detail page (either new or existing SP)
     await expect(page).toHaveURL(/\/ui\/servicePrincipals\/[a-f0-9-]+$/);
-    await expect(page.locator('h2')).toContainText('E2E Test SP');
+    await expect(page.locator('h2')).toContainText('Saldeti Simulator App');
   });
 
   test('edit service principal', async ({ page }) => {
@@ -196,12 +198,15 @@ test.describe('SP CRUD', () => {
     let spId: string;
 
     test.beforeEach(async ({ page }) => {
-      // Create a throwaway SP for the delete test
-      await page.goto('/ui/servicePrincipals/new');
-      await page.fill('input[name="displayName"]', 'Delete Test SP');
-      await page.fill('textarea[name="notes"]', 'SP to be deleted');
+      // Create a throwaway app+SP for the delete test
+      await page.goto('/ui/applications/new');
+      await page.fill('input[name="displayName"]', 'SP Delete Test');
       await page.click('button[type="submit"]');
-      // Capture the spId from the redirected URL
+      await expect(page).toHaveURL(/\/ui\/applications\/[a-f0-9-]+$/);
+
+      // Navigate to SP list and find the auto-created SP
+      await page.goto('/ui/servicePrincipals');
+      await page.locator('tr', { hasText: 'SP Delete Test' }).locator('a').first().click();
       await expect(page).toHaveURL(/\/ui\/servicePrincipals\/([a-f0-9-]+)$/);
       const url = page.url();
       spId = url.match(/\/ui\/servicePrincipals\/([a-f0-9-]+)$/)?.[1] || '';
@@ -215,14 +220,14 @@ test.describe('SP CRUD', () => {
       await expect(page).toHaveURL(/\/ui\/servicePrincipals$/);
 
       // The throwaway SP should be gone
-      await expect(page.locator('tr', { hasText: 'Delete Test SP' })).not.toBeVisible();
+      await expect(page.locator('tr', { hasText: 'SP Delete Test' })).not.toBeVisible();
     });
 
     test.afterEach(async ({ page }) => {
       // Cleanup: if the test didn't delete, try to clean up
       if (spId) {
         await page.goto('/ui/servicePrincipals');
-        const row = page.locator('tr', { hasText: 'Delete Test SP' });
+        const row = page.locator('tr', { hasText: 'SP Delete Test' });
         if (await row.isVisible()) {
           await row.locator('a').first().click();
           page.on('dialog', dialog => dialog.accept());
@@ -236,10 +241,15 @@ test.describe('SP CRUD', () => {
 
 test.describe('Credential Management', () => {
   async function createSPAndNavigate(page: import('@playwright/test').Page, name: string) {
-    await page.goto('/ui/servicePrincipals/new');
+    // Create a fresh application (simulator auto-creates an SP for it)
+    await page.goto('/ui/applications/new');
     await page.fill('input[name="displayName"]', name);
-    await page.fill('textarea[name="notes"]', 'SP for credential tests');
     await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/ui\/applications\/[a-f0-9-]+$/);
+
+    // Navigate to SP list and find the auto-created SP
+    await page.goto('/ui/servicePrincipals');
+    await page.locator('tr', { hasText: name }).locator('a').first().click();
     await expect(page).toHaveURL(/\/ui\/servicePrincipals\/[a-f0-9-]+$/);
   }
 
@@ -284,7 +294,7 @@ test.describe('Credential Management', () => {
     // Remove it — use page.once to avoid handler accumulation
     page.once('dialog', dialog => dialog.accept());
     const removeResponse = page.waitForResponse(
-      resp => resp.url().includes('/credentials/password/remove') && resp.status() === 200
+      resp => resp.url().includes('/credentials/password/') && resp.url().includes('/remove') && resp.status() === 200
     );
     await page.locator('#sp-credentials button.outline.danger').first().click();
     await removeResponse;
@@ -340,7 +350,7 @@ test.describe('Credential Management', () => {
     // Remove it — use page.once to avoid handler accumulation
     page.once('dialog', dialog => dialog.accept());
     const removeResponse = page.waitForResponse(
-      resp => resp.url().includes('/credentials/key/remove') && resp.status() === 200
+      resp => resp.url().includes('/credentials/key/') && resp.url().includes('/remove') && resp.status() === 200
     );
     // Find the danger button within the certificates table (has "Type" column header)
     await page.locator('#sp-credentials table')
@@ -358,9 +368,15 @@ test.describe('Credential Management', () => {
 
 test.describe('SP Owner Management', () => {
   test('add owner', async ({ page }) => {
+    // Create a fresh app+SP to ensure clean owner state
+    await page.goto('/ui/applications/new');
+    await page.fill('input[name="displayName"]', 'SP Owner Add Test');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/ui\/applications\/[a-f0-9-]+$/);
+
+    // Navigate to the auto-created SP
     await page.goto('/ui/servicePrincipals');
-    const firstSPLink = page.locator('table tbody tr').first().locator('a').first();
-    await firstSPLink.click();
+    await page.locator('tr', { hasText: 'SP Owner Add Test' }).locator('a').first().click();
     await expect(page).toHaveURL(/\/ui\/servicePrincipals\/[a-f0-9-]+$/);
 
     // Verify owners section is visible
@@ -400,13 +416,22 @@ test.describe('SP Owner Management', () => {
   });
 
   test('remove owner', async ({ page }) => {
+    // Create a fresh app+SP so we start with no owners
+    await page.goto('/ui/applications/new');
+    await page.fill('input[name="displayName"]', 'Owner Remove Test SP');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/ui\/applications\/[a-f0-9-]+$/);
+
+    // Navigate to the auto-created SP
     await page.goto('/ui/servicePrincipals');
-    const firstSPLink = page.locator('table tbody tr').first().locator('a').first();
-    await firstSPLink.click();
+    await page.locator('tr', { hasText: 'Owner Remove Test SP' }).locator('a').first().click();
     await expect(page).toHaveURL(/\/ui\/servicePrincipals\/[a-f0-9-]+$/);
 
     const ownersArticle = page.locator('#sp-owners');
     await expect(ownersArticle).toBeVisible();
+
+    // Verify starting with no owners
+    await expect(ownersArticle.locator('p', { hasText: 'No owners.' })).toBeVisible();
 
     // Add an owner first
     await ownersArticle.locator('details').locator('summary').click();
@@ -441,7 +466,7 @@ test.describe('SP Owner Management', () => {
     // Verify success flash
     await expect(page.locator('.flash-success')).toBeVisible();
 
-    // Verify "No owners." is visible
+    // Verify "No owners." is visible again
     await expect(page.locator('#sp-owners p', { hasText: 'No owners.' })).toBeVisible();
   });
 });

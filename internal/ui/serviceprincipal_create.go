@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/gin-gonic/gin"
@@ -149,6 +150,24 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 										err = fmt.Errorf("response did not contain an ID")
 									}
 								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// If SP already exists for this appId, look up and redirect to existing SP
+		if err != nil {
+			if strings.Contains(err.Error(), "already exists") {
+				spResult, _ := h.client.ServicePrincipals().Get(c.Request.Context(), nil)
+				if spResult != nil {
+					for _, sp := range spResult.GetValue() {
+						if sp.GetAppId() != nil && *sp.GetAppId() == appId {
+							if id := sp.GetId(); id != nil {
+								SetFlash(c, FlashSuccess, "Service principal already exists")
+								c.Redirect(http.StatusFound, "/ui/servicePrincipals/"+*id)
+								return
 							}
 						}
 					}

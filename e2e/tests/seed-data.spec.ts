@@ -150,6 +150,6 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     // Admin should not have a manager (top of chain)
-    await expect(page.locator('#manager').filter({ hasText: 'No manager assigned.' })).toBeVisible();
+    await expect(page.locator('#user-manager').filter({ hasText: 'No manager assigned.' })).toBeVisible();
   });
 });

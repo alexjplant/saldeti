@@ -173,7 +173,7 @@ test.describe('Applications', () => {
       // Remove it — use page.once to avoid handler accumulation
       page.once('dialog', dialog => dialog.accept());
       const removeResponse = page.waitForResponse(
-        resp => resp.url().includes('/credentials/password/remove') && resp.status() === 200
+        resp => resp.url().includes('/credentials/password/') && resp.url().includes('/remove') && resp.status() === 200
       );
       await page.locator('#credentials button.outline.danger').first().click();
       await removeResponse;
@@ -229,7 +229,7 @@ test.describe('Applications', () => {
       // Remove it — use page.once to avoid handler accumulation
       page.once('dialog', dialog => dialog.accept());
       const removeResponse = page.waitForResponse(
-        resp => resp.url().includes('/credentials/key/remove') && resp.status() === 200
+        resp => resp.url().includes('/credentials/key/') && resp.url().includes('/remove') && resp.status() === 200
       );
       // Find the danger button within the certificates table (has "Type" column header)
       await page.locator('#credentials table')
