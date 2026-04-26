@@ -282,7 +282,7 @@ func usersDeltaHandler(st store.Store) gin.HandlerFunc {
 		// On initial sync (no token), we return deltaLink directly (all users in one response)
 		// On incremental sync (token provided), we also return deltaLink (only changed users)
 		// We don't support pagination for delta queries in this implementation
-		response["@odata.deltaLink"] = "https://graph.microsoft.com/v1.0/users/delta?$deltatoken=" + newDeltaToken
+		response["@odata.deltaLink"] = getBaseURL(c) + "/v1.0/users/delta?$deltatoken=" + newDeltaToken
 
 		writeJSON(c, http.StatusOK, response)
 	}
@@ -307,7 +307,7 @@ func groupsDeltaHandler(st store.Store) gin.HandlerFunc {
 		// On initial sync (no token), we return deltaLink directly (all groups in one response)
 		// On incremental sync (token provided), we also return deltaLink (only changed groups)
 		// We don't support pagination for delta queries in this implementation
-		response["@odata.deltaLink"] = "https://graph.microsoft.com/v1.0/groups/delta?$deltatoken=" + newDeltaToken
+		response["@odata.deltaLink"] = getBaseURL(c) + "/v1.0/groups/delta?$deltatoken=" + newDeltaToken
 
 		writeJSON(c, http.StatusOK, response)
 	}

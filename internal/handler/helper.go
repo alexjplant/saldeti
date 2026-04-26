@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,4 +30,33 @@ func writeError(c *gin.Context, status int, code string, message string) {
 			},
 		},
 	})
+}
+
+func getBaseURL(c *gin.Context) string {
+	host := c.Request.Host
+	if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
+		host = forwarded
+	}
+	scheme := "http"
+	if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	return scheme + "://" + host
+}
+
+func applySelect(itemMap map[string]interface{}, selects []string) map[string]interface{} {
+	if len(selects) == 0 {
+		return itemMap
+	}
+	selectSet := make(map[string]bool, len(selects))
+	for _, s := range selects {
+		selectSet[s] = true
+	}
+	result := make(map[string]interface{}, 0)
+	for k, v := range itemMap {
+		if strings.HasPrefix(k, "@odata.") || selectSet[k] {
+			result[k] = v
+		}
+	}
+	return result
 }

@@ -74,7 +74,9 @@
             <ul style="padding: 0; margin: 0;">
                 <li><a href="/ui" {{if eq .ActiveNav "dashboard"}}aria-current="page"{{else}}class="secondary"{{end}}>Dashboard</a></li>
                 <li><a href="/ui/users" {{if eq .ActiveNav "users"}}aria-current="page"{{else}}class="secondary"{{end}}>Users</a></li>
-                <li style="padding-right: 0; margin-right: 0;"><a href="/ui/groups" {{if eq .ActiveNav "groups"}}aria-current="page"{{else}}class="secondary"{{end}} style="padding-right: 0; margin-right: 0;">Groups</a></li>
+                <li><a href="/ui/groups" {{if eq .ActiveNav "groups"}}aria-current="page"{{else}}class="secondary"{{end}}>Groups</a></li>
+                <li><a href="/ui/applications" {{if eq .ActiveNav "applications"}}aria-current="page"{{else}}class="secondary"{{end}}>App Registrations</a></li>
+                <li style="padding-right: 0; margin-right: 0;"><a href="/ui/servicePrincipals" {{if eq .ActiveNav "serviceprincipals"}}aria-current="page"{{else}}class="secondary"{{end}} style="padding-right: 0; margin-right: 0;">Enterprise Apps</a></li>
             </ul>
         </nav>
     </header>

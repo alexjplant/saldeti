@@ -31,8 +31,20 @@ var (
 	ErrInvalidObjType   = errors.New("invalid object type")
 	ErrDisplayNameRequired = errors.New("displayName is required")
 	ErrManagerNotFound   = errors.New("manager not found")
+	ErrApplicationNotFound      = errors.New("application not found")
+	ErrDuplicateAppID           = errors.New("application with same appId already exists")
+	ErrServicePrincipalNotFound = errors.New("service principal not found")
+	ErrDuplicateSPAppID         = errors.New("service principal with same appId already exists")
+	ErrCredentialNotFound       = errors.New("credential not found")
+	ErrExtensionNotFound        = errors.New("extension property not found")
+	ErrGrantNotFound            = errors.New("oauth2 permission grant not found")
+	ErrAssignmentNotFound       = errors.New("app role assignment not found")
+	ErrAlreadyAppOwner          = errors.New("object is already an owner of the application")
+	ErrNotAppOwner              = errors.New("object is not an owner of the application")
+	ErrAlreadySPOwner           = errors.New("object is already an owner of the service principal")
+	ErrNotSPOwner               = errors.New("object is not an owner of the service principal")
+	ErrAppRoleNotFound          = errors.New("app role not found on resource service principal")
 )
-
 type memoryStore struct {
 	mu                 sync.RWMutex
 	users              map[string]model.User
@@ -44,6 +56,15 @@ type memoryStore struct {
 	managers           map[string]string            // userID → managerID
 	deletedUsers       map[string]time.Time         // ID → deletedAt
 	deletedGroups      map[string]time.Time         // ID → deletedAt
+	applications       map[string]model.Application
+	appOwners          map[string]map[string]string // appObjID → {objectID → objectType}
+	spOwners           map[string]map[string]string // spObjID → {objectID → objectType}
+	appRoleAssignments map[string]model.AppRoleAssignment
+	oauth2PermissionGrants map[string]model.OAuth2PermissionGrant
+	spMemberOf         map[string]map[string]string // spObjID → {groupID → objectType}
+	appExtensions      map[string]map[string]model.ExtensionProperty
+	deletedApplications map[string]time.Time
+	deletedSPs         map[string]time.Time
 }
 
 type clientEntry struct {
@@ -54,18 +75,26 @@ type clientEntry struct {
 
 func NewMemoryStore() Store {
 	return &memoryStore{
-		users:             make(map[string]model.User),
-		clients:           make(map[string]clientEntry),
-		groups:            make(map[string]model.Group),
-		servicePrincipals: make(map[string]model.ServicePrincipal),
-		members:           make(map[string]map[string]string),
-		owners:            make(map[string]map[string]string),
-		managers:          make(map[string]string),
-		deletedUsers:      make(map[string]time.Time),
-		deletedGroups:     make(map[string]time.Time),
+		users:                 make(map[string]model.User),
+		clients:               make(map[string]clientEntry),
+		groups:                make(map[string]model.Group),
+		servicePrincipals:     make(map[string]model.ServicePrincipal),
+		members:               make(map[string]map[string]string),
+		owners:                make(map[string]map[string]string),
+		managers:              make(map[string]string),
+		deletedUsers:          make(map[string]time.Time),
+		deletedGroups:         make(map[string]time.Time),
+		applications:          make(map[string]model.Application),
+		appOwners:             make(map[string]map[string]string),
+		spOwners:              make(map[string]map[string]string),
+		appRoleAssignments:    make(map[string]model.AppRoleAssignment),
+		oauth2PermissionGrants: make(map[string]model.OAuth2PermissionGrant),
+		spMemberOf:            make(map[string]map[string]string),
+		appExtensions:         make(map[string]map[string]model.ExtensionProperty),
+		deletedApplications:   make(map[string]time.Time),
+		deletedSPs:            make(map[string]time.Time),
 	}
 }
-
 func (s *memoryStore) GetUser(ctx context.Context, id string) (*model.User, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -149,13 +178,18 @@ func (s *memoryStore) RegisterClient(ctx context.Context, clientID, clientSecret
 	}
 
 	// Create a service principal for this client
-	spID := "sp-" + clientID
+	spID := uuid.New().String()
+	accountEnabled := true
 	s.servicePrincipals[spID] = model.ServicePrincipal{
-		ID:          spID,
-		AppID:       clientID,
-		DisplayName: "Service Principal for " + clientID,
-		ODataType:   "#microsoft.graph.servicePrincipal",
+		ID:                     spID,
+		AppID:                  clientID,
+		DisplayName:            "Service Principal for " + clientID,
+		ODataType:              "#microsoft.graph.servicePrincipal",
+		AccountEnabled:         &accountEnabled,
+		ServicePrincipalNames:  []string{clientID},
 	}
+	s.spOwners[spID] = make(map[string]string)
+	s.spMemberOf[spID] = make(map[string]string)
 
 	return nil
 }
@@ -328,6 +362,46 @@ func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
 func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, error) {
 	sourceValue := reflect.ValueOf(value)
 	sourceType := sourceValue.Type()
+	// Handle map[string]interface{} → struct conversion via JSON round-trip
+	if mapVal, ok := value.(map[string]interface{}); ok {
+		resolvedTarget := targetType
+		if resolvedTarget.Kind() == reflect.Ptr {
+			resolvedTarget = resolvedTarget.Elem()
+		}
+		if resolvedTarget.Kind() == reflect.Struct {
+			jsonBytes, err := json.Marshal(mapVal)
+			if err != nil {
+				return reflect.Value{}, fmt.Errorf("failed to marshal map: %w", err)
+			}
+			result := reflect.New(resolvedTarget).Interface()
+			if err := json.Unmarshal(jsonBytes, result); err != nil {
+				return reflect.Value{}, fmt.Errorf("cannot convert map to %s: %w", resolvedTarget.Name(), err)
+			}
+			if targetType.Kind() != reflect.Ptr {
+				return reflect.ValueOf(result).Elem(), nil
+			}
+			return reflect.ValueOf(result), nil
+		}
+	}
+
+	// Handle []interface{} → slice conversion via JSON round-trip
+	if sliceVal, ok := value.([]interface{}); ok {
+		resolvedTarget := targetType
+		if resolvedTarget.Kind() == reflect.Ptr {
+			resolvedTarget = resolvedTarget.Elem()
+		}
+		if resolvedTarget.Kind() == reflect.Slice {
+			jsonBytes, err := json.Marshal(sliceVal)
+			if err != nil {
+				return reflect.Value{}, fmt.Errorf("failed to marshal slice: %w", err)
+			}
+			result := reflect.New(resolvedTarget).Interface()
+			if err := json.Unmarshal(jsonBytes, result); err != nil {
+				return reflect.Value{}, fmt.Errorf("cannot convert slice to %s: %w", resolvedTarget.Name(), err)
+			}
+			return reflect.ValueOf(result).Elem(), nil
+		}
+	}
 
 	// If types match, return directly
 	if sourceType.AssignableTo(targetType) {
@@ -1395,8 +1469,8 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 
 // GetUsersDelta returns users changed since the delta token
 func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	// Parse delta token to get timestamp (if provided)
 	var sinceTime time.Time
@@ -1415,7 +1489,7 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 
 	// Get current users modified after the delta token
 	for _, user := range s.users {
-		if deltaToken == "" || user.ModifiedAt.After(sinceTime) || user.ModifiedAt.Equal(sinceTime) {
+		if deltaToken == "" || user.ModifiedAt.After(sinceTime) {
 			// Convert user to map
 			userJSON, err := json.Marshal(user)
 			if err != nil {
@@ -1432,7 +1506,7 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 
 	// Get deleted users modified after the delta token
 	for userID, deletedAt := range s.deletedUsers {
-		if deltaToken == "" || deletedAt.After(sinceTime) || deletedAt.Equal(sinceTime) {
+		if deltaToken == "" || deletedAt.After(sinceTime) {
 			// Create a minimal representation of the deleted user
 			deletedUser := map[string]interface{}{
 				"id": userID,
@@ -1452,8 +1526,8 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 
 // GetGroupsDelta returns groups changed since the delta token
 func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	// Parse delta token to get timestamp (if provided)
 	var sinceTime time.Time
@@ -1472,7 +1546,7 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 
 	// Get current groups modified after the delta token
 	for _, group := range s.groups {
-		if deltaToken == "" || group.ModifiedAt.After(sinceTime) || group.ModifiedAt.Equal(sinceTime) {
+		if deltaToken == "" || group.ModifiedAt.After(sinceTime) {
 			// Convert group to map
 			groupJSON, err := json.Marshal(group)
 			if err != nil {
@@ -1489,7 +1563,7 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 
 	// Get deleted groups modified after the delta token
 	for groupID, deletedAt := range s.deletedGroups {
-		if deltaToken == "" || deletedAt.After(sinceTime) || deletedAt.Equal(sinceTime) {
+		if deltaToken == "" || deletedAt.After(sinceTime) {
 			// Create a minimal representation of the deleted group
 			deletedGroup := map[string]interface{}{
 				"id": groupID,

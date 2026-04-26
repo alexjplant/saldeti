@@ -38,4 +38,25 @@
         </footer>
     </article>
 </div>
+
+<div class="grid" style="margin-top: var(--pico-spacing);">
+    <article>
+        <header>
+            <h3 style="margin-bottom: 0;">{{.TotalApplications}}</h3>
+        </header>
+        App Registrations
+        <footer>
+            <a href="/ui/applications" role="button" class="outline contrast" style="width: 100%;">View App Registrations</a>
+        </footer>
+    </article>
+    <article>
+        <header>
+            <h3 style="margin-bottom: 0;">{{.TotalServicePrincipals}}</h3>
+        </header>
+        Service Principals
+        <footer>
+            <a href="/ui/servicePrincipals" role="button" class="outline contrast" style="width: 100%;">View Enterprise Apps</a>
+        </footer>
+    </article>
+</div>
 {{end}}

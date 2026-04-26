@@ -879,7 +879,10 @@ func applySorting(items []map[string]interface{}, orderBy string) {
 			// Compare this field
 			cmp := compareValuesForOrder(valI, valJ, of.ascending)
 			if cmp != 0 {
-				return cmp < 0
+				if of.ascending {
+					return cmp < 0
+				}
+				return cmp > 0
 			}
 			// Values are equal, continue to next field
 		}

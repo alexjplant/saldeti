@@ -1,0 +1,22 @@
+{{define "group-approles-partial"}}
+<article id="group-approles">
+    <header>App Role Assignments ({{len .GroupAppRoleAssignments}})</header>
+    {{if .GroupAppRoleAssignments}}
+    <figure>
+        <table class="striped">
+            <thead><tr><th>Resource</th><th>App Role ID</th></tr></thead>
+            <tbody>
+                {{range .GroupAppRoleAssignments}}
+                <tr>
+                    <td>{{.ResourceDisplayName}}</td>
+                    <td><small>{{.AppRoleID}}</small></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </figure>
+    {{else}}
+    <p>No app role assignments.</p>
+    {{end}}
+</article>
+{{end}}

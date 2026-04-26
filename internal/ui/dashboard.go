@@ -2,7 +2,9 @@ package ui
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/microsoftgraph/msgraph-sdk-go/applications"
 	"github.com/microsoftgraph/msgraph-sdk-go/groups"
+	"github.com/microsoftgraph/msgraph-sdk-go/serviceprincipals"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
 )
 
@@ -65,14 +67,38 @@ func DashboardHandler(h *UIHandler) gin.HandlerFunc {
 			}
 		}
 
+		// List applications via SDK
+		totalApplications := 0
+		appsResult, err := h.client.Applications().Get(ctx, &applications.ApplicationsRequestBuilderGetRequestConfiguration{
+			QueryParameters: &applications.ApplicationsRequestBuilderGetQueryParameters{
+				Top: ptrInt32(999),
+			},
+		})
+		if err == nil && appsResult != nil {
+			totalApplications = len(appsResult.GetValue())
+		}
+
+		// List service principals via SDK
+		totalSPs := 0
+		spsResult, err := h.client.ServicePrincipals().Get(ctx, &serviceprincipals.ServicePrincipalsRequestBuilderGetRequestConfiguration{
+			QueryParameters: &serviceprincipals.ServicePrincipalsRequestBuilderGetQueryParameters{
+				Top: ptrInt32(999),
+			},
+		})
+		if err == nil && spsResult != nil {
+			totalSPs = len(spsResult.GetValue())
+		}
+
 		h.render(c, "templates/dashboard.html", gin.H{
-			"ActiveNav":      "dashboard",
-			"TotalUsers":     totalUsers,
-			"EnabledUsers":   enabledUsers,
-			"DisabledUsers":  disabledUsers,
-			"TotalGroups":    totalGroups,
-			"SecurityGroups": securityGroups,
-			"UnifiedGroups":  unifiedGroups,
+			"ActiveNav":              "dashboard",
+			"TotalUsers":             totalUsers,
+			"EnabledUsers":           enabledUsers,
+			"DisabledUsers":          disabledUsers,
+			"TotalGroups":            totalGroups,
+			"SecurityGroups":         securityGroups,
+			"UnifiedGroups":          unifiedGroups,
+			"TotalApplications":      totalApplications,
+			"TotalServicePrincipals": totalSPs,
 		})
 	}
 }

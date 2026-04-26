@@ -55,7 +55,7 @@ func TestListUserMemberOf(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test listing user memberOf
@@ -128,7 +128,7 @@ func TestListUserTransitiveMemberOf(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test listing user transitiveMemberOf
@@ -198,7 +198,7 @@ func TestGetManager(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test getting manager
@@ -241,7 +241,7 @@ func TestGetManagerNotSet(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test getting manager when not set
@@ -294,7 +294,7 @@ func TestSetManager(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test setting manager
@@ -363,7 +363,7 @@ func TestRemoveManager(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test removing manager
@@ -427,7 +427,7 @@ func TestDirectReports(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test listing direct reports
@@ -497,7 +497,7 @@ func TestGetByIds(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Directory.Read.All"}, []string{"Application"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Directory.Read.All"}, []string{"Application"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test getByIds with all IDs
@@ -572,7 +572,7 @@ func TestGetByIdsWithTypeFilter(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Directory.Read.All"}, []string{"Application"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Directory.Read.All"}, []string{"Application"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test getByIds with type filter (only users)
@@ -644,7 +644,7 @@ func TestUserCheckMemberGroups(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test checkMemberGroups
@@ -719,7 +719,7 @@ func TestUserGetMemberGroups(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test getMemberGroups
@@ -775,7 +775,7 @@ func TestUsersDelta(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test users delta
@@ -829,7 +829,7 @@ func TestGroupsDelta(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token
-	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test groups delta

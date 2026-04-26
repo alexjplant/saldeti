@@ -900,3 +900,121 @@ func TestHtmxGroupRemoveOwner(t *testing.T) {
 		t.Error("htmx response should contain owners partial")
 	}
 }
+
+func TestHtmxGroupDetailWithTransitiveMembers(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	groups, _, err := st.ListGroups(ctx, model.ListOptions{Top: 100})
+	if err != nil {
+		t.Fatalf("Failed to list groups: %v", err)
+	}
+	var engGroupID string
+	for _, g := range groups {
+		if g.DisplayName == "Engineering Team" {
+			engGroupID = g.ID
+			break
+		}
+	}
+	if engGroupID == "" {
+		t.Fatal("Engineering Team not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/groups/"+engGroupID, nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Transitive Members") {
+		t.Error("Expected 'Transitive Members' section in group detail page")
+	}
+}
+
+func TestHtmxGroupDetailWithAppRoleAssignments(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	groups, _, err := st.ListGroups(ctx, model.ListOptions{Top: 100})
+	if err != nil {
+		t.Fatalf("Failed to list groups: %v", err)
+	}
+	var engGroupID string
+	for _, g := range groups {
+		if g.DisplayName == "Engineering Team" {
+			engGroupID = g.ID
+			break
+		}
+	}
+	if engGroupID == "" {
+		t.Fatal("Engineering Team not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/groups/"+engGroupID, nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "App Role Assignments") {
+		t.Error("Expected 'App Role Assignments' section in group detail page")
+	}
+}
+
+func TestGroupCreateForm(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, _ := setupTestServer(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/groups/new", nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "New Group") && !strings.Contains(body, "displayName") {
+		t.Error("Expected 'New Group' heading or 'displayName' field in page")
+	}
+}
+
+func TestGroupEditForm(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	groups, _, err := st.ListGroups(ctx, model.ListOptions{Top: 100})
+	if err != nil {
+		t.Fatalf("Failed to list groups: %v", err)
+	}
+	var engineeringTeamID string
+	for _, g := range groups {
+		if g.DisplayName == "Engineering Team" {
+			engineeringTeamID = g.ID
+			break
+		}
+	}
+	if engineeringTeamID == "" {
+		t.Fatal("Engineering Team not found in seed data")
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/groups/"+engineeringTeamID+"/edit", nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Engineering Team") {
+		t.Error("Expected 'Engineering Team' in group edit form")
+	}
+}
+ 
+

@@ -92,7 +92,7 @@ func TestMeEndpoint(t *testing.T) {
 	defer server.Close()
 
 	// Mint a token for the user
-	token, err := auth.MintToken("test-tenant", "test-client", "test@example.com", []string{"User.Read"}, []string{"User"}, time.Hour)
+	token, err := auth.MintToken("test-tenant", "test-client", "test@example.com", []string{"User.Read"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Test /me endpoint with valid token
@@ -168,7 +168,7 @@ func TestTokenGrantTypes(t *testing.T) {
 	}{
 		{
 			name:       "authorization_code grant",
-			formData:   "grant_type=authorization_code&client_id=test-client&code=test@example.com&scope=User.Read",
+			formData:   "grant_type=authorization_code&client_id=test-client&client_secret=test-secret&code=test@example.com&scope=User.Read",
 			expectCode: http.StatusOK,
 		},
 		{

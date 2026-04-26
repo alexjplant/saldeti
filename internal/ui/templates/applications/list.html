@@ -1,0 +1,61 @@
+{{define "title"}}App Registrations — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>App Registrations</h2>
+    <p>{{.TotalCount}} total applications</p>
+</hgroup>
+
+<nav style="margin-bottom: var(--pico-spacing);">
+    <ul>
+        <li>
+            <form method="GET" action="/ui/applications" style="margin-bottom: 0;">
+                <fieldset role="group" style="margin-bottom: 0;">
+                    <input type="search" name="search" placeholder="Search applications..." value="{{.Search}}" />
+                    <input type="submit" value="Search" />
+                </fieldset>
+            </form>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <a href="/ui/applications/new" role="button">{{template "icon-plus" .}} New Registration</a>
+        </li>
+    </ul>
+</nav>
+{{if .Search}}<p><small>Filtered by "{{.Search}}" — <a href="/ui/applications">Clear</a></small></p>{{end}}
+
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Display Name</th>
+                <th>Application (Client) ID</th>
+                <th>Sign-in Audience</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .AppRows}}
+            <tr>
+                <td><a href="/ui/applications/{{.Application.ID}}">{{.Application.DisplayName}}</a></td>
+                <td><small>{{.Application.AppID}}</small></td>
+                <td>{{.Application.SignInAudience}}</td>
+                <td>
+                    <div role="group">
+                        <a href="/ui/applications/{{.Application.ID}}" role="button" class="outline secondary" title="View" aria-label="View">{{template "icon-eye" .}}</a>
+                        <a href="/ui/applications/{{.Application.ID}}/edit" role="button" class="outline secondary" title="Edit" aria-label="Edit">{{template "icon-pencil" .}}</a>
+                        <form id="delete-app-{{.Application.ID}}" method="POST" action="/ui/applications/{{.Application.ID}}/delete" onsubmit="return confirm('Delete {{.Application.DisplayName}}?');" style="display: none;"></form>
+                        <button form="delete-app-{{.Application.ID}}" type="submit" title="Delete" aria-label="Delete" class="outline danger">{{template "icon-trash-2" .}}</button>
+                    </div>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="4">No applications found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+
+{{template "pagination" .}}
+{{end}}

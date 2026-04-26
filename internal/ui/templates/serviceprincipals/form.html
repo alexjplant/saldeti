@@ -1,0 +1,62 @@
+{{define "title"}}{{if .IsEdit}}Edit Service Principal{{else}}New Service Principal{{end}} — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>{{if .IsEdit}}Edit Service Principal{{else}}New Service Principal{{end}}</h2>
+</hgroup>
+
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/ui/servicePrincipals">Enterprise Apps</a></li>
+    {{if .IsEdit}}
+    <li><a href="/ui/servicePrincipals/{{.Form.ID}}">{{.Form.DisplayName}}</a></li>
+    <li>Edit</li>
+    {{else}}
+    <li>New</li>
+    {{end}}
+  </ul>
+</nav>
+
+{{if .Error}}<article class="flash-danger"><p style="margin: 0;">{{.Error}}</p></article>{{end}}
+
+<form method="POST" action="{{.FormAction}}">
+    <fieldset>
+        <label for="displayName">Display Name *
+            <input type="text" id="displayName" name="displayName" value="{{.Form.DisplayName}}" required>
+        </label>
+    </fieldset>
+
+    {{if not .IsEdit}}
+    <fieldset>
+        <label for="appId">Application *
+            <select id="appId" name="appId" required>
+                <option value="">— Select an application —</option>
+                {{range .Applications}}
+                <option value="{{.AppID}}" {{if eq .AppID $.Form.AppId}}selected{{end}}>{{.DisplayName}} ({{.AppID}})</option>
+                {{end}}
+            </select>
+        </label>
+    </fieldset>
+    {{end}}
+
+    <fieldset>
+        <label for="notes">Description
+            <textarea id="notes" name="notes" rows="3">{{.Form.Notes}}</textarea>
+        </label>
+    </fieldset>
+
+    {{if .IsEdit}}
+    <fieldset>
+        <label for="accountEnabled">
+            <input type="checkbox" id="accountEnabled" name="accountEnabled" {{if .Form.AccountEnabled}}checked{{end}}>
+            Account Enabled
+        </label>
+    </fieldset>
+    {{end}}
+
+    <div role="group">
+        <button type="submit">{{if .IsEdit}}Update Service Principal{{else}}Create Service Principal{{end}}</button>
+        <a href="{{.CancelURL}}" role="button" class="secondary outline">Cancel</a>
+    </div>
+</form>
+{{end}}

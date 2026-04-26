@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/saldeti/saldeti/internal/model"
 	"github.com/saldeti/saldeti/internal/store"
 )
@@ -115,9 +116,10 @@ func validateConfig(cfg *SeedConfig) error {
 		}
 	}
 
-	// Validate membership indices
 	numUsers := len(cfg.Users)
 	numGroups := len(cfg.Groups)
+
+	// Validate membership indices
 	for i, membership := range cfg.Memberships {
 		if membership.GroupIndex == nil {
 			return fmt.Errorf("membership[%d]: group_index is required", i)
@@ -160,6 +162,48 @@ func validateConfig(cfg *SeedConfig) error {
 		}
 		if ownership.GroupIndex < 0 || ownership.GroupIndex >= numGroups {
 			return fmt.Errorf("ownership[%d]: group_index %d is out of range (0-%d)", i, ownership.GroupIndex, numGroups-1)
+		}
+	}
+
+	// Validate application fields
+	for i, app := range cfg.Applications {
+		if app.DisplayName == "" {
+			return fmt.Errorf("application[%d]: display_name is required", i)
+		}
+	}
+
+	// Validate app role assignment fields
+	for i, assignment := range cfg.AppRoleAssignments {
+		if assignment.PrincipalIndex < 0 || assignment.PrincipalIndex >= numUsers {
+			return fmt.Errorf("app_role_assignment[%d]: principal_index %d is out of range (0-%d)", i, assignment.PrincipalIndex, numUsers-1)
+		}
+		if assignment.ResourceAppID == "" {
+			return fmt.Errorf("app_role_assignment[%d]: resource_app_id is required", i)
+		}
+		if assignment.RoleValue == "" {
+			return fmt.Errorf("app_role_assignment[%d]: role_value is required", i)
+		}
+	}
+
+	// Validate OAuth2 grant fields
+	for i, grant := range cfg.OAuth2Grants {
+		if grant.ClientAppID == "" {
+			return fmt.Errorf("oauth2_grant[%d]: client_app_id is required", i)
+		}
+		if grant.ResourceAppID == "" {
+			return fmt.Errorf("oauth2_grant[%d]: resource_app_id is required", i)
+		}
+		if grant.Scope == "" {
+			return fmt.Errorf("oauth2_grant[%d]: scope is required", i)
+		}
+		if grant.ConsentType == "" {
+			return fmt.Errorf("oauth2_grant[%d]: consent_type is required", i)
+		}
+		if grant.ConsentType != "AllPrincipals" && grant.ConsentType != "Principal" {
+			return fmt.Errorf("oauth2_grant[%d]: consent_type must be 'AllPrincipals' or 'Principal'", i)
+		}
+		if grant.ConsentType == "Principal" && grant.PrincipalUPN == "" {
+			return fmt.Errorf("oauth2_grant[%d]: principal_upn is required when consent_type is 'Principal'", i)
 		}
 	}
 
@@ -416,6 +460,148 @@ func SeedFromConfig(s store.Store, cfg *SeedConfig) error {
 		err := s.AddOwner(ctx, groupID, userID, "user")
 		if err != nil && !errors.Is(err, store.ErrAlreadyOwner) {
 			return fmt.Errorf("failed to add user %d as owner of group %d: %w", ownership.UserIndex, ownership.GroupIndex, err)
+		}
+	}
+
+	// ===== Create applications =====
+	appObjIDs := make([]string, len(cfg.Applications))
+	for i, seedApp := range cfg.Applications {
+		// Convert SeedAppRole to model.AppRole
+		appRoles := make([]model.AppRole, 0, len(seedApp.AppRoles))
+		for _, sr := range seedApp.AppRoles {
+			isEnabled := sr.IsEnabled
+			appRoles = append(appRoles, model.AppRole{
+				ID:                 uuid.New().String(),
+				AllowedMemberTypes: sr.AllowedMemberTypes,
+				Description:        sr.Description,
+				DisplayName:        sr.DisplayName,
+				IsEnabled:          &isEnabled,
+				Value:              sr.Value,
+			})
+		}
+
+		app := model.Application{
+			ODataType:      "#microsoft.graph.application",
+			AppID:          seedApp.AppID,
+			DisplayName:    seedApp.DisplayName,
+			Description:    seedApp.Description,
+			SignInAudience: seedApp.SignInAudience,
+			IdentifierUris: seedApp.IdentifierUris,
+			AppRoles:       appRoles,
+		}
+		if len(app.IdentifierUris) == 0 {
+			app.IdentifierUris = []string{}
+		}
+
+		createdApp, err := s.CreateApplication(ctx, app)
+		if err != nil {
+			if errors.Is(err, store.ErrDuplicateAppID) {
+				// Look up existing application
+				existing, lookupErr := s.GetApplicationByAppID(ctx, app.AppID)
+				if lookupErr != nil {
+					return fmt.Errorf("application %s already exists but lookup failed: %w", seedApp.AppID, lookupErr)
+				}
+				appObjIDs[i] = existing.ID
+				continue
+			}
+			return fmt.Errorf("failed to create application %s: %w", seedApp.DisplayName, err)
+		}
+		appObjIDs[i] = createdApp.ID
+	}
+
+	// Process application owner_upns
+	for i, seedApp := range cfg.Applications {
+		appObjID := appObjIDs[i]
+		for _, upn := range seedApp.OwnerUPNs {
+			userID, ok := upnToID[upn]
+			if !ok {
+				return fmt.Errorf("application[%d]: owner_upn %s does not reference any user", i, upn)
+			}
+			if err := s.AddApplicationOwner(ctx, appObjID, userID, "user"); err != nil && !errors.Is(err, store.ErrAlreadyAppOwner) {
+				return fmt.Errorf("failed to add owner %s to application %s: %w", upn, seedApp.DisplayName, err)
+			}
+		}
+	}
+
+	// Process ServicePrincipals
+	for _, seedSP := range cfg.ServicePrincipals {
+		// Check if SP already exists (auto-created by CreateApplication)
+		_, err := s.GetServicePrincipalByAppID(ctx, seedSP.AppID)
+		if err == nil {
+			// SP already exists, skip
+			continue
+		}
+		if !errors.Is(err, store.ErrServicePrincipalNotFound) {
+			return fmt.Errorf("failed to check SP for appId %s: %w", seedSP.AppID, err)
+		}
+		// Create SP
+		sp := model.ServicePrincipal{
+			AppID: seedSP.AppID,
+		}
+		if _, err := s.CreateServicePrincipal(ctx, sp); err != nil {
+			return fmt.Errorf("failed to create service principal for appId %s: %w", seedSP.AppID, err)
+		}
+	}
+
+	// Process AppRoleAssignments
+	for i, assignment := range cfg.AppRoleAssignments {
+		principalID := userIDs[assignment.PrincipalIndex]
+
+		// Find resource SP by appId
+		resourceSP, err := s.GetServicePrincipalByAppID(ctx, assignment.ResourceAppID)
+		if err != nil {
+			return fmt.Errorf("app_role_assignment[%d]: failed to find SP for resource_app_id %s: %w", i, assignment.ResourceAppID, err)
+		}
+
+		// Find matching app role by value
+		var appRoleID string
+		for _, role := range resourceSP.AppRoles {
+			if role.Value == assignment.RoleValue {
+				appRoleID = role.ID
+				break
+			}
+		}
+		if appRoleID == "" {
+			return fmt.Errorf("app_role_assignment[%d]: role value %s not found on SP %s", i, assignment.RoleValue, assignment.ResourceAppID)
+		}
+
+		if _, err := s.CreateAppRoleAssignment(ctx, resourceSP.ID, principalID, appRoleID); err != nil {
+			return fmt.Errorf("failed to create app role assignment[%d]: %w", i, err)
+		}
+	}
+
+	// Process OAuth2Grants
+	for i, seedGrant := range cfg.OAuth2Grants {
+		// Find client SP by appId
+		clientSP, err := s.GetServicePrincipalByAppID(ctx, seedGrant.ClientAppID)
+		if err != nil {
+			return fmt.Errorf("oauth2_grant[%d]: failed to find client SP for %s: %w", i, seedGrant.ClientAppID, err)
+		}
+
+		// Find resource SP by appId
+		resourceSP, err := s.GetServicePrincipalByAppID(ctx, seedGrant.ResourceAppID)
+		if err != nil {
+			return fmt.Errorf("oauth2_grant[%d]: failed to find resource SP for %s: %w", i, seedGrant.ResourceAppID, err)
+		}
+
+		grant := model.OAuth2PermissionGrant{
+			ODataType:   "#microsoft.graph.oAuth2PermissionGrant",
+			ClientID:    clientSP.ID,
+			ResourceID:  resourceSP.ID,
+			Scope:       seedGrant.Scope,
+			ConsentType: seedGrant.ConsentType,
+		}
+
+		if seedGrant.ConsentType == "Principal" {
+			principalID, ok := upnToID[seedGrant.PrincipalUPN]
+			if !ok {
+				return fmt.Errorf("oauth2_grant[%d]: principal_upn %s does not reference any user", i, seedGrant.PrincipalUPN)
+			}
+			grant.PrincipalID = principalID
+		}
+
+		if _, err := s.CreateOAuth2PermissionGrant(ctx, grant); err != nil {
+			return fmt.Errorf("failed to create oauth2 grant[%d]: %w", i, err)
 		}
 	}
 

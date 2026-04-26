@@ -19,6 +19,23 @@ func Seed(s store.Store) error {
 				TenantID:     "sim-tenant-id",
 			},
 		},
+		Applications: []SeedApplication{
+			{
+				DisplayName:    "Saldeti Simulator App",
+				AppID:          "sim-client-id",
+				Description:    "Default simulator application registration",
+				SignInAudience: "AzureADandPersonalMicrosoftAccount",
+				AppRoles: []SeedAppRole{
+					{
+						AllowedMemberTypes: []string{"Application"},
+						Description:        "Allows the application to read all applications",
+						DisplayName:        "Application.Read.All",
+						IsEnabled:          true,
+						Value:              "Application.Read.All",
+					},
+				},
+			},
+		},
 		Users: []SeedUser{
 			// Admin user (index 0)
 			{
@@ -202,6 +219,21 @@ func Seed(s store.Store) error {
 				Visibility:   "Public",
 				GroupTypes:   []string{"Unified"},
 				MemberUPNs:   []string{"alice.smith@saldeti.local", "charlie.brown@saldeti.local", "eve.wilson@saldeti.local"},
+			},
+		},
+		AppRoleAssignments: []SeedAppRoleAssignment{
+			{
+				PrincipalIndex: 0, // Admin User
+				ResourceAppID:  "sim-client-id",
+				RoleValue:      "Application.Read.All",
+			},
+		},
+		OAuth2Grants: []SeedOAuth2Grant{
+			{
+				ClientAppID:   "sim-client-id",
+				ResourceAppID: "sim-client-id",
+				Scope:         "User.Read",
+				ConsentType:   "AllPrincipals",
 			},
 		},
 	}

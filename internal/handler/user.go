@@ -102,6 +102,34 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 			responseValue = expandedUsers
 		}
 
+		// Apply $select if specified
+		if len(opts.Select) > 0 {
+			if len(opts.Expand) > 0 {
+				// Items are already maps from expand handling
+				maps := responseValue.([]map[string]interface{})
+				for i, m := range maps {
+					maps[i] = applySelect(m, opts.Select)
+				}
+			} else {
+				// Items are structs, serialize to maps first
+				filteredItems := make([]map[string]interface{}, 0, len(users))
+				for i := range users {
+					itemJSON, err := json.Marshal(users[i])
+					if err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					var itemMap map[string]interface{}
+					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					filteredItems = append(filteredItems, applySelect(itemMap, opts.Select))
+				}
+				responseValue = filteredItems
+			}
+		}
+
 		// Build response
 		response := model.ListResponse{
 			Context: "https://graph.microsoft.com/v1.0/$metadata#users",
@@ -120,18 +148,8 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -219,6 +237,12 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 					}
 				}
 			}
+		}
+
+		// Apply $select if specified
+		opts := parseListOptions(c.Request.URL.Query())
+		if len(opts.Select) > 0 {
+			response = applySelect(response, opts.Select)
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -429,16 +453,111 @@ func parseListOptions(query url.Values) model.ListOptions {
 // buildNextLinkQuery builds query string for nextLink
 func buildNextLinkQuery(originalQuery url.Values, nextSkip int) string {
 	q := url.Values{}
-	
+
 	// Copy all original parameters
 	for key, values := range originalQuery {
 		for _, value := range values {
 			q.Add(key, value)
 		}
 	}
-	
+
 	// Update $skip parameter
 	q.Set("$skip", strconv.Itoa(nextSkip))
-	
+
 	return q.Encode()
 }
+
+// getUserPhotoHandler handles GET /v1.0/users/{id}/photo
+func getUserPhotoHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		writeJSON(c, http.StatusOK, gin.H{
+			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('" + id + "')/photo",
+			"id":     "1X1",
+			"height": 1,
+			"width":  1,
+		})
+	}
+}
+
+// getUserPhotoValueHandler handles GET /v1.0/users/{id}/photo/$value
+func getUserPhotoValueHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	}
+}
+
+// updateUserPhotoValueHandler handles PATCH /v1.0/users/{id}/photo/$value
+func updateUserPhotoValueHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	}
+}
+
+// changePasswordHandler handles POST /v1.0/users/{id}/changePassword
+func changePasswordHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Status(http.StatusNoContent)
+	}
+}
+
+// reprocessLicenseHandler handles POST /v1.0/users/{id}/reprocessLicenseAssignment
+func reprocessLicenseHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		if id == "" {
+			writeError(c, http.StatusBadRequest, "InvalidRequest", "User ID is required")
+			return
+		}
+
+		var user *model.User
+		var err error
+
+		if strings.Contains(id, "@") {
+			user, err = st.GetUserByUPN(c.Request.Context(), id)
+		} else {
+			user, err = st.GetUser(c.Request.Context(), id)
+		}
+
+		if err != nil {
+			if errors.Is(err, store.ErrUserNotFound) {
+				writeError(c, http.StatusNotFound, "ResourceNotFound", "User not found")
+			} else {
+				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to get user")
+			}
+			return
+		}
+
+		response := map[string]interface{}{
+			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
+		}
+
+		userJSON, err := json.Marshal(user)
+		if err != nil {
+			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+			return
+		}
+		var userMap map[string]interface{}
+		if err := json.Unmarshal(userJSON, &userMap); err != nil {
+			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+			return
+		}
+
+		for k, v := range userMap {
+			response[k] = v
+		}
+
+		writeJSON(c, http.StatusOK, response)
+	}
+}
+
+// listLicenseDetailsHandler handles GET /v1.0/users/{id}/licenseDetails
+func listLicenseDetailsHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		writeJSON(c, http.StatusOK, gin.H{
+			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('" + c.Param("id") + "')/licenseDetails",
+			"value":          []interface{}{},
+		})
+	}
+}
+

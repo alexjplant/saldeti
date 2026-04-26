@@ -1,0 +1,59 @@
+{{define "title"}}Application Detail — Saldeti{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>{{.App.DisplayName}}</h2>
+    <p>{{.App.AppID}}</p>
+</hgroup>
+
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/ui/applications">App Registrations</a></li>
+    <li>{{.App.DisplayName}}</li>
+  </ul>
+</nav>
+
+<div role="group" style="margin-bottom: var(--pico-spacing);">
+    <a href="/ui/applications/{{.App.ID}}/edit" role="button" class="secondary outline">{{template "icon-pencil" .}} Edit</a>
+    <form id="delete-app" method="POST" action="/ui/applications/{{.App.ID}}/delete" onsubmit="return confirm('Delete {{.App.DisplayName}}?');" style="display: none;"></form>
+    <button form="delete-app" type="submit" class="outline danger">{{template "icon-trash-2" .}} Delete</button>
+</div>
+
+<div class="grid">
+    <div>
+        <article>
+            <header>Application Info</header>
+            <dl>
+                <dt>Object ID</dt><dd>{{.App.ID}}</dd>
+                <dt>Application (Client) ID</dt><dd>{{.App.AppID}}</dd>
+                <dt>Description</dt><dd>{{if .App.Description}}{{.App.Description}}{{else}}—{{end}}</dd>
+                <dt>Sign-in Audience</dt><dd>{{.App.SignInAudience}}</dd>
+                <dt>Publisher Domain</dt><dd>{{if .App.PublisherDomain}}{{.App.PublisherDomain}}{{else}}—{{end}}</dd>
+                <dt>Identifier URIs</dt>
+                <dd>
+                    {{if .App.IdentifierUris}}
+                    <ul style="margin:0; padding-left: 1rem;">
+                        {{range .App.IdentifierUris}}<li><small>{{.}}</small></li>{{end}}
+                    </ul>
+                    {{else}}None{{end}}
+                </dd>
+                <dt>Tags</dt>
+                <dd>
+                    {{if .App.Tags}}
+                    {{range .App.Tags}}<mark>{{.}}</mark> {{end}}
+                    {{else}}None{{end}}
+                </dd>
+                <dt>Created</dt><dd>{{if .App.CreatedDateTime}}{{formatDate .App.CreatedDateTime}}{{else}}—{{end}}</dd>
+            </dl>
+        </article>
+
+        {{template "approles-partial" .}}
+        {{template "extensions-partial" .}}
+    </div>
+
+    <div>
+        {{template "credentials-partial" .}}
+        {{template "app-owners-partial" .}}
+    </div>
+</div>
+{{end}}

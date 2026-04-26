@@ -1,0 +1,37 @@
+{{define "user-manager-partial"}}
+<article id="user-manager">
+    <header>Manager</header>
+    {{if .Manager}}
+    <p>
+        <a href="/ui/users/{{.Manager.ID}}">{{.Manager.DisplayName}}</a>
+        <form id="remove-manager" method="POST" action="/ui/users/{{.User.ID}}/manager/remove"
+              hx-post="/ui/users/{{.User.ID}}/manager/remove"
+              hx-target="#user-manager" hx-swap="outerHTML"
+              hx-confirm="Remove manager?" style="display: none;"></form>
+        <button form="remove-manager" type="submit" class="outline secondary" title="Remove manager" aria-label="Remove manager" style="margin-left: var(--pico-spacing);">{{template "icon-x" .}}</button>
+    </p>
+    {{else}}
+    <p><small>No manager assigned.</small></p>
+    {{end}}
+
+    {{if .AllUsers}}
+    <details style="margin-bottom: 0;">
+        <summary role="button" class="secondary outline">Set Manager</summary>
+        <form method="POST" action="/ui/users/{{.User.ID}}/manager/set"
+              hx-post="/ui/users/{{.User.ID}}/manager/set"
+              hx-target="#user-manager" hx-swap="outerHTML" style="margin-top: var(--pico-spacing);">
+            <fieldset role="group">
+                <select name="managerId" required style="flex: 1;">
+                    <option value="" disabled selected>Select a manager...</option>
+                    {{range .AllUsers}}
+                    <option value="{{.ID}}">{{.DisplayName}} ({{.UserPrincipalName}})</option>
+                    {{end}}
+                </select>
+                <input type="submit" value="Set" />
+            </fieldset>
+        </form>
+    </details>
+    {{end}}
+</article>
+{{if .IsPartial}}{{template "flash-oob" .}}{{end}}
+{{end}}
