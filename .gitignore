@@ -6,3 +6,5 @@ e2e/playwright-report/
 .env
 
 .opencode
+
+.playwright-mcp

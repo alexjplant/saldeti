@@ -15,7 +15,9 @@
 
 <div role="group" style="margin-bottom: var(--pico-spacing);">
     <a href="/ui/users/{{.User.ID}}/edit" role="button" class="secondary outline">{{template "icon-pencil" .}} Edit</a>
-    <form id="delete-user" method="POST" action="/ui/users/{{.User.ID}}/delete" onsubmit="return confirm('Delete {{.User.DisplayName}}?');" style="display: none;"></form>
+    <form id="delete-user" method="POST" action="/ui/users/{{.User.ID}}/delete" data-confirm="Delete {{.User.DisplayName}}?" style="display: none;">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    </form>
     <button form="delete-user" type="submit" class="outline danger">{{template "icon-trash-2" .}} Delete</button>
 </div>
 
@@ -32,12 +34,7 @@
             </dl>
         </article>
 
-        {{if .Manager}}
-        <article>
-            <header>Manager</header>
-            <p><a href="/ui/users/{{.Manager.ID}}">{{.Manager.DisplayName}}</a></p>
-        </article>
-        {{end}}
+        {{template "user-manager-partial" .}}
 
         {{if .DirectReports}}
         <article>
@@ -60,8 +57,10 @@
             </ul>
         </article>
         {{end}}
+
+        {{template "user-approles-partial" .}}
     </div>
-    
+
     <div>
         <article>
             <header>Work</header>
@@ -74,7 +73,7 @@
                 <dt>User Type</dt><dd>{{.User.UserType}}</dd>
             </dl>
         </article>
-        
+
         {{template "licenses-partial" .}}
     </div>
 </div>

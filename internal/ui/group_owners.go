@@ -1,10 +1,9 @@
 package ui
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/rs/zerolog/log"
 )
 
 func GroupAddOwnerHandler(h *UIHandler) gin.HandlerFunc {
@@ -24,7 +23,8 @@ func GroupAddOwnerHandler(h *UIHandler) gin.HandlerFunc {
 
 		err := h.client.Groups().ByGroupId(id).Owners().Ref().Post(c.Request.Context(), refBody, nil)
 		if err != nil {
-			h.handleOwnersResponse(c, id, FlashDanger, fmt.Sprintf("Failed to add owner: %v", err))
+			log.Error().Err(err).Msg("Failed to add group owner")
+			h.handleOwnersResponse(c, id, FlashDanger, "Failed to add owner. Please try again.")
 			return
 		}
 
@@ -38,7 +38,8 @@ func GroupRemoveOwnerHandler(h *UIHandler) gin.HandlerFunc {
 		ownerID := c.Param("ownerId")
 
 		if err := h.client.Groups().ByGroupId(id).Owners().ByDirectoryObjectId(ownerID).Ref().Delete(c.Request.Context(), nil); err != nil {
-			h.handleOwnersResponse(c, id, FlashDanger, "Failed to remove owner")
+			log.Error().Err(err).Msg("Failed to remove group owner")
+			h.handleOwnersResponse(c, id, FlashDanger, "Failed to remove owner. Please try again.")
 		} else {
 			h.handleOwnersResponse(c, id, FlashSuccess, "Owner removed successfully")
 		}

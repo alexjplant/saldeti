@@ -22,7 +22,7 @@ func TestMintToken(t *testing.T) {
 	roles := []string{"Application"}
 	lifetime := time.Hour
 
-	token, err := MintToken(tenantID, clientID, subject, scopes, roles, lifetime)
+	token, err := MintToken(tenantID, clientID, subject, scopes, roles, lifetime, "Test User", "test@example.com")
 	require.NoError(t, err)
 	assert.NotEmpty(t, token)
 
@@ -43,7 +43,7 @@ func TestValidateToken_Invalid(t *testing.T) {
 	assert.Error(t, err)
 
 	// Test with expired token
-	token, err := MintToken("tenant", "client", "subject", []string{"scope"}, []string{"role"}, -time.Hour)
+	token, err := MintToken("tenant", "client", "subject", []string{"scope"}, []string{"role"}, -time.Hour, "", "")
 	require.NoError(t, err)
 	
 	_, err = ValidateToken(token)
@@ -51,7 +51,7 @@ func TestValidateToken_Invalid(t *testing.T) {
 }
 
 func TestValidateToken_Tampered(t *testing.T) {
-	token, err := MintToken("tenant", "client", "subject", []string{"scope"}, []string{"role"}, time.Hour)
+	token, err := MintToken("tenant", "client", "subject", []string{"scope"}, []string{"role"}, time.Hour, "", "")
 	require.NoError(t, err)
 
 	// Tamper with the token

@@ -26,7 +26,7 @@ test.describe('Navigation', () => {
     await page.locator('tr', { hasText: 'Engineering Team' }).locator('a').first().click();
 
     // Should show members
-    const membersArticle = page.locator('article').filter({ hasText: 'Members' });
+    const membersArticle = page.locator('#members');
     await expect(membersArticle).toBeVisible();
 
     // Click a member name

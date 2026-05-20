@@ -11,6 +11,8 @@ import (
 	"github.com/saldeti/saldeti/internal/model"
 )
 
+var comparisonRegex = regexp.MustCompile(`(?i)^(.+?)\s+(eq|ne|gt|ge|lt|le)\s+(.+)$`)
+
 // ApplyOData applies OData query options to a slice of items
 func ApplyOData[T any](items []T, opts model.ListOptions) ([]T, int, error) {
 	// Convert items to maps for filtering
@@ -142,13 +144,22 @@ func mapToStruct[T any](m map[string]interface{}) (T, error) {
 				if val == nil {
 					fieldValue.Set(reflect.Zero(fieldValue.Type()))
 				} else {
-					ptr := reflect.New(fieldValue.Type().Elem())
-					ptr.Elem().Set(reflect.ValueOf(val))
-					fieldValue.Set(ptr)
+					elemType := fieldValue.Type().Elem()
+					converted, ok := coerceValue(val, elemType)
+					if ok {
+						ptr := reflect.New(elemType)
+						ptr.Elem().Set(converted)
+						fieldValue.Set(ptr)
+					}
+					// If not convertible, skip silently (don't panic)
 				}
 			} else {
 				if val != nil {
-					fieldValue.Set(reflect.ValueOf(val))
+					converted, ok := coerceValue(val, fieldValue.Type())
+					if ok {
+						fieldValue.Set(converted)
+					}
+					// If not convertible, skip silently (don't panic)
 				}
 			}
 		}
@@ -256,22 +267,18 @@ func parseOr(expr string) *filterNode {
 	for i := 0; i < len(expr); i++ {
 		ch := expr[i]
 		if ch == '(' {
-			// Skip to matching closing paren
+			// Skip to matching closing paren using depth tracking
 			depth := 1
-			for j := i + 1; j < len(expr) && depth > 0; j++ {
+			j := i + 1
+			for ; j < len(expr) && depth > 0; j++ {
 				if expr[j] == '(' {
 					depth++
 				} else if expr[j] == ')' {
 					depth--
 				}
 			}
-			// Advance i past the closing paren
-			for j := i + 1; j < len(expr); j++ {
-				if expr[j] == ')' {
-					i = j
-					break
-				}
-			}
+			// After loop, j is one past the matching ')'
+			i = j - 1
 		} else if ch == '\'' {
 			// Skip to matching close quote
 			for j := i + 1; j < len(expr); j++ {
@@ -311,21 +318,18 @@ func parseAnd(expr string) *filterNode {
 	for i := 0; i < len(expr); i++ {
 		ch := expr[i]
 		if ch == '(' {
-			// Skip to matching closing paren
+			// Skip to matching closing paren using depth tracking
 			depth := 1
-			for j := i + 1; j < len(expr) && depth > 0; j++ {
+			j := i + 1
+			for ; j < len(expr) && depth > 0; j++ {
 				if expr[j] == '(' {
 					depth++
 				} else if expr[j] == ')' {
 					depth--
 				}
 			}
-			for j := i + 1; j < len(expr); j++ {
-				if expr[j] == ')' {
-					i = j
-					break
-				}
-			}
+			// After loop, j is one past the matching ')'
+			i = j - 1
 		} else if ch == '\'' {
 			// Skip to matching close quote
 			for j := i + 1; j < len(expr); j++ {
@@ -396,10 +400,7 @@ func parsePrimary(expr string) *filterNode {
 
 // parseComparisonExpression parses comparison operators (eq, ne, gt, ge, lt, le)
 func parseComparisonExpression(expr string) *filterNode {
-	// Regex for comparison operators (case-insensitive)
-	pattern := `^(.+?)\s+(eq|ne|gt|ge|lt|le)\s+(.+)$`
-	re := regexp.MustCompile("(?i)" + pattern)
-	matches := re.FindStringSubmatch(expr)
+	matches := comparisonRegex.FindStringSubmatch(expr)
 
 	if matches == nil {
 		return nil
@@ -856,6 +857,29 @@ func toFloat64(v interface{}) (float64, bool) {
 	}
 }
 
+// coerceValue attempts to convert val to the targetType using reflection.
+// Returns the converted reflect.Value and true if conversion is possible,
+// or an invalid reflect.Value and false if conversion is not possible.
+// This prevents panics when map values (e.g. float64 from JSON) don't
+// exactly match the struct field type (e.g. int).
+func coerceValue(val interface{}, targetType reflect.Type) (reflect.Value, bool) {
+	valType := reflect.TypeOf(val)
+
+	// Direct type match — no conversion needed
+	if valType == targetType {
+		return reflect.ValueOf(val), true
+	}
+
+	// Try standard Go convertibility (handles float64→int, float64→int32,
+	// float64→int64, int→float64, int32→int, etc.)
+	if valType.ConvertibleTo(targetType) {
+		return reflect.ValueOf(val).Convert(targetType), true
+	}
+
+	// Not convertible — skip silently
+	return reflect.Value{}, false
+}
+
 // applySorting sorts items by the specified property or properties
 func applySorting(items []map[string]interface{}, orderBy string) {
 	if orderBy == "" || len(items) == 0 {
@@ -879,7 +903,10 @@ func applySorting(items []map[string]interface{}, orderBy string) {
 			// Compare this field
 			cmp := compareValuesForOrder(valI, valJ, of.ascending)
 			if cmp != 0 {
-				return cmp < 0
+				if of.ascending {
+					return cmp < 0
+				}
+				return cmp > 0
 			}
 			// Values are equal, continue to next field
 		}
@@ -1154,6 +1181,10 @@ func selectFields(m map[string]interface{}, fields []string) map[string]interfac
 		if val, ok := m[field]; ok {
 			result[field] = val
 		}
+	}
+	// Always include 'id' per MS Graph API behavior
+	if val, ok := m["id"]; ok {
+		result["id"] = val
 	}
 	return result
 }

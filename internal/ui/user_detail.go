@@ -38,6 +38,12 @@ func UserDetailHandler(h *UIHandler) gin.HandlerFunc {
 			groupMemberships = []model.DirectoryObject{} // Empty slice on error
 		}
 
+		// App Role Assignments
+		appRoleAssignments, err := h.fetchAppRoleAssignments(ctx, h.baseURL+"/v1.0/users/"+id+"/appRoleAssignments")
+		if err != nil {
+			appRoleAssignments = []model.AppRoleAssignment{}
+		}
+
 		// Subscribed SKUs (for license dropdown)
 		subscribedSkus, err := h.fetchSubscribedSkus(ctx)
 		if err != nil {
@@ -56,14 +62,19 @@ func UserDetailHandler(h *UIHandler) gin.HandlerFunc {
 			}
 		}
 
+		// All users for manager dropdown
+		allUsers := h.fetchAllUsers(ctx)
+
 		h.render(c, "templates/users/detail.html", gin.H{
-			"ActiveNav":        "users",
-			"User":             user,
-			"Manager":          manager,
-			"DirectReports":    directReports,
-			"GroupMemberships": groupMemberships,
-			"AssignedLicenses": user.AssignedLicenses,
-			"AvailableSkus":    availableSkus,
+			"ActiveNav":          "users",
+			"User":               user,
+			"Manager":            manager,
+			"DirectReports":      directReports,
+			"GroupMemberships":   groupMemberships,
+			"AppRoleAssignments": appRoleAssignments,
+			"AssignedLicenses":   user.AssignedLicenses,
+			"AvailableSkus":      availableSkus,
+			"AllUsers":           allUsers,
 		})
 	}
 }

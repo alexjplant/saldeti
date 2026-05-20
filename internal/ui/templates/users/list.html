@@ -49,7 +49,9 @@
                     <div role="group">
                         <a href="/ui/users/{{.ID}}" role="button" class="outline secondary" title="View" aria-label="View">{{template "icon-eye" .}}</a>
                         <a href="/ui/users/{{.ID}}/edit" role="button" class="outline secondary" title="Edit" aria-label="Edit">{{template "icon-pencil" .}}</a>
-                        <form id="delete-user-{{.ID}}" method="POST" action="/ui/users/{{.ID}}/delete" onsubmit="return confirm('Delete {{.DisplayName}}?');" style="display: none;"></form>
+                        <form id="delete-user-{{.ID}}" method="POST" action="/ui/users/{{.ID}}/delete" data-confirm="Delete {{.DisplayName}}?" style="display: none;">
+                            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                        </form>
                         <button form="delete-user-{{.ID}}" type="submit" title="Delete" aria-label="Delete" class="outline danger">{{template "icon-trash-2" .}}</button>
                     </div>
                 </td>

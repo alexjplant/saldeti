@@ -36,14 +36,8 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 		groups, totalCount, err := st.ListGroups(c.Request.Context(), opts)
 		if err != nil {
 			// Check if error is a filter parsing error
-			errStr := err.Error()
-			if strings.Contains(errStr, "unable to parse filter expression") ||
-			   strings.Contains(errStr, "cannot compare values") ||
-			   strings.Contains(errStr, "operator not supported") ||
-			   strings.Contains(errStr, "function value must be string") ||
-			   strings.Contains(errStr, "unknown function") ||
-			   strings.Contains(errStr, "invalid filter node") {
-				writeError(c, http.StatusBadRequest, "InvalidRequest", errStr)
+			if isFilterError(err) {
+				writeError(c, http.StatusBadRequest, "InvalidRequest", err.Error())
 			} else {
 				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to list groups")
 			}
@@ -63,9 +57,13 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 				groupMap := make(map[string]interface{})
 				groupJSON, err := json.Marshal(g)
 				if err != nil {
-					continue
+					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process group expansion")
+					return
 				}
-				json.Unmarshal(groupJSON, &groupMap)
+				if err := json.Unmarshal(groupJSON, &groupMap); err != nil {
+					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process group expansion")
+					return
+				}
 
 				for _, prop := range opts.Expand {
 					prop = strings.TrimSpace(prop)
@@ -101,6 +99,34 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 			responseValue = expandedGroups
 		}
 
+		// Apply $select if specified
+		if len(opts.Select) > 0 {
+			if len(opts.Expand) > 0 {
+				// Items are already maps from expand handling
+				maps := responseValue.([]map[string]interface{})
+				for i, m := range maps {
+					maps[i] = applySelect(m, opts.Select)
+				}
+			} else {
+				// Items are structs, serialize to maps first
+				filteredItems := make([]map[string]interface{}, 0, len(groups))
+				for i := range groups {
+					itemJSON, err := json.Marshal(groups[i])
+					if err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					var itemMap map[string]interface{}
+					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					filteredItems = append(filteredItems, applySelect(itemMap, opts.Select))
+				}
+				responseValue = filteredItems
+			}
+		}
+
 		// Build response
 		response := model.ListResponse{
 			Context: "https://graph.microsoft.com/v1.0/$metadata#groups",
@@ -119,18 +145,8 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -213,6 +229,12 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 			}
 		}
 
+		// Apply $select if specified
+		opts := parseListOptions(c.Request.URL.Query())
+		if len(opts.Select) > 0 {
+			response = applySelect(response, opts.Select)
+		}
+
 		writeJSON(c, http.StatusOK, response)
 	}
 }
@@ -222,7 +244,7 @@ func createGroupHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// First, read the raw request body to handle members@odata.bind and owners@odata.bind
 		var requestBody map[string]interface{}
-		bodyBytes, err := io.ReadAll(c.Request.Body)
+		bodyBytes, err := io.ReadAll(io.LimitReader(c.Request.Body, maxBodyBytes))
 		if err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Failed to read request body")
 			return
@@ -332,7 +354,7 @@ func updateGroupHandler(st store.Store) gin.HandlerFunc {
 
 		// Decode patch as map
 		var patch map[string]interface{}
-		if err := json.NewDecoder(c.Request.Body).Decode(&patch); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -441,18 +463,8 @@ func listMembersHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -469,7 +481,7 @@ func addMemberHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		var refBody map[string]string
-		if err := json.NewDecoder(c.Request.Body).Decode(&refBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&refBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -590,18 +602,8 @@ func listTransitiveMembersHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -653,18 +655,8 @@ func listOwnersHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -681,7 +673,7 @@ func addOwnerHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		var refBody map[string]string
-		if err := json.NewDecoder(c.Request.Body).Decode(&refBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&refBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -801,18 +793,8 @@ func listGroupMemberOfHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -864,18 +846,8 @@ func listGroupTransitiveMemberOfHandler(st store.Store) gin.HandlerFunc {
 				Path:     c.Request.URL.Path,
 				RawQuery: buildNextLinkQuery(c.Request.URL.Query(), nextSkip),
 			}
-			
-			// Use request host and scheme
-			host := c.Request.Host
-			if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
-				host = forwarded
-			}
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			
-			response.NextLink = scheme + "://" + host + nextURL.String()
+
+			response.NextLink = getBaseURL(c) + nextURL.String()
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -894,7 +866,7 @@ func checkMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 		var requestBody struct {
 			GroupIDs []string `json:"groupIds"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&requestBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&requestBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -935,7 +907,7 @@ func getMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 		var requestBody struct {
 			SecurityEnabledOnly bool `json:"securityEnabledOnly"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&requestBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&requestBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -971,7 +943,7 @@ func listMembersByTypeHandler(st store.Store, objectType string) gin.HandlerFunc
 		// Parse OData query parameters
 		opts := parseListOptions(c.Request.URL.Query())
 
-		members, totalCount, err := st.ListMembers(c.Request.Context(), id, opts)
+		members, _, err := st.ListMembers(c.Request.Context(), id, opts)
 		if err != nil {
 			if errors.Is(err, store.ErrGroupNotFound) {
 				writeError(c, http.StatusNotFound, "ResourceNotFound", "Group not found")
@@ -996,9 +968,10 @@ func listMembersByTypeHandler(st store.Store, objectType string) gin.HandlerFunc
 			Value:   filteredMembers,
 		}
 
-		// Add count if requested
+		// Add count if requested (use filtered count, not total)
 		if opts.Count {
-			response.Count = &totalCount
+			filteredCount := len(filteredMembers)
+			response.Count = &filteredCount
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -1017,7 +990,7 @@ func listOwnersByTypeHandler(st store.Store, objectType string) gin.HandlerFunc 
 		// Parse OData query parameters
 		opts := parseListOptions(c.Request.URL.Query())
 
-		owners, totalCount, err := st.ListOwners(c.Request.Context(), id, opts)
+		owners, _, err := st.ListOwners(c.Request.Context(), id, opts)
 		if err != nil {
 			if errors.Is(err, store.ErrGroupNotFound) {
 				writeError(c, http.StatusNotFound, "ResourceNotFound", "Group not found")
@@ -1042,11 +1015,49 @@ func listOwnersByTypeHandler(st store.Store, objectType string) gin.HandlerFunc 
 			Value:   filteredOwners,
 		}
 
-		// Add count if requested
+		// Add count if requested (use filtered count, not total)
 		if opts.Count {
-			response.Count = &totalCount
+			filteredCount := len(filteredOwners)
+			response.Count = &filteredCount
 		}
 
 		writeJSON(c, http.StatusOK, response)
 	}
 }
+
+// getMemberObjectsHandler handles POST /v1.0/groups/{id}/getMemberObjects
+func getMemberObjectsHandler(st store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		if id == "" {
+			writeError(c, http.StatusBadRequest, "InvalidRequest", "Group ID is required")
+			return
+		}
+
+		var requestBody struct {
+			SecurityEnabledOnly bool `json:"securityEnabledOnly"`
+		}
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&requestBody); err != nil {
+			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
+			return
+		}
+
+		memberObjects, err := st.GetMemberGroups(c.Request.Context(), id, requestBody.SecurityEnabledOnly)
+		if err != nil {
+			if errors.Is(err, store.ErrObjectNotFound) {
+				writeError(c, http.StatusNotFound, "ResourceNotFound", "Object not found")
+			} else {
+				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to get member objects")
+			}
+			return
+		}
+
+		response := map[string]interface{}{
+			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(Edm.String)",
+			"value":          memberObjects,
+		}
+
+		writeJSON(c, http.StatusOK, response)
+	}
+}
+

@@ -24,6 +24,7 @@
 {{end}}
 
 <form method="POST" action="{{.FormAction}}">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     <div class="grid">
         <fieldset>
             <label for="displayName">Display Name *

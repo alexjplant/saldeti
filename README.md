@@ -4,12 +4,20 @@ A local Microsoft Graph API simulator for development and testing. saldeti mimic
 
 ## Features
 
+- **Management Web UI**: Available at `/ui` after starting the server
 - **Authentication**: OAuth 2.0 token endpoint (client_credentials, authorization_code, refresh_token)
 - **Users**: Full CRUD with OData query support ($filter, $select, $top, $orderby, $count, $search)
 - **Groups**: Full CRUD with member/owner management and transitive membership resolution
+- **Applications**: Full CRUD with password/key credential management, owner management, extension properties, and verified publisher support
+- **Service Principals**: Full CRUD with password/key credential management, owner management, app role assignments, and OAuth2 permission grant listing
+- **App Role Assignments**: Assign and manage app roles on users, groups, and service principals
+- **OAuth2 Permission Grants**: Full CRUD for delegated permission grants
 - **Navigation Properties**: memberOf, transitiveMemberOf, manager, directReports
 - **Directory Objects**: getByIds batch lookup, checkMemberGroups, getMemberGroups
-- **Delta Queries**: Basic delta query support for users and groups
+- **Delta Queries**: Delta query support for users, groups, and applications
+- **$select & $orderby**: Field projection and sorting support across all list endpoints
+
+A full roadmap is available in [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Quick Start
 
@@ -17,17 +25,18 @@ A local Microsoft Graph API simulator for development and testing. saldeti mimic
 # Build
 mise run build
 
-# Run (empty store)
+# Run with empty store (admin client credentials are logged at startup)
 ./bin/saldeti -port 9443
 
 # Run with sample seed data (persists changes on shutdown)
 ./bin/saldeti -port 9443 -seed examples/seed.json -dump snapshot.json
 
-# Get a token (requires seed data or manually created client)
-curl -X POST http://localhost:9443/sim-tenant-id/oauth2/v2.0/token \
+# Get a token using the admin client credentials logged at startup
+# (With -seed examples/seed.json, the built-in client is sim-client-id / sim-client-secret)
+curl -X POST http://localhost:9443/<tenant-id>/oauth2/v2.0/token \
   -d "grant_type=client_credentials" \
-  -d "client_id=sim-client-id" \
-  -d "client_secret=sim-client-secret" \
+  -d "client_id=<admin-client-id>" \
+  -d "client_secret=<admin-client-secret>" \
   -d "scope=User.Read.All Group.Read.All"
 
 # List users
@@ -43,21 +52,21 @@ curl -X POST http://localhost:9443/v1.0/users \
 
 ## Seed Data
 
-By default, the simulator starts with an **empty store** — no users, groups, or clients. This allows you to create exactly the data you need via the API.
+The simulator can start in two modes:
 
-To load sample data on startup, pass the `-seed` flag with a path to a JSON seed file:
+**Without `-seed` flag** (default): the server starts with a **completely empty store** — no users, no groups, no applications, no sample data of any kind. The UI shows empty lists and you create everything yourself via the API or UI.
 
-```bash
-./bin/saldeti -port 9443 -seed examples/seed.json
-```
+The only thing automatically created is an **admin OAuth client** (along with its service principal) that the management UI uses to authenticate. Its credentials (client ID, client secret, and tenant ID) are logged at startup. By default these are random UUIDs; you can override them with the `-admin-client-id`, `-admin-client-secret`, and `-admin-tenant-id` flags.
 
-A sample `seed.json` file is included in the repository with realistic test data:
+**With `-seed file.json`**: all data from the specified JSON file is loaded — clients, users, groups, applications, memberships, managers, owners, app role assignments, and OAuth2 grants. The sample `examples/seed.json` includes:
 
 - **Client**: `sim-client-id` / `sim-client-secret`, tenant `sim-tenant-id`
 - **Admin user**: `admin@saldeti.local` with password `Simulator123!`
-- **10 sample users**: Alice Smith, Bob Jones, Charlie Brown, Diana Prince, Eve Wilson, Frank Miller, Grace Lee (disabled), Henry Taylor, Ivan Guest (external), Julia Roberts
-- **5 sample groups**: Engineering Team, Marketing Team, All Staff, Leadership (Private), Project Alpha (Unified/M365)
-- **Pre-configured memberships and manager hierarchy**
+- **10 sample users** with inline manager relationships (via `manager_upn` fields)
+- **5 sample groups** with inline memberships (via `member_upns`) and nested groups (via `member_group_names`)
+- **Application**: "Saldeti Simulator App" with an AppRole
+- **App Role Assignment**: One assignment
+- **OAuth2 Permission Grant**: One grant
 
 ### Seed File Format
 
@@ -69,7 +78,12 @@ The seed JSON file uses this schema:
   "users": [{ "email": "...", "display_name": "...", "password": "...", "department": "...", "job_title": "..." }],
   "groups": [{ "display_name": "...", "description": "...", "mail_nickname": "..." }],
   "memberships": [{ "user_index": 0, "group_index": 0 }],
-  "managers": [{ "user_index": 1, "manager_index": 0 }]
+  "managers": [{ "user_index": 1, "manager_index": 0 }],
+  "ownerships": [{ "user_index": 0, "group_index": 0 }],
+  "applications": [{ "display_name": "...", "app_id": "...", "description": "...", "sign_in_audience": "...", "identifier_uris": [], "app_roles": [], "owner_upns": [] }],
+  "service_principals": [{ "app_id": "..." }],
+  "app_role_assignments": [{ "principal_index": 0, "resource_app_id": "...", "role_value": "..." }],
+  "oauth2_grants": [{ "client_app_id": "...", "resource_app_id": "...", "scope": "...", "consent_type": "...", "principal_upn": "..." }]
 }
 ```
 
@@ -94,11 +108,23 @@ The dump uses the same JSON schema as the seed file, so the output can be fed di
 
 ## API Coverage
 
-### Supported Endpoints
+### Authentication & Discovery
 
 | Endpoint | Methods | Description |
 |----------|---------|-------------|
 | `/{tenant}/oauth2/v2.0/token` | POST | OAuth2 token exchange |
+| `/{tenant}/v2.0/.well-known/openid-configuration` | GET | OpenID discovery document |
+
+### Batch
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/v1.0/$batch` | POST | JSON batch requests |
+
+### Users
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
 | `/v1.0/users` | GET, POST | List/create users |
 | `/v1.0/users/{id}` | GET, PATCH, DELETE | Get/update/delete user |
 | `/v1.0/users/{id}/memberOf` | GET | Groups user belongs to |
@@ -108,7 +134,21 @@ The dump uses the same JSON schema as the seed file, so the output can be fed di
 | `/v1.0/users/{id}/directReports` | GET | List direct reports |
 | `/v1.0/users/{id}/checkMemberGroups` | POST | Check group membership |
 | `/v1.0/users/{id}/getMemberGroups` | POST | Get all group memberships |
+| `/v1.0/users/{id}/appRoleAssignments` | GET, POST | List/create user role assignments |
+| `/v1.0/users/{id}/appRoleAssignments/{aid}` | DELETE | Delete user role assignment |
+| `/v1.0/users/{id}/photo` | GET | Photo metadata (stub) |
+| `/v1.0/users/{id}/photo/$value` | GET, PATCH | Photo binary (stub) |
+| `/v1.0/users/{id}/changePassword` | POST | Change password (stub) |
+| `/v1.0/users/{id}/reprocessLicenseAssignment` | POST | Reprocess licenses (stub) |
+| `/v1.0/users/{id}/licenseDetails` | GET | License details (stub) |
+| `/v1.0/users/{id}/assignLicense` | POST | Assign/remove licenses |
 | `/v1.0/users/delta` | GET | Delta query for users |
+| `/v1.0/me` | GET | Get authenticated user |
+
+### Groups
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
 | `/v1.0/groups` | GET, POST | List/create groups |
 | `/v1.0/groups/{id}` | GET, PATCH, DELETE | Get/update/delete group |
 | `/v1.0/groups/{id}/members` | GET | List direct members |
@@ -122,19 +162,97 @@ The dump uses the same JSON schema as the seed file, so the output can be fed di
 | `/v1.0/groups/{id}/transitiveMemberOf` | GET | Transitive memberOf |
 | `/v1.0/groups/{id}/checkMemberGroups` | POST | Check membership |
 | `/v1.0/groups/{id}/getMemberGroups` | POST | Get all memberships |
+| `/v1.0/groups/{id}/getMemberObjects` | POST | Get all member objects |
+| `/v1.0/groups/{id}/appRoleAssignments` | GET, POST | List/create group role assignments |
+| `/v1.0/groups/{id}/appRoleAssignments/{aid}` | DELETE | Delete group role assignment |
 | `/v1.0/groups/delta` | GET | Delta query for groups |
+
+### Applications
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/v1.0/applications` | GET, POST | List/create applications |
+| `/v1.0/applications/{id}` | GET, PATCH, DELETE | Get/update/delete application |
+| `/v1.0/applications(appId='{appId}')` | GET | Get by alternate key (appId) |
+| `/v1.0/applications/{id}/addPassword` | POST | Add password credential |
+| `/v1.0/applications/{id}/removePassword` | POST | Remove password credential |
+| `/v1.0/applications/{id}/addKey` | POST | Add key credential |
+| `/v1.0/applications/{id}/removeKey` | POST | Remove key credential |
+| `/v1.0/applications/{id}/owners` | GET | List owners |
+| `/v1.0/applications/{id}/owners/$ref` | POST | Add owner |
+| `/v1.0/applications/{id}/owners/{oid}/$ref` | DELETE | Remove owner |
+| `/v1.0/applications/{id}/extensionProperties` | GET, POST | List/create extension properties |
+| `/v1.0/applications/{id}/extensionProperties/{extId}` | DELETE | Delete extension property |
+| `/v1.0/applications/{id}/setVerifiedPublisher` | POST | Set verified publisher |
+| `/v1.0/applications/delta` | GET | Delta query for applications |
+
+### Service Principals
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/v1.0/servicePrincipals` | GET, POST | List/create service principals |
+| `/v1.0/servicePrincipals/{id}` | GET, PATCH, DELETE | Get/update/delete SP |
+| `/v1.0/servicePrincipals(appId='{appId}')` | GET | Get by alternate key (appId) |
+| `/v1.0/servicePrincipals/{id}/owners` | GET | List owners |
+| `/v1.0/servicePrincipals/{id}/owners/$ref` | POST | Add owner |
+| `/v1.0/servicePrincipals/{id}/owners/{oid}/$ref` | DELETE | Remove owner |
+| `/v1.0/servicePrincipals/{id}/memberOf` | GET | Groups SP belongs to |
+| `/v1.0/servicePrincipals/{id}/transitiveMemberOf` | GET | Transitive group membership |
+| `/v1.0/servicePrincipals/{id}/appRoleAssignments` | GET, POST | List/create role assignments |
+| `/v1.0/servicePrincipals/{id}/appRoleAssignments/{aid}` | DELETE | Delete role assignment |
+| `/v1.0/servicePrincipals/{id}/appRoleAssignedTo` | GET, POST | List/create assigned-to |
+| `/v1.0/servicePrincipals/{id}/appRoleAssignedTo/{aid}` | DELETE | Delete assigned-to |
+| `/v1.0/servicePrincipals/{id}/oauth2PermissionGrants` | GET | List delegated grants |
+| `/v1.0/servicePrincipals/{id}/addPassword` | POST | Add password credential |
+| `/v1.0/servicePrincipals/{id}/removePassword` | POST | Remove password credential |
+| `/v1.0/servicePrincipals/{id}/addKey` | POST | Add key credential |
+| `/v1.0/servicePrincipals/{id}/removeKey` | POST | Remove key credential |
+| `/v1.0/servicePrincipals/{id}/homeRealmDiscoveryPolicies` | GET | Policy stub (empty) |
+| `/v1.0/servicePrincipals/{id}/claimsMappingPolicies` | GET | Policy stub (empty) |
+| `/v1.0/servicePrincipals/{id}/tokenIssuancePolicies` | GET | Policy stub (empty) |
+| `/v1.0/servicePrincipals/{id}/tokenLifetimePolicies` | GET | Policy stub (empty) |
+
+### OAuth2 Permission Grants
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/v1.0/oauth2PermissionGrants` | GET, POST | List/create grants |
+| `/v1.0/oauth2PermissionGrants/{id}` | GET, PATCH, DELETE | Get/update/delete grant |
+
+### Licensing
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/v1.0/subscribedSkus` | GET | List available license SKUs |
+
+### Directory Objects
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
 | `/v1.0/directoryObjects/getByIds` | POST | Batch object lookup |
-| `/v1.0/me` | GET | Get authenticated user |
 
 ## Development
 
 ```bash
-mise run build    # Build binary
-mise run test     # Run all tests
-mise run lint     # Run go vet
-mise run clean    # Clean build artifacts
+mise run build        # Build binary
+mise run test         # Run Go unit tests
+mise run test-all     # Run all Go tests including E2E
+mise run ui-test      # Run UI unit tests
+mise run ui-e2e       # Run Playwright E2E tests (builds + starts server + runs tests + stops server)
+mise run lint         # Run go vet
+mise run clean        # Clean build artifacts
 ```
 
-## License
+## Questions
+> What is this for?
+Testing your apps and scripts against a make-believe directory so that you ~~don't overwrite everybody's phone number with your own then task a 15-year-old helpdesk intern with manually fixing it while you run down the hall to save your job by finding somebody with a recent backup of the domain controller.~~ can perform integration testing in CI without spinning up a tenant.
 
-GNU Affero General Public License v3
+> Is this vibe-coded?
+Very yes. I used GLM-5.1 for orchestration and planning, GLM-4.7 for implementation, Gemini 3 Flash for UI iteration, and DeepSeek for review.
+
+> ...but why?
+Because I wanted it and would rather spend time learning about LLMs and coding harnesses than manually replicating a Microsoft Azure product.
+
+> How is this licensed?
+
+[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). Use it, improve it, don't make money on it.

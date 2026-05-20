@@ -51,7 +51,9 @@
                     <div role="group">
                         <a href="/ui/groups/{{.Group.ID}}" role="button" class="outline secondary" title="View" aria-label="View">{{template "icon-eye" .}}</a>
                         <a href="/ui/groups/{{.Group.ID}}/edit" role="button" class="outline secondary" title="Edit" aria-label="Edit">{{template "icon-pencil" .}}</a>
-                        <form id="delete-group-{{.Group.ID}}" method="POST" action="/ui/groups/{{.Group.ID}}/delete" onsubmit="return confirm('Delete {{.Group.DisplayName}}?');" style="display: none;"></form>
+                        <form id="delete-group-{{.Group.ID}}" method="POST" action="/ui/groups/{{.Group.ID}}/delete" data-confirm="Delete {{.Group.DisplayName}}?" style="display: none;">
+                            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                        </form>
                         <button form="delete-group-{{.Group.ID}}" type="submit" title="Delete" aria-label="Delete" class="outline danger">{{template "icon-trash-2" .}}</button>
                     </div>
                 </td>

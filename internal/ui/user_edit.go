@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/rs/zerolog/log"
 )
 
 func UserEditHandler(h *UIHandler) gin.HandlerFunc {
@@ -83,7 +84,8 @@ func UserEditHandler(h *UIHandler) gin.HandlerFunc {
 
 		_, err := h.client.Users().ByUserId(id).Patch(ctx, patch, nil)
 		if err != nil {
-			SetFlash(c, FlashDanger, "Failed to update user: "+err.Error())
+			log.Error().Err(err).Msg("Failed to update user")
+			SetFlash(c, FlashDanger, "Failed to update user. Please try again.")
 			c.Redirect(http.StatusFound, "/ui/users/"+id+"/edit")
 			return
 		}

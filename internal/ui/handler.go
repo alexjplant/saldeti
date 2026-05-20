@@ -19,7 +19,7 @@ var httpClient = &http.Client{
 	},
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // InsecureSkipVerify: acceptable for local simulator
 		},
 	},
 }
@@ -48,6 +48,12 @@ func (h *UIHandler) render(c *gin.Context, pageFile string, data gin.H) {
 
 	flash := GetFlash(c)
 	data["Flash"] = flash
+
+	if token, ok := c.Get("csrf_token"); ok {
+		data["CSRFToken"] = token
+	} else {
+		data["CSRFToken"] = ""
+	}
 
 	if _, ok := data["ActiveNav"]; !ok {
 		data["ActiveNav"] = ""
@@ -85,6 +91,12 @@ func (h *UIHandler) renderPartial(c *gin.Context, templateName string, data gin.
 		data = gin.H{}
 	}
 	data["IsPartial"] = true
+
+	if token, ok := c.Get("csrf_token"); ok {
+		data["CSRFToken"] = token
+	} else {
+		data["CSRFToken"] = ""
+	}
 
 	t, err := h.baseTmpl.Clone()
 	if err != nil {

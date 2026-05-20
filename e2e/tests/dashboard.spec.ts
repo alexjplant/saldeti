@@ -12,7 +12,7 @@ test.describe('Dashboard', () => {
 
     // 11 users total (admin + 10 sample)
     const statCards = page.locator('div.grid article');
-    await expect(statCards).toHaveCount(4);
+    await expect(statCards).toHaveCount(6);
 
     // Total Users should be > 0
     const totalUsers = await statCards.nth(0).locator('h3').textContent();

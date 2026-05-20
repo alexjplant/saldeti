@@ -7,6 +7,8 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -58,6 +60,39 @@ func TestMain(m *testing.M) {
 
 	auth.SetSigningKey([]byte("test-signing-key-32-bytes-long"))
 	m.Run()
+}
+
+// getCSRFToken makes a GET request to establish a CSRF cookie and returns the token value.
+func getCSRFToken(t *testing.T, ts *httptest.Server) string {
+	t.Helper()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/applications", nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == "saldeti_csrf" {
+			return cookie.Value
+		}
+	}
+	t.Fatal("Failed to obtain CSRF token from GET request")
+	return ""
+}
+
+// csrfPost creates a POST request with a valid CSRF token and cookie.
+// Pass nil for data if no form fields are needed (e.g., delete endpoints).
+func csrfPost(t *testing.T, ts *httptest.Server, path string, data url.Values) *http.Request {
+	t.Helper()
+	token := getCSRFToken(t, ts)
+	if data == nil {
+		data = url.Values{}
+	}
+	data.Set("csrf_token", token)
+	req, _ := http.NewRequest("POST", path, strings.NewReader(data.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{
+		Name:  "saldeti_csrf",
+		Value: token,
+	})
+	return req
 }
 
 func TestFlashHelpers(t *testing.T) {

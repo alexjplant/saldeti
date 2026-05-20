@@ -144,8 +144,7 @@ func TestUserCreate(t *testing.T) {
 	formData.Set("accountEnabled", "true")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/new", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req := csrfPost(t, ts, "/ui/users/new", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to user detail page
@@ -206,8 +205,7 @@ func TestUserCreateValidation(t *testing.T) {
 	// Missing displayName and userPrincipalName
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/new", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req := csrfPost(t, ts, "/ui/users/new", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should return the form with error (not redirect)
@@ -254,8 +252,7 @@ func TestUserEdit(t *testing.T) {
 	formData.Set("accountEnabled", "true")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/edit", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req := csrfPost(t, ts, "/ui/users/"+alice.ID+"/edit", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to user detail page
@@ -318,7 +315,7 @@ func TestUserDelete(t *testing.T) {
 
 	// Delete Grace
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/ui/users/"+grace.ID+"/delete", nil)
+	req = csrfPost(t, ts, "/ui/users/"+grace.ID+"/delete", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// Should redirect to user list
@@ -355,5 +352,148 @@ func TestUserDelete(t *testing.T) {
 		t.Error("Expected user to be deleted from store, but it still exists")
 	}
 }
+
+func TestHtmxUserSetManager(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	alice, err := st.GetUserByUPN(ctx, "alice.smith@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Alice: %v", err)
+	}
+	bob, err := st.GetUserByUPN(ctx, "bob.jones@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Bob: %v", err)
+	}
+
+	formData := url.Values{}
+	formData.Set("managerId", bob.ID)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/manager/set", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Manager set successfully") {
+		t.Error("Expected 'Manager set successfully' flash in response")
+	}
+}
+
+func TestHtmxUserRemoveManager(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	alice, err := st.GetUserByUPN(ctx, "alice.smith@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Alice: %v", err)
+	}
+	bob, err := st.GetUserByUPN(ctx, "bob.jones@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Bob: %v", err)
+	}
+
+	// Set manager first via store
+	err = st.SetManager(ctx, alice.ID, bob.ID)
+	if err != nil {
+		t.Fatalf("Failed to set manager: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/manager/remove", nil)
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d for htmx request, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Manager removed successfully") {
+		t.Error("Expected 'Manager removed successfully' flash in response")
+	}
+}
+
+func TestHtmxUserDetailWithManager(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	alice, err := st.GetUserByUPN(ctx, "alice.smith@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Alice: %v", err)
+	}
+	bob, err := st.GetUserByUPN(ctx, "bob.jones@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Bob: %v", err)
+	}
+
+	// Set manager via store
+	err = st.SetManager(ctx, alice.ID, bob.ID)
+	if err != nil {
+		t.Fatalf("Failed to set manager: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/users/"+alice.ID, nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Manager") {
+		t.Error("Expected 'Manager' section in user detail page")
+	}
+	if !strings.Contains(body, "Bob Jones") {
+		t.Error("Expected 'Bob Jones' (manager name) in user detail page")
+	}
+}
+
+func TestUserCreateForm(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, _ := setupTestServer(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/users/new", nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "New User") && !strings.Contains(body, "displayName") {
+		t.Error("Expected 'New User' heading or 'displayName' field in page")
+	}
+}
+
+func TestUserEditForm(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	alice, err := st.GetUserByUPN(ctx, "alice.smith@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Alice user: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ui/users/"+alice.ID+"/edit", nil)
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Alice Smith") {
+		t.Error("Expected 'Alice Smith' in user edit form")
+	}
+}
+ 
 
 // Helper function to login and get session cookie

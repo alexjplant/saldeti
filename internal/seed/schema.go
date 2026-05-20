@@ -3,13 +3,19 @@ package seed
 import "github.com/saldeti/saldeti/internal/model"
 
 // SeedConfig is the top-level structure for a seed JSON file.
+//
+//go:generate go run ../../cmd/genschema/main.go
 type SeedConfig struct {
-	Clients     []SeedClient      `json:"clients"`
-	Users       []SeedUser        `json:"users,omitempty"`
-	Groups      []SeedGroup       `json:"groups,omitempty"`
-	Memberships []SeedMembership  `json:"memberships,omitempty"`
-	Ownerships  []SeedOwnership   `json:"ownerships,omitempty"`
-	Managers    []SeedManager     `json:"managers,omitempty"`
+	Clients            []SeedClient            `json:"clients"`
+	Users              []SeedUser              `json:"users,omitempty"`
+	Groups             []SeedGroup             `json:"groups,omitempty"`
+	Memberships        []SeedMembership        `json:"memberships,omitempty"`
+	Ownerships         []SeedOwnership         `json:"ownerships,omitempty"`
+	Managers           []SeedManager           `json:"managers,omitempty"`
+	Applications       []SeedApplication       `json:"applications,omitempty"`
+	ServicePrincipals  []SeedServicePrincipal  `json:"service_principals,omitempty"`
+	AppRoleAssignments []SeedAppRoleAssignment `json:"app_role_assignments,omitempty"`
+	OAuth2Grants       []SeedOAuth2Grant       `json:"oauth2_grants,omitempty"`
 }
 
 type SeedClient struct {
@@ -19,18 +25,18 @@ type SeedClient struct {
 }
 
 type SeedUser struct {
-	ID          string `json:"id,omitempty"`
-	Email       string `json:"email"`
-	DisplayName string `json:"display_name"`
-	Password    string `json:"password"`
-	GivenName   string `json:"given_name,omitempty"`
-	Surname     string `json:"surname,omitempty"`
-	JobTitle    string `json:"job_title,omitempty"`
-	Department        string                  `json:"department,omitempty"`
-	Enabled           *bool                   `json:"enabled,omitempty"` // defaults to true if nil
-	IsGuest           bool                    `json:"is_guest,omitempty"`
-	ManagerUPN        string                  `json:"manager_upn,omitempty"`
-	AssignedLicenses  []model.SeedLicense     `json:"assigned_licenses,omitempty"`
+	ID               string              `json:"id,omitempty"`
+	Email            string              `json:"email"`
+	DisplayName      string              `json:"display_name"`
+	Password         string              `json:"password"`
+	GivenName        string              `json:"given_name,omitempty"`
+	Surname          string              `json:"surname,omitempty"`
+	JobTitle         string              `json:"job_title,omitempty"`
+	Department       string              `json:"department,omitempty"`
+	Enabled          *bool               `json:"enabled,omitempty"` // defaults to true if nil
+	IsGuest          bool                `json:"is_guest,omitempty"`
+	ManagerUPN       string              `json:"manager_upn,omitempty"`
+	AssignedLicenses []model.SeedLicense `json:"assigned_licenses,omitempty"`
 }
 
 type SeedGroup struct {
@@ -42,6 +48,7 @@ type SeedGroup struct {
 	GroupTypes       []string `json:"group_types,omitempty"`
 	MemberUPNs       []string `json:"member_upns,omitempty"`
 	MemberGroupNames []string `json:"member_group_names,omitempty"`
+	MemberSPAppIDs   []string `json:"member_sp_app_ids,omitempty"`
 	OwnerUPNs        []string `json:"owner_upns,omitempty"`
 }
 
@@ -63,4 +70,48 @@ type SeedManager struct {
 type SeedOwnership struct {
 	UserIndex  int `json:"user_index"`
 	GroupIndex int `json:"group_index"`
+}
+
+// SeedApplication defines a seed application registration.
+type SeedApplication struct {
+	DisplayName    string        `json:"display_name"`
+	AppID          string        `json:"app_id,omitempty"`
+	Description    string        `json:"description,omitempty"`
+	SignInAudience string        `json:"sign_in_audience,omitempty"`
+	IdentifierUris []string      `json:"identifier_uris,omitempty"`
+	AppRoles       []SeedAppRole `json:"app_roles,omitempty"`
+	OwnerUPNs      []string      `json:"owner_upns,omitempty"`
+}
+
+// SeedAppRole defines a seed application role.
+type SeedAppRole struct {
+	AllowedMemberTypes []string `json:"allowed_member_types"`
+	Description        string   `json:"description"`
+	DisplayName        string   `json:"display_name"`
+	IsEnabled          bool     `json:"is_enabled"`
+	Value              string   `json:"value"`
+}
+
+// SeedServicePrincipal defines a seed service principal.
+type SeedServicePrincipal struct {
+	AppID     string   `json:"app_id"`
+	OwnerUPNs []string `json:"owner_upns,omitempty"`
+}
+
+// SeedAppRoleAssignment defines a seed app role assignment.
+type SeedAppRoleAssignment struct {
+	PrincipalIndex int    `json:"principal_index,omitempty"`
+	PrincipalType  string `json:"principal_type,omitempty"` // "user" (default), "group", "service_principal"
+	PrincipalName  string `json:"principal_name,omitempty"` // UPN for user, DisplayName for group, AppID for SP
+	ResourceAppID  string `json:"resource_app_id"`
+	RoleValue      string `json:"role_value"`
+}
+
+// SeedOAuth2Grant defines a seed OAuth2 permission grant.
+type SeedOAuth2Grant struct {
+	ClientAppID   string `json:"client_app_id"`
+	ResourceAppID string `json:"resource_app_id"`
+	PrincipalUPN  string `json:"principal_upn,omitempty"`
+	Scope         string `json:"scope"`
+	ConsentType   string `json:"consent_type"`
 }

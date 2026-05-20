@@ -1,10 +1,9 @@
 package ui
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/rs/zerolog/log"
 )
 
 func GroupAddMemberHandler(h *UIHandler) gin.HandlerFunc {
@@ -24,7 +23,8 @@ func GroupAddMemberHandler(h *UIHandler) gin.HandlerFunc {
 
 		err := h.client.Groups().ByGroupId(id).Members().Ref().Post(c.Request.Context(), refBody, nil)
 		if err != nil {
-			h.handleMembersResponse(c, id, FlashDanger, fmt.Sprintf("Failed to add member: %v", err))
+			log.Error().Err(err).Msg("Failed to add group member")
+			h.handleMembersResponse(c, id, FlashDanger, "Failed to add member. Please try again.")
 			return
 		}
 
@@ -38,7 +38,8 @@ func GroupRemoveMemberHandler(h *UIHandler) gin.HandlerFunc {
 		memberID := c.Param("memberId")
 
 		if err := h.client.Groups().ByGroupId(id).Members().ByDirectoryObjectId(memberID).Ref().Delete(c.Request.Context(), nil); err != nil {
-			h.handleMembersResponse(c, id, FlashDanger, "Failed to remove member")
+			log.Error().Err(err).Msg("Failed to remove group member")
+			h.handleMembersResponse(c, id, FlashDanger, "Failed to remove member. Please try again.")
 		} else {
 			h.handleMembersResponse(c, id, FlashSuccess, "Member removed successfully")
 		}
