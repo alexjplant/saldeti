@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -129,7 +130,7 @@ func getGrantHandler(st store.Store) gin.HandlerFunc {
 func createGrantHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var grant model.OAuth2PermissionGrant
-		if err := json.NewDecoder(c.Request.Body).Decode(&grant); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&grant); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -216,7 +217,7 @@ func updateGrantHandler(st store.Store) gin.HandlerFunc {
 
 		// Decode body as map[string]interface{}
 		var patch map[string]interface{}
-		if err := json.NewDecoder(c.Request.Body).Decode(&patch); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}

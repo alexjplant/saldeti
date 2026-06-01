@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -76,7 +77,7 @@ func createUserAppRoleAssignmentHandler(st store.Store) gin.HandlerFunc {
 			ResourceID  string `json:"resourceId"`
 			AppRoleID   string `json:"appRoleId"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -201,7 +202,7 @@ func createGroupAppRoleAssignmentHandler(st store.Store) gin.HandlerFunc {
 			ResourceID  string `json:"resourceId"`
 			AppRoleID   string `json:"appRoleId"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}

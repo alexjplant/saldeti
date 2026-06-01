@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -239,7 +241,7 @@ func NewRouter(st store.Store) *gin.Engine {
 	return r
 }
 
-func meHandler(store store.Store) gin.HandlerFunc {
+func meHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get claims from context
 		claims, ok := c.MustGet("claims").(*auth.TokenClaims)
@@ -249,22 +251,66 @@ func meHandler(store store.Store) gin.HandlerFunc {
 		}
 
 		// Try to get user by subject (UPN) first
-		user, err := store.GetUserByUPN(c.Request.Context(), claims.Subject)
+		user, err := st.GetUserByUPN(c.Request.Context(), claims.Subject)
 		if err == nil {
-			writeJSON(c, http.StatusOK, user)
+			// Build response with proper context, same pattern as other get handlers
+			response := map[string]interface{}{
+				"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
+			}
+
+			userJSON, err := json.Marshal(user)
+			if err != nil {
+				writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+				return
+			}
+			var userMap map[string]interface{}
+			if err := json.Unmarshal(userJSON, &userMap); err != nil {
+				writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+				return
+			}
+
+			for k, v := range userMap {
+				response[k] = v
+			}
+
+			writeJSON(c, http.StatusOK, response)
 			return
 		}
 
-		// Fall back: if token roles contain "Application", return minimal SP-shaped object
+		// Fall back: if token roles contain "Application", look up the real SP
 		for _, role := range claims.Roles {
 			if role == "Application" {
-				writeJSON(c, http.StatusOK, gin.H{
+				sp, err := st.GetServicePrincipalByAppID(c.Request.Context(), claims.ClientID)
+				if err != nil {
+					if errors.Is(err, store.ErrServicePrincipalNotFound) {
+						writeError(c, http.StatusNotFound, "ResourceNotFound", "Service principal not found")
+					} else {
+						writeError(c, http.StatusInternalServerError, "InternalError", "Failed to get service principal")
+					}
+					return
+				}
+
+				// Build response with proper context, same pattern as getServicePrincipalHandler
+				response := map[string]interface{}{
 					"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
-					"@odata.type":    "#microsoft.graph.servicePrincipal",
-					"id":             claims.Subject,
-					"displayName":    claims.Subject,
-					"appId":          claims.ClientID,
-				})
+				}
+
+				spJSON, err := json.Marshal(sp)
+				if err != nil {
+					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+					return
+				}
+				var spMap map[string]interface{}
+				if err := json.Unmarshal(spJSON, &spMap); err != nil {
+					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+					return
+				}
+
+				for k, v := range spMap {
+					response[k] = v
+				}
+
+				writeJSON(c, http.StatusOK, response)
 				return
 			}
 		}
