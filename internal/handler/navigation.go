@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 
@@ -98,7 +99,7 @@ func setManagerHandler(st store.Store) gin.HandlerFunc {
 		var requestBody struct {
 			ODataID string `json:"@odata.id"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&requestBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&requestBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON")
 			return
 		}
@@ -178,7 +179,7 @@ func getByIdsHandler(st store.Store) gin.HandlerFunc {
 			IDs   []string `json:"ids"`
 			Types []string `json:"types,omitempty"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&requestBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&requestBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON")
 			return
 		}
@@ -208,7 +209,7 @@ func checkUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 		var requestBody struct {
 			GroupIDs []string `json:"groupIds"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&requestBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&requestBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON")
 			return
 		}
@@ -242,7 +243,7 @@ func getUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 		var requestBody struct {
 			SecurityEnabledOnly bool `json:"securityEnabledOnly"`
 		}
-		if err := json.NewDecoder(c.Request.Body).Decode(&requestBody); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&requestBody); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON")
 			return
 		}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -252,7 +253,7 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 func createUserHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user model.User
-		if err := json.NewDecoder(c.Request.Body).Decode(&user); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&user); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -328,7 +329,7 @@ func updateUserHandler(st store.Store) gin.HandlerFunc {
 
 		// Decode patch as map
 		var patch map[string]interface{}
-		if err := json.NewDecoder(c.Request.Body).Decode(&patch); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}

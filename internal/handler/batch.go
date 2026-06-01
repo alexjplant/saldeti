@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,12 +51,14 @@ func batchHandler(engine *gin.Engine) gin.HandlerFunc {
 
 		responses := make([]BatchSubResponse, 0, len(req.Requests))
 		for _, sub := range req.Requests {
-			// Create internal request
 			var bodyBytes []byte
 			if sub.Body != nil {
 				bodyBytes, _ = json.Marshal(sub.Body)
 			}
-			req := httptest.NewRequest(sub.Method, sub.URL, bytes.NewReader(bodyBytes))
+
+			url := normalizeBatchURL(sub.URL)
+			req := httptest.NewRequest(sub.Method, url, bytes.NewReader(bodyBytes))
+			req.Host = c.Request.Host
 			// Copy auth header
 			if auth := c.GetHeader("Authorization"); auth != "" {
 				req.Header.Set("Authorization", auth)
@@ -84,4 +87,14 @@ func batchHandler(engine *gin.Engine) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, BatchResponse{Responses: responses})
 	}
+}
+
+func normalizeBatchURL(url string) string {
+	if strings.HasPrefix(url, "/v1.0/") || strings.HasPrefix(url, "/beta/") {
+		return url
+	}
+	if !strings.HasPrefix(url, "/") {
+		return "/v1.0/" + url
+	}
+	return "/v1.0" + url
 }
