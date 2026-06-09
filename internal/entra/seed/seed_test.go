@@ -1155,7 +1155,7 @@ func TestSeedFromConfig_Idempotent(t *testing.T) {
 
 func TestSeedFromConfigNewSchema(t *testing.T) {
 	// Load the new-format seed.json
-	cfg, err := LoadFromFile("../../examples/seed.json")
+	cfg, err := LoadFromFile("../../../examples/seed.json")
 	if err != nil {
 		t.Fatalf("Failed to load seed.json: %v", err)
 	}

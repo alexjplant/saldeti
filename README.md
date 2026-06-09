@@ -17,6 +17,64 @@ A local Microsoft Graph API simulator for development and testing. saldeti mimic
 - **Delta Queries**: Delta query support for users, groups, and applications
 - **$select & $orderby**: Field projection and sorting support across all list endpoints
 
+## Google Workspace API Simulator
+
+saldeti now also supports simulating Google Workspace Admin APIs. Use the `--google` flag to enable:
+
+```bash
+# Run with both Entra and Google Workspace simulators
+./bin/saldeti -port 9443 --google
+
+# Google UI available at https://localhost:9443/google-ui/
+```
+
+### Supported Google APIs
+
+- **Authentication**: OAuth 2.0 token exchange (`/oauth2/v1/token`)
+- **Users**: Full CRUD, aliases, photos, admin, undelete, sign out (21 endpoints)
+- **Groups**: Full CRUD, aliases (9 endpoints)
+- **Members**: Full CRUD, hasMember (7 endpoints)
+- **Org Units**: Full CRUD (6 endpoints)
+- **Roles & Role Assignments**: Full CRUD + privileges (11 endpoints)
+- **Customers, Domains, Domain Aliases**: Management APIs (11 endpoints)
+- **Devices**: ChromeOS, Mobile, Cloud Identity devices (24 endpoints)
+- **Cloud Identity Groups & Memberships**: Advanced group management (20 endpoints)
+- **Reports**: Activity and usage reports (5 endpoints)
+- **Security**: Tokens, ASPs, verification codes, 2SV, user invitations (15 endpoints)
+- **Custom Schemas, Resources, Data Transfer, Events**: Full management (32 endpoints)
+
+### Google API Endpoints
+
+- Auth: `POST /oauth2/v1/token`
+- Directory: `/admin/directory/v1/*`
+- Reports: `/admin/reports/v1/*`
+- Data Transfer: `/admin/datatransfer/v1/*`
+- Groups Settings: `/groups/v1/groups/*`
+- Cloud Identity: `/v1/devices/*`, `/v1/groups/*`
+- Workspace Events: `/v1/subscriptions/*`
+
+### Testing
+
+```bash
+# Run Google unit tests
+go test ./internal/google/... -count=1
+
+# Run Entra unit tests
+go test ./internal/entra/... -count=1
+
+# Run Google E2E tests
+go test ./test/google/... -tags=google -count=1
+
+# Run Entra E2E tests
+go test ./test/... -tags=e2e,entra -count=1
+
+# Run Playwright E2E tests (Entra)
+npx playwright test --project=chromium
+
+# Run Playwright E2E tests (Google)
+npx playwright test --project=google-chromium
+```
+
 A full roadmap is available in [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Quick Start

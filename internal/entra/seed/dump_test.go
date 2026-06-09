@@ -112,7 +112,7 @@ func TestDumpStore(t *testing.T) {
 
 func TestDumpRoundTrip(t *testing.T) {
 	// Load the sample seed.json, seed a store, dump it, compare
-	original, err := LoadFromFile("../../examples/seed.json")
+	original, err := LoadFromFile("../../../examples/seed.json")
 	require.NoError(t, err)
 
 	s := store.NewMemoryStore()
