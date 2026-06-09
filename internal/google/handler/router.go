@@ -42,6 +42,18 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 			users.PUT("/photos/thumbnail", updateUserPhotoHandler(st))
 			users.PATCH("/photos/thumbnail", patchUserPhotoHandler(st))
 			users.DELETE("/photos/thumbnail", deleteUserPhotoHandler(st))
+
+			// Security (Tier 7) — under users/:userKey
+			users.GET("/tokens", listTokensHandler(st))
+			users.GET("/tokens/:clientId", getTokenHandler(st))
+			users.DELETE("/tokens/:clientId", deleteTokenHandler(st))
+			users.GET("/asps", listASPsHandler(st))
+			users.GET("/asps/:codeId", getASPHandler(st))
+			users.DELETE("/asps/:codeId", deleteASPHandler(st))
+			users.GET("/verificationCodes", listVerificationCodesHandler(st))
+			users.POST("/verificationCodes/generate", generateVerificationCodesHandler(st))
+			users.POST("/verificationCodes/invalidate", invalidateVerificationCodesHandler(st))
+			users.POST("/twoStepVerification/turnOff", turnOff2SVHandler(st))
 		}
 
 		// Groups (Tier 1C, endpoints 22-30)
@@ -73,11 +85,8 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 		}
 
 		// OrgUnits (Tier 2A, endpoints 38-43)
-		// NOTE: Using :customer (not :customerId) to avoid Gin param name conflict
-		// with the Roles group below. Both share /customer/:customer at the same tree level.
 		ou := directory.Group("/customer/:customer/orgunits")
 		{
-			// GET with empty wildcard path dispatches to list; non-empty goes to get.
 			ou.GET("/*orgUnitPath", getOrgUnitHandler(st))
 			ou.POST("", createOrgUnitHandler(st))
 			ou.PUT("/*orgUnitPath", updateOrgUnitHandler(st))
@@ -101,19 +110,220 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 			roles.POST("/roleassignments", createRoleAssignmentHandler(st))
 			roles.DELETE("/roleassignments/:roleAssignmentId", deleteRoleAssignmentHandler(st))
 		}
+
+		// Tier 3 — Customers
+		directory.GET("/customers/:customerKey", getCustomerHandler(st))
+		directory.PATCH("/customers/:customerKey", patchCustomerHandler(st))
+		directory.PUT("/customers/:customerKey", updateCustomerHandler(st))
+
+		// Tier 3 — Domains
+		domainsGrp := directory.Group("/customer/:customer/domains")
+		{
+			domainsGrp.GET("", listDomainsHandler(st))
+			domainsGrp.GET("/:domainName", getDomainHandler(st))
+			domainsGrp.POST("", addDomainHandler(st))
+			domainsGrp.DELETE("/:domainName", deleteDomainHandler(st))
+		}
+
+		// Tier 3 — Domain Aliases
+		daGrp := directory.Group("/customer/:customer/domainaliases")
+		{
+			daGrp.GET("", listDomainAliasesHandler(st))
+			daGrp.GET("/:aliasName", getDomainAliasHandler(st))
+			daGrp.POST("", createDomainAliasHandler(st))
+			daGrp.DELETE("/:aliasName", deleteDomainAliasHandler(st))
+		}
+
+		// Tier 4 — ChromeOS Devices
+		chromeos := directory.Group("/customer/:customer/devices/chromeos")
+		{
+			chromeos.GET("", listChromeOSDevicesHandler(st))
+			chromeos.GET("/:deviceId", getChromeOSDeviceHandler(st))
+			chromeos.PATCH("/:deviceId", patchChromeOSDeviceHandler(st))
+			chromeos.PUT("/:deviceId", updateChromeOSDeviceHandler(st))
+			chromeos.POST("/moveDevicesToOu", moveChromeOSDevicesHandler(st))
+			chromeos.POST("/batchChangeStatus", batchChangeChromeOSStatusHandler(st))
+			chromeos.GET("/count", countChromeOSDevicesHandler(st))
+			chromeos.POST("/:deviceId/issueCommand", issueChromeOSCommandHandler(st))
+			chromeos.GET("/:deviceId/commands/:commandId", getChromeOSCommandHandler(st))
+		}
+
+		// Tier 4 — Mobile Devices
+		mobile := directory.Group("/customer/:customer/devices/mobile")
+		{
+			mobile.GET("", listMobileDevicesHandler(st))
+			mobile.GET("/:resourceId", getMobileDeviceHandler(st))
+			mobile.DELETE("/:resourceId", deleteMobileDeviceHandler(st))
+			mobile.POST("/:resourceId/action", mobileDeviceActionHandler(st))
+		}
+
+		// Tier 4 — Custom Schemas
+		schemasGrp := directory.Group("/customer/:customer/schemas")
+		{
+			schemasGrp.GET("", listSchemasHandler(st))
+			schemasGrp.GET("/:schemaKey", getSchemaHandler(st))
+			schemasGrp.POST("", createSchemaHandler(st))
+			schemasGrp.PUT("/:schemaKey", updateSchemaHandler(st))
+			schemasGrp.PATCH("/:schemaKey", patchSchemaHandler(st))
+			schemasGrp.DELETE("/:schemaKey", deleteSchemaHandler(st))
+		}
+
+		// Tier 4 — Calendar Resources
+		calRes := directory.Group("/customer/:customer/resources/calendars")
+		{
+			calRes.GET("", listCalendarResourcesHandler(st))
+			calRes.GET("/:resourceId", getCalendarResourceHandler(st))
+			calRes.POST("", createCalendarResourceHandler(st))
+			calRes.PUT("/:resourceId", updateCalendarResourceHandler(st))
+			calRes.PATCH("/:resourceId", patchCalendarResourceHandler(st))
+			calRes.DELETE("/:resourceId", deleteCalendarResourceHandler(st))
+		}
+
+		// Tier 4 — Buildings
+		bldg := directory.Group("/customer/:customer/resources/buildings")
+		{
+			bldg.GET("", listBuildingsHandler(st))
+			bldg.GET("/:buildingId", getBuildingHandler(st))
+			bldg.POST("", createBuildingHandler(st))
+			bldg.PUT("/:buildingId", updateBuildingHandler(st))
+			bldg.PATCH("/:buildingId", patchBuildingHandler(st))
+			bldg.DELETE("/:buildingId", deleteBuildingHandler(st))
+		}
+
+		// Tier 4 — Features
+		feat := directory.Group("/customer/:customer/resources/features")
+		{
+			feat.GET("", listFeaturesHandler(st))
+			feat.GET("/:featureKey", getFeatureHandler(st))
+			feat.POST("", createFeatureHandler(st))
+			feat.PUT("/:featureKey", updateFeatureHandler(st))
+			feat.PATCH("/:featureKey", patchFeatureHandler(st))
+			feat.DELETE("/:featureKey", deleteFeatureHandler(st))
+			feat.POST("/:featureKey/rename", renameFeatureHandler(st))
+		}
 	}
 
-	// Cloud Identity API: /v1/devices, /v1/groups, etc.
-	// Routes will be registered in a future milestone.
+	// Tier 6 — Admin Reports API
+	reports := engine.Group("/admin/reports/v1")
+	reports.Use(gauth.RequireAuth())
+	{
+		reports.GET("/activity/users/:userKey/applications/:applicationName", listActivitiesHandler(st))
+		reports.POST("/activity/users/:userKey/applications/:applicationName/watch", watchActivitiesHandler(st))
+		reports.GET("/usage/dates/:date", getCustomerUsageReportHandler(st))
+		reports.GET("/usage/users/:userKey/dates/:date", getUserUsageReportHandler(st))
+		reports.GET("/usage/:entityType/:entityKey/dates/:date", getEntityUsageReportHandler(st))
+	}
 
-	// Admin Reports API: /admin/reports/v1/activity, /admin/reports/v1/usage, etc.
-	// Routes will be registered in a future milestone.
+	// Tier 7 — Data Transfer API
+	datatransfer := engine.Group("/admin/datatransfer/v1")
+	datatransfer.Use(gauth.RequireAuth())
+	{
+		datatransfer.GET("/applications", listTransferApplicationsHandler(st))
+		datatransfer.GET("/applications/:applicationId", getTransferApplicationHandler(st))
+		datatransfer.GET("/transfers", listTransfersHandler(st))
+		datatransfer.GET("/transfers/:dataTransferId", getTransferHandler(st))
+		datatransfer.POST("/transfers", createTransferHandler(st))
+	}
 
-	// Admin Data Transfer API: /admin/datatransfer/v1/*
-	// Routes will be registered in a future milestone.
+	// Tier 8 — Groups Settings API
+	groupsSettings := engine.Group("/groups/v1/groups")
+	groupsSettings.Use(gauth.RequireAuth())
+	{
+		groupsSettings.GET("/:groupUniqueId", getGroupSettingsHandler(st))
+		groupsSettings.PUT("/:groupUniqueId", updateGroupSettingsHandler(st))
+		groupsSettings.PATCH("/:groupUniqueId", patchGroupSettingsHandler(st))
+	}
 
-	// Workspace Events API: /v1/subscriptions
-	// Routes will be registered in a future milestone.
+	// Cloud Identity API + Workspace Events (/v1/)
+	v1 := engine.Group("/v1")
+	v1.Use(gauth.RequireAuth())
+	{
+		// Devices — collection
+		v1.GET("/devices", listCIDevicesHandler(st))
+		v1.POST("/devices", createCIDeviceHandler(st))
+
+		// Devices — named resource
+		ciDev := v1.Group("/devices/:deviceName")
+		{
+			ciDev.GET("", getCIDeviceHandler(st))
+			ciDev.DELETE("", deleteCIDeviceHandler(st))
+			ciDev.POST("/wipe", wipeCIDeviceHandler(st))
+			ciDev.POST("/cancelWipe", cancelWipeCIDeviceHandler(st))
+
+			// Device Users
+			ciDev.GET("/deviceUsers", listDeviceUsersHandler(st))
+			ciDev.GET("/deviceUsers:lookup", lookupDeviceUserHandler(st))
+
+			ciDevUser := ciDev.Group("/deviceUsers/:deviceUserName")
+			{
+				ciDevUser.GET("", getDeviceUserHandler(st))
+				ciDevUser.DELETE("", deleteDeviceUserHandler(st))
+				ciDevUser.POST("/approve", approveDeviceUserHandler(st))
+				ciDevUser.POST("/block", blockDeviceUserHandler(st))
+				ciDevUser.POST("/wipe", wipeDeviceUserHandler(st))
+				ciDevUser.POST("/cancelWipe", cancelWipeDeviceUserHandler(st))
+			}
+		}
+
+		// Groups — collection
+		v1.GET("/groups", listCIGroupsHandler(st))
+		v1.POST("/groups", createCIGroupHandler(st))
+		v1.GET("/groups:lookup", lookupCIGroupHandler(st))
+		v1.GET("/groups:search", searchCIGroupsHandler(st))
+
+		// Groups — named resource
+		ciGrp := v1.Group("/groups/:groupName")
+		{
+			ciGrp.GET("", getCIGroupHandler(st))
+			ciGrp.PATCH("", updateCIGroupHandler(st))
+			ciGrp.DELETE("", deleteCIGroupHandler(st))
+
+			// Memberships — collection
+			ciGrp.GET("/memberships", listCIMembershipsHandler(st))
+			ciGrp.POST("/memberships", createCIMembershipHandler(st))
+			ciGrp.POST("/memberships:lookup", lookupCIMembershipHandler(st))
+			ciGrp.POST("/memberships:checkTransitiveMembership", checkTransitiveMembershipHandler(st))
+			ciGrp.GET("/memberships:getMembershipGraph", getMembershipGraphHandler(st))
+			ciGrp.GET("/memberships:searchTransitiveGroups", searchTransitiveGroupsHandler(st))
+			ciGrp.GET("/memberships:searchTransitiveMemberships", searchTransitiveMembershipsHandler(st))
+			ciGrp.GET("/memberships:searchDirectGroups", searchDirectGroupsHandler(st))
+
+			// Memberships — named resource
+			ciMem := ciGrp.Group("/memberships/:membershipName")
+			{
+				ciMem.GET("", getCIMembershipHandler(st))
+				ciMem.DELETE("", deleteCIMembershipHandler(st))
+				ciMem.POST("/modifyMembershipRoles", modifyMembershipRolesHandler(st))
+			}
+
+			// Security Settings
+			ciGrp.GET("/securitySettings", getCIGroupSecuritySettingsHandler(st))
+			ciGrp.PATCH("/securitySettings", updateCIGroupSecuritySettingsHandler(st))
+		}
+
+		// Subscriptions — collection
+		v1.GET("/subscriptions", listSubscriptionsHandler(st))
+		v1.POST("/subscriptions", createSubscriptionHandler(st))
+
+		// Subscriptions — named resource
+		ciSub := v1.Group("/subscriptions/:subscriptionName")
+		{
+			ciSub.GET("", getSubscriptionHandler(st))
+			ciSub.PATCH("", updateSubscriptionHandler(st))
+			ciSub.DELETE("", deleteSubscriptionHandler(st))
+			ciSub.POST("/reactivate", reactivateSubscriptionHandler(st))
+		}
+
+		// User Invitations
+		ciInv := v1.Group("/customers/:customer/userinvitations")
+		{
+			ciInv.GET("", listUserInvitationsHandler(st))
+			ciInv.GET("/:invitationId", getUserInvitationHandler(st))
+			ciInv.GET("/:invitationId/isInvitable", isInvitableUserHandler(st))
+			ciInv.POST("/:invitationId/send", sendUserInvitationHandler(st))
+			ciInv.POST("/:invitationId/cancel", cancelUserInvitationHandler(st))
+		}
+	}
 }
 
 func directoryInfoHandler() gin.HandlerFunc {

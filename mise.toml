@@ -9,6 +9,7 @@ node = "22"
 "npm:typescript" = "latest"
 "npm:vscode-langservers-extracted" = "latest"
 "github:tamasfe/taplo" = "latest"
+uv = "latest"
 
 [env]
 _.file = ".env"
