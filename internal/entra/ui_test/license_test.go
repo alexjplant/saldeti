@@ -1,4 +1,4 @@
-//go:build ui
+//go:build ui && entra
 
 package ui_test
 
