@@ -124,7 +124,7 @@ func moveChromeOSDevicesHandler(st store.Store) gin.HandlerFunc {
 	}
 }
 
-// batchChangeChromeOSStatusHandler handles POST /admin/directory/v1/customer/:customer/devices/chromeos/batchChangeStatus
+// batchChangeChromeOSStatusHandler handles POST /admin/directory/v1/customer/:customer/devices/chromeos:batchChangeStatus
 func batchChangeChromeOSStatusHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")
@@ -148,7 +148,7 @@ func batchChangeChromeOSStatusHandler(st store.Store) gin.HandlerFunc {
 	}
 }
 
-// countChromeOSDevicesHandler handles GET /admin/directory/v1/customer/:customer/devices/chromeos/count
+// countChromeOSDevicesHandler handles GET /admin/directory/v1/customer/:customer/devices/chromeos:countChromeOsDevices
 func countChromeOSDevicesHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")
@@ -164,7 +164,7 @@ func countChromeOSDevicesHandler(st store.Store) gin.HandlerFunc {
 	}
 }
 
-// issueChromeOSCommandHandler handles POST /admin/directory/v1/customer/:customer/devices/chromeos/:deviceId/issueCommand
+// issueChromeOSCommandHandler handles POST /admin/directory/v1/customer/:customer/devices/chromeos/:deviceId:issueCommand
 func issueChromeOSCommandHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")

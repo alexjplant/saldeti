@@ -94,14 +94,17 @@ func deleteCIMembershipHandler(st store.Store) gin.HandlerFunc {
 	}
 }
 
-// lookupCIMembershipHandler handles POST /v1/groups/:groupName/memberships:lookup
+// lookupCIMembershipHandler handles GET /v1/groups/:groupName/memberships:lookup
 func lookupCIMembershipHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		groupName := c.Param("groupName")
 		parent := "groups/" + groupName
-		var key model.EntityKey
-		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&key); err != nil {
-			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
+		key := model.EntityKey{
+			ID:        c.Query("memberKey.id"),
+			Namespace: c.Query("memberKey.namespace"),
+		}
+		if key.ID == "" {
+			writeError(c, http.StatusBadRequest, "invalid", "Missing memberKey.id query parameter")
 			return
 		}
 		membership, err := st.LookupCIMembership(c.Request.Context(), parent, key)
@@ -141,14 +144,17 @@ func modifyMembershipRolesHandler(st store.Store) gin.HandlerFunc {
 	}
 }
 
-// checkTransitiveMembershipHandler handles POST /v1/groups/:groupName/memberships:checkTransitiveMembership
+// checkTransitiveMembershipHandler handles GET /v1/groups/:groupName/memberships:checkTransitiveMembership
 func checkTransitiveMembershipHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		groupName := c.Param("groupName")
 		parent := "groups/" + groupName
-		var key model.EntityKey
-		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&key); err != nil {
-			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
+		key := model.EntityKey{
+			ID:        c.Query("memberKey.id"),
+			Namespace: c.Query("memberKey.namespace"),
+		}
+		if key.ID == "" {
+			writeError(c, http.StatusBadRequest, "invalid", "Missing memberKey.id query parameter")
 			return
 		}
 		result, err := st.CheckTransitiveMembership(c.Request.Context(), parent, key)

@@ -76,7 +76,7 @@ type SystemRamFreeReport struct {
 }
 
 type NetworkInterface struct {
-	Ipadddress string `json:"ipAddress,omitempty"`
+	IpAddress  string `json:"ipAddress,omitempty"`
 	MACAddress string `json:"macAddress,omitempty"`
 	Type       string `json:"type,omitempty"`
 }

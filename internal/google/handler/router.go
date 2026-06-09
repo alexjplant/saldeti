@@ -142,9 +142,9 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 			chromeos.PATCH("/:deviceId", patchChromeOSDeviceHandler(st))
 			chromeos.PUT("/:deviceId", updateChromeOSDeviceHandler(st))
 			chromeos.POST("/moveDevicesToOu", moveChromeOSDevicesHandler(st))
-			chromeos.POST("/batchChangeStatus", batchChangeChromeOSStatusHandler(st))
-			chromeos.GET("/count", countChromeOSDevicesHandler(st))
-			chromeos.POST("/:deviceId/issueCommand", issueChromeOSCommandHandler(st))
+			chromeos.POST("%3AbatchChangeStatus", batchChangeChromeOSStatusHandler(st))
+			chromeos.GET("%3AcountChromeOsDevices", countChromeOSDevicesHandler(st))
+			chromeos.POST("/:deviceId%3AissueCommand", issueChromeOSCommandHandler(st))
 			chromeos.GET("/:deviceId/commands/:commandId", getChromeOSCommandHandler(st))
 		}
 
@@ -281,8 +281,8 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 			// Memberships — collection
 			ciGrp.GET("/memberships", listCIMembershipsHandler(st))
 			ciGrp.POST("/memberships", createCIMembershipHandler(st))
-			ciGrp.POST("/memberships%3Alookup", lookupCIMembershipHandler(st))
-			ciGrp.POST("/memberships%3AcheckTransitiveMembership", checkTransitiveMembershipHandler(st))
+			ciGrp.GET("/memberships%3Alookup", lookupCIMembershipHandler(st))
+			ciGrp.GET("/memberships%3AcheckTransitiveMembership", checkTransitiveMembershipHandler(st))
 			ciGrp.GET("/memberships%3AgetMembershipGraph", getMembershipGraphHandler(st))
 			ciGrp.GET("/memberships%3AsearchTransitiveGroups", searchTransitiveGroupsHandler(st))
 			ciGrp.GET("/memberships%3AsearchTransitiveMemberships", searchTransitiveMembershipsHandler(st))
