@@ -32,6 +32,8 @@ import (
 	"github.com/saldeti/saldeti/internal/entra/seed"
 	"github.com/saldeti/saldeti/internal/entra/store"
 	ui "github.com/saldeti/saldeti/internal/entra/ui"
+	ghandler "github.com/saldeti/saldeti/internal/google/handler"
+	gstore "github.com/saldeti/saldeti/internal/google/store"
 )
 
 func generateSelfSignedCert() (tls.Certificate, error) {
@@ -82,6 +84,7 @@ func main() {
 	stop := flag.Bool("stop", false, "Stop a running daemon")
 	baseURLFlag := flag.String("base-url", "", "External base URL (e.g. https://example.com). When set, X-Forwarded-Host/Proto headers are ignored.")
 	trustForwarded := flag.Bool("trust-forwarded-headers", false, "Trust X-Forwarded-Host/Proto headers for base URL detection")
+	google := flag.Bool("google", false, "Enable Google Workspace API simulator")
 
 	// Admin credential flags
 	adminClientID := flag.String("admin-client-id", "", "Admin app client ID (default: random UUID; if set, -admin-client-secret and -admin-tenant-id must also be set)")
@@ -276,6 +279,13 @@ func main() {
 	if *uiEnabled {
 		baseURL := fmt.Sprintf("https://localhost:%d", *port)
 		ui.RegisterUIRoutes(router, baseURL, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID)
+	}
+
+	// Register Google Workspace routes if enabled
+	if *google {
+		googleStore := gstore.NewMemoryStore()
+		ghandler.RegisterRoutes(router, googleStore)
+		log.Info().Msg("Google Workspace API simulator enabled")
 	}
 
 	// Generate self-signed TLS cert if not provided
