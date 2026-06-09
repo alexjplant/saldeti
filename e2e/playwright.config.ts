@@ -13,6 +13,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'chromium', use: { browserName: 'chromium' }, testIgnore: '**/google/**' },
+    { name: 'google-chromium', use: { browserName: 'chromium' }, testDir: './tests/google' },
   ],
 });
