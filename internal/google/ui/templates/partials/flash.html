@@ -1,0 +1,7 @@
+{{define "flash"}}
+{{if .Flash}}
+<div class="flash-{{.Flash.Level}}">
+    {{.Flash.Message}}
+</div>
+{{end}}
+{{end}}

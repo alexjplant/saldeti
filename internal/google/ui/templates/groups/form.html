@@ -1,0 +1,38 @@
+{{define "title"}}New Group — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>New Group</h2>
+    <p>Create a new group</p>
+</hgroup>
+
+{{if .Error}}
+<div class="flash-danger">
+    {{.Error}}
+</div>
+{{end}}
+
+<form method="POST" action="{{.FormAction}}">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+    <label for="email">
+        Email
+        <input type="email" id="email" name="email" placeholder="group@example.com" value="{{.Form.Email}}" required>
+    </label>
+
+    <label for="name">
+        Name
+        <input type="text" id="name" name="name" placeholder="Group Name" value="{{.Form.Name}}">
+    </label>
+
+    <label for="description">
+        Description
+        <textarea id="description" name="description" placeholder="Group description" rows="3">{{.Form.Description}}</textarea>
+    </label>
+
+    <div role="group">
+        <button type="submit">Create</button>
+        <a href="{{.CancelURL}}" role="button" class="secondary">Cancel</a>
+    </div>
+</form>
+{{end}}

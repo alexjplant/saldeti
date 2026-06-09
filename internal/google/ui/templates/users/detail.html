@@ -1,0 +1,54 @@
+{{define "title"}}User Detail — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>{{if .User.Name}}{{.User.Name.FullName}}{{else}}{{.User.PrimaryEmail}}{{end}}</h2>
+    <p>{{.User.PrimaryEmail}}</p>
+</hgroup>
+
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/google-ui/users">Users</a></li>
+    <li>{{.User.PrimaryEmail}}</li>
+  </ul>
+</nav>
+
+<div role="group" style="margin-bottom: var(--pico-spacing);">
+    <a href="/google-ui/users/{{.User.ID}}/edit" role="button" class="secondary outline">{{template "icon-pencil" .}} Edit</a>
+    <form id="delete-user" method="POST" action="/google-ui/users/{{.User.ID}}/delete" data-confirm="Delete {{.User.PrimaryEmail}}?" style="display: none;">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    </form>
+    <button form="delete-user" type="submit" class="outline danger">{{template "icon-trash-2" .}} Delete</button>
+</div>
+
+<div class="grid">
+    <div>
+        <article>
+            <header>General</header>
+            <dl>
+                <dt>ID</dt><dd>{{.User.ID}}</dd>
+                <dt>Primary Email</dt><dd>{{.User.PrimaryEmail}}</dd>
+                <dt>Given Name</dt><dd>{{if .User.Name}}{{.User.Name.GivenName}}{{else}}{{.User.GivenName}}{{end}}</dd>
+                <dt>Family Name</dt><dd>{{if .User.Name}}{{.User.Name.FamilyName}}{{else}}{{.User.FamilyName}}{{end}}</dd>
+                <dt>Display Name</dt><dd>{{.User.DisplayName}}</dd>
+                <dt>Org Unit Path</dt><dd>{{.User.OrgUnitPath}}</dd>
+                <dt>Customer ID</dt><dd>{{.User.CustomerID}}</dd>
+            </dl>
+        </article>
+    </div>
+
+    <div>
+        <article>
+            <header>Status</header>
+            <dl>
+                <dt>Suspended</dt><dd>{{yesno .User.Suspended}}</dd>
+                <dt>Is Admin</dt><dd>{{yesno .User.IsAdmin}}</dd>
+                <dt>Change Password At Next Login</dt><dd>{{yesno .User.ChangePasswordAtNextLogin}}</dd>
+                <dt>Creation Time</dt><dd>{{.User.CreationTime}}</dd>
+                <dt>Last Login Time</dt><dd>{{.User.LastLoginTime}}</dd>
+                <dt>2SV Enrolled</dt><dd>{{yesno .User.Is2svEnrolled}}</dd>
+            </dl>
+        </article>
+    </div>
+</div>
+{{end}}

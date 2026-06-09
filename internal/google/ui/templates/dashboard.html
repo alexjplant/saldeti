@@ -1,0 +1,77 @@
+{{define "title"}}Dashboard — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>Dashboard</h2>
+    <p>Google Workspace API Simulator overview</p>
+</hgroup>
+
+<div class="grid">
+    <div>
+        <article>
+            <header>Total Users</header>
+            <hgroup>
+                <h2>{{.TotalUsers}}</h2>
+            </hgroup>
+            <footer><a href="/google-ui/users">View</a></footer>
+        </article>
+    </div>
+    <div>
+        <article>
+            <header>Total Groups</header>
+            <hgroup>
+                <h2>{{.TotalGroups}}</h2>
+            </hgroup>
+            <footer><a href="/google-ui/groups">View</a></footer>
+        </article>
+    </div>
+    <div>
+        <article>
+            <header>Org Units</header>
+            <hgroup>
+                <h2>{{.TotalOrgUnits}}</h2>
+            </hgroup>
+            <footer><a href="/google-ui/orgunits">View</a></footer>
+        </article>
+    </div>
+    <div>
+        <article>
+            <header>ChromeOS Devices</header>
+            <hgroup>
+                <h2>{{.TotalChromeOSDevices}}</h2>
+            </hgroup>
+            <footer><a href="/google-ui/devices">View</a></footer>
+        </article>
+    </div>
+    <div>
+        <article>
+            <header>Roles</header>
+            <hgroup>
+                <h2>{{.TotalRoles}}</h2>
+            </hgroup>
+            <footer><a href="/google-ui/roles">View</a></footer>
+        </article>
+    </div>
+    <div>
+        <article>
+            <header>Domains</header>
+            <hgroup>
+                <h2>{{.TotalDomains}}</h2>
+            </hgroup>
+            <footer><a href="/google-ui/domains">View</a></footer>
+        </article>
+    </div>
+</div>
+
+<div class="grid" style="margin-top: calc(var(--pico-spacing) * 2);">
+    <div>
+        <article>
+            <header>Mobile Devices</header>
+            <hgroup>
+                <h2>{{.TotalMobileDevices}}</h2>
+            </hgroup>
+            <footer><a href="/google-ui/devices">View</a></footer>
+        </article>
+    </div>
+</div>
+{{end}}

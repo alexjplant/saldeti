@@ -1,0 +1,76 @@
+{{define "title"}}Groups — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>Groups</h2>
+    <p>{{.TotalCount}} total groups</p>
+</hgroup>
+
+<nav style="margin-bottom: var(--pico-spacing);">
+    <ul>
+        <li>
+            <form method="GET" action="/google-ui/groups" style="margin-bottom: 0;">
+                <fieldset role="group" style="margin-bottom: 0;">
+                    <input type="search" name="search" placeholder="Search groups..." value="{{.Search}}" />
+                    <input type="submit" value="Search" />
+                </fieldset>
+            </form>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <a href="/google-ui/groups/new" role="button">{{template "icon-plus" .}} New Group</a>
+        </li>
+    </ul>
+</nav>
+{{if .Search}}<p><small>Filtered by "{{.Search}}" — <a href="/google-ui/groups">Clear</a></small></p>{{end}}
+
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Admin Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Groups}}
+            <tr>
+                <td><a href="/google-ui/groups/{{.ID}}">{{.Email}}</a></td>
+                <td>{{.Name}}</td>
+                <td>{{truncate .Description 50}}</td>
+                <td>{{yesno .AdminCreated}}</td>
+                <td>
+                    <div role="group">
+                        <a href="/google-ui/groups/{{.ID}}" role="button" class="outline secondary" title="View" aria-label="View">{{template "icon-eye" .}}</a>
+                        <form id="delete-group-{{.ID}}" method="POST" action="/google-ui/groups/{{.ID}}/delete" data-confirm="Delete {{.Email}}?" style="display: none;">
+                            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                        </form>
+                        <button form="delete-group-{{.ID}}" type="submit" title="Delete" aria-label="Delete" class="outline danger">{{template "icon-trash-2" .}}</button>
+                    </div>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="5">No groups found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+
+{{if .HasPagination}}
+<nav aria-label="Pagination">
+  <ul>
+    {{if .PrevPage}}
+    <li><a href="/google-ui/groups?page={{.PrevPage}}{{if .Search}}&search={{.Search}}{{end}}">Previous</a></li>
+    {{end}}
+    <li>Page {{.CurrentPage}} of {{.TotalPages}}</li>
+    {{if .NextPage}}
+    <li><a href="/google-ui/groups?page={{.NextPage}}{{if .Search}}&search={{.Search}}{{end}}">Next</a></li>
+    {{end}}
+  </ul>
+</nav>
+{{end}}
+{{end}}

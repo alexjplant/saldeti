@@ -1,0 +1,88 @@
+{{define "title"}}Group Detail — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>{{.Group.Name}}</h2>
+    <p>{{.Group.Email}}</p>
+</hgroup>
+
+<nav aria-label="breadcrumb" style="margin-bottom: var(--pico-spacing);">
+  <ul>
+    <li><a href="/google-ui/groups">Groups</a></li>
+    <li>{{.Group.Email}}</li>
+  </ul>
+</nav>
+
+<form id="delete-group" method="POST" action="/google-ui/groups/{{.Group.ID}}/delete" data-confirm="Delete {{.Group.Email}}?" style="margin-bottom: var(--pico-spacing);">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <button type="submit" class="outline danger">{{template "icon-trash-2" .}} Delete Group</button>
+</form>
+
+<div class="grid">
+    <div>
+        <article>
+            <header>Group Information</header>
+            <dl>
+                <dt>ID</dt><dd>{{.Group.ID}}</dd>
+                <dt>Email</dt><dd>{{.Group.Email}}</dd>
+                <dt>Name</dt><dd>{{.Group.Name}}</dd>
+                <dt>Description</dt><dd>{{.Group.Description}}</dd>
+                <dt>Admin Created</dt><dd>{{yesno .Group.AdminCreated}}</dd>
+                <dt>Direct Members Count</dt><dd>{{.Group.DirectMembersCount}}</dd>
+            </dl>
+        </article>
+    </div>
+</div>
+
+<h3>Members</h3>
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Members}}
+            <tr>
+                <td>{{.Email}}</td>
+                <td>{{.Role}}</td>
+                <td>{{.Type}}</td>
+                <td>{{.Status}}</td>
+                <td>
+                    <form id="remove-member-{{.ID}}" method="POST" action="/google-ui/groups/{{$.Group.ID}}/members/{{.ID}}/remove" data-confirm="Remove {{.Email}} from group?" style="display: none;">
+                        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                    </form>
+                    <button form="remove-member-{{.ID}}" type="submit" title="Remove" aria-label="Remove" class="outline danger">{{template "icon-user-minus" .}}</button>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="5">No members in this group.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+
+<h3>Add Member</h3>
+<form method="POST" action="/google-ui/groups/{{.Group.ID}}/members/add" style="margin-bottom: var(--pico-spacing);">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <div role="group">
+        <select id="email" name="email" required>
+            <option value="">Select a user...</option>
+            {{range .AllUsers}}
+            <option value="{{.PrimaryEmail}}">{{.PrimaryEmail}} - {{if .Name}}{{.Name.FullName}}{{else}}{{.GivenName}} {{.FamilyName}}{{end}}</option>
+            {{end}}
+        </select>
+        <select id="role" name="role">
+            <option value="MEMBER">Member</option>
+            <option value="MANAGER">Manager</option>
+            <option value="OWNER">Owner</option>
+        </select>
+        <button type="submit">Add Member</button>
+    </div>
+</form>
+{{end}}

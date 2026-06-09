@@ -1,0 +1,41 @@
+{{define "title"}}Org Units — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>Org Units</h2>
+    <p>Organizational Units</p>
+</hgroup>
+
+<nav style="margin-bottom: var(--pico-spacing);">
+    <ul>
+        <li>
+            <a href="/google-ui/orgunits/new" role="button">{{template "icon-plus" .}} New Org Unit</a>
+        </li>
+    </ul>
+</nav>
+
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Org Unit Path</th>
+                <th>Description</th>
+                <th>Parent Org Unit Path</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .OrgUnits}}
+            <tr>
+                <td>{{.Name}}</td>
+                <td>{{.OrgUnitPath}}</td>
+                <td>{{truncate .Description 50}}</td>
+                <td>{{.ParentOrgUnitPath}}</td>
+            </tr>
+            {{else}}
+            <tr><td colspan="4">No org units found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+{{end}}
