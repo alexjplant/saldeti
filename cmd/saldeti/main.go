@@ -27,11 +27,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/saldeti/saldeti/internal/auth"
-	"github.com/saldeti/saldeti/internal/handler"
-	"github.com/saldeti/saldeti/internal/seed"
-	"github.com/saldeti/saldeti/internal/store"
-	ui "github.com/saldeti/saldeti/internal/ui"
+	"github.com/saldeti/saldeti/internal/entra/auth"
+	"github.com/saldeti/saldeti/internal/entra/handler"
+	"github.com/saldeti/saldeti/internal/entra/seed"
+	"github.com/saldeti/saldeti/internal/entra/store"
+	ui "github.com/saldeti/saldeti/internal/entra/ui"
 )
 
 func generateSelfSignedCert() (tls.Certificate, error) {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/saldeti/saldeti/internal/auth"
+	"github.com/saldeti/saldeti/internal/entra/auth"
 )
 
 func TestMain(m *testing.M) {
