@@ -23,8 +23,8 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 		// Users (Tier 1B, endpoints 4-21)
 		directory.GET("/users", listUsersHandler(st))
 		directory.POST("/users", createUserHandler(st))
-		directory.POST("/users:createGuest", createGuestUserHandler(st))
-		directory.POST("/users:watch", watchUsersHandler(st))
+		directory.POST("/users%3AcreateGuest", createGuestUserHandler(st))
+		directory.POST("/users%3Awatch", watchUsersHandler(st))
 
 		users := directory.Group("/users/:userKey")
 		{
@@ -252,7 +252,7 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 
 			// Device Users
 			ciDev.GET("/deviceUsers", listDeviceUsersHandler(st))
-			ciDev.GET("/deviceUsers:lookup", lookupDeviceUserHandler(st))
+			ciDev.GET("/deviceUsers%3Alookup", lookupDeviceUserHandler(st))
 
 			ciDevUser := ciDev.Group("/deviceUsers/:deviceUserName")
 			{
@@ -268,8 +268,8 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 		// Groups — collection
 		v1.GET("/groups", listCIGroupsHandler(st))
 		v1.POST("/groups", createCIGroupHandler(st))
-		v1.GET("/groups:lookup", lookupCIGroupHandler(st))
-		v1.GET("/groups:search", searchCIGroupsHandler(st))
+		v1.GET("/groups%3Alookup", lookupCIGroupHandler(st))
+		v1.GET("/groups%3Asearch", searchCIGroupsHandler(st))
 
 		// Groups — named resource
 		ciGrp := v1.Group("/groups/:groupName")
@@ -281,12 +281,12 @@ func RegisterRoutes(engine *gin.Engine, st store.Store) {
 			// Memberships — collection
 			ciGrp.GET("/memberships", listCIMembershipsHandler(st))
 			ciGrp.POST("/memberships", createCIMembershipHandler(st))
-			ciGrp.POST("/memberships:lookup", lookupCIMembershipHandler(st))
-			ciGrp.POST("/memberships:checkTransitiveMembership", checkTransitiveMembershipHandler(st))
-			ciGrp.GET("/memberships:getMembershipGraph", getMembershipGraphHandler(st))
-			ciGrp.GET("/memberships:searchTransitiveGroups", searchTransitiveGroupsHandler(st))
-			ciGrp.GET("/memberships:searchTransitiveMemberships", searchTransitiveMembershipsHandler(st))
-			ciGrp.GET("/memberships:searchDirectGroups", searchDirectGroupsHandler(st))
+			ciGrp.POST("/memberships%3Alookup", lookupCIMembershipHandler(st))
+			ciGrp.POST("/memberships%3AcheckTransitiveMembership", checkTransitiveMembershipHandler(st))
+			ciGrp.GET("/memberships%3AgetMembershipGraph", getMembershipGraphHandler(st))
+			ciGrp.GET("/memberships%3AsearchTransitiveGroups", searchTransitiveGroupsHandler(st))
+			ciGrp.GET("/memberships%3AsearchTransitiveMemberships", searchTransitiveMembershipsHandler(st))
+			ciGrp.GET("/memberships%3AsearchDirectGroups", searchDirectGroupsHandler(st))
 
 			// Memberships — named resource
 			ciMem := ciGrp.Group("/memberships/:membershipName")

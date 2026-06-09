@@ -180,7 +180,7 @@ func listGroupAliasesHandler(st store.Store) gin.HandlerFunc {
 		if aliases == nil {
 			aliases = []string{}
 		}
-		var aliasItems []gin.H
+		aliasItems := []gin.H{}
 		for _, a := range aliases {
 			aliasItems = append(aliasItems, gin.H{
 				"kind":  "admin#directory#alias",
