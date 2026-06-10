@@ -1,4 +1,4 @@
-//go:build e2e
+//go:build e2e && entra
 
 package e2e
 
@@ -14,8 +14,8 @@ import (
 	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
-	"github.com/saldeti/saldeti/internal/handler"
-	"github.com/saldeti/saldeti/internal/store"
+	"github.com/saldeti/saldeti/internal/entra/handler"
+	"github.com/saldeti/saldeti/internal/entra/store"
 )
 
 // httpTransport wraps an http.Client to implement policy.Transporter

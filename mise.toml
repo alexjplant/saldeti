@@ -9,6 +9,7 @@ node = "22"
 "npm:typescript" = "latest"
 "npm:vscode-langservers-extracted" = "latest"
 "github:tamasfe/taplo" = "latest"
+uv = "latest"
 
 [env]
 _.file = ".env"
@@ -43,7 +44,7 @@ description = "Runs end-to-end tests (requires e2e build tag)"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test ./test/ -v -count=1 -tags=e2e "$@"
+go test ./test/ -v -count=1 -tags=e2e,entra "$@"
 """
 
 [tasks.lint]
@@ -75,7 +76,7 @@ description = "Runs unit + integration tests"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test -tags e2e ./...
+go test -tags e2e,entra ./...
 """
 
 [tasks.ui-test]
@@ -83,7 +84,7 @@ description = "Runs Go UI unit tests (build tag: ui)"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test -tags ui -v -count=1 ./internal/ui_test/...
+go test -tags ui,entra -v -count=1 ./internal/entra/ui_test/...
 """
 
 [tasks.ui-e2e-install]
@@ -166,7 +167,7 @@ run = """
 #!/usr/bin/env bash
 set -euo pipefail
 trap 'mise run ui-e2e-stop' EXIT
-npx playwright test "$@"
+npx playwright test --project=chromium "$@"
 """
 
 [tasks.ui-e2e-headed]

@@ -1,0 +1,33 @@
+{{define "title"}}Roles — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>Roles</h2>
+    <p>Admin roles</p>
+</hgroup>
+
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Role Name</th>
+                <th>Role Description</th>
+                <th>Is System Role</th>
+                <th>Is Super Admin Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Roles}}
+            <tr>
+                <td>{{.RoleName}}</td>
+                <td>{{truncate .RoleDescription 100}}</td>
+                <td>{{yesno .IsSystemRole}}</td>
+                <td>{{yesno .IsSuperAdminRole}}</td>
+            </tr>
+            {{else}}
+            <tr><td colspan="4">No roles found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+{{end}}

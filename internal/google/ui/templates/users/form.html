@@ -1,0 +1,48 @@
+{{define "title"}}{{if .IsCreate}}New User{{else}}Edit User{{end}} — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>{{if .IsCreate}}New User{{else}}Edit User{{end}}</h2>
+    <p>{{if .IsCreate}}Create a new user account{{else}}Update user details{{end}}</p>
+</hgroup>
+
+{{if .Error}}
+<div class="flash-danger">
+    {{.Error}}
+</div>
+{{end}}
+
+<form method="POST" action="{{.FormAction}}">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+    <label for="primaryEmail">
+        Primary Email
+        <input type="email" id="primaryEmail" name="primaryEmail" placeholder="user@example.com" value="{{.Form.PrimaryEmail}}" required>
+    </label>
+
+    <label for="givenName">
+        Given Name
+        <input type="text" id="givenName" name="givenName" placeholder="John" value="{{.Form.GivenName}}">
+    </label>
+
+    <label for="familyName">
+        Family Name
+        <input type="text" id="familyName" name="familyName" placeholder="Doe" value="{{.Form.FamilyName}}">
+    </label>
+
+    <label for="orgUnitPath">
+        Org Unit Path
+        <input type="text" id="orgUnitPath" name="orgUnitPath" placeholder="/" value="{{.Form.OrgUnitPath}}">
+    </label>
+
+    <label for="suspended">
+        <input type="checkbox" id="suspended" name="suspended" {{if .Form.Suspended}}checked{{end}}>
+        Suspended
+    </label>
+
+    <div role="group">
+        <button type="submit">{{if .IsCreate}}Create{{else}}Update{{end}}</button>
+        <a href="{{.CancelURL}}" role="button" class="secondary">Cancel</a>
+    </div>
+</form>
+{{end}}

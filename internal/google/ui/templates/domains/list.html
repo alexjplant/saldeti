@@ -1,0 +1,33 @@
+{{define "title"}}Domains — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>Domains</h2>
+    <p>Verified domains</p>
+</hgroup>
+
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Domain Name</th>
+                <th>Is Primary</th>
+                <th>Verified</th>
+                <th>Creation Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Domains}}
+            <tr>
+                <td>{{.DomainName}}</td>
+                <td>{{yesno .IsPrimary}}</td>
+                <td>{{yesno .Verified}}</td>
+                <td>{{.CreationTime}}</td>
+            </tr>
+            {{else}}
+            <tr><td colspan="4">No domains found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+{{end}}

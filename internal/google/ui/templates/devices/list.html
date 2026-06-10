@@ -1,0 +1,68 @@
+{{define "title"}}Devices — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>Devices</h2>
+    <p>Managed devices</p>
+</hgroup>
+
+<h3>ChromeOS Devices</h3>
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Device ID</th>
+                <th>Serial Number</th>
+                <th>Status</th>
+                <th>Model</th>
+                <th>OS Version</th>
+                <th>Org Unit Path</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .ChromeOSDevices}}
+            <tr>
+                <td>{{.DeviceID}}</td>
+                <td>{{.SerialNumber}}</td>
+                <td>{{.Status}}</td>
+                <td>{{.Model}}</td>
+                <td>{{.OsVersion}}</td>
+                <td>{{.OrgUnitPath}}</td>
+            </tr>
+            {{else}}
+            <tr><td colspan="6">No ChromeOS devices found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+
+<h3>Mobile Devices</h3>
+<figure>
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Resource ID</th>
+                <th>Model</th>
+                <th>OS</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Serial Number</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .MobileDevices}}
+            <tr>
+                <td>{{.ResourceId}}</td>
+                <td>{{.Model}}</td>
+                <td>{{.Os}}</td>
+                <td>{{.Type}}</td>
+                <td>{{.Status}}</td>
+                <td>{{.SerialNumber}}</td>
+            </tr>
+            {{else}}
+            <tr><td colspan="6">No mobile devices found.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+{{end}}

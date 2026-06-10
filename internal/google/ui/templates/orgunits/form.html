@@ -1,0 +1,43 @@
+{{define "title"}}New Org Unit — Saldeti Google Workspace{{end}}
+
+{{define "content"}}
+<hgroup>
+    <h2>New Org Unit</h2>
+    <p>Create a new organizational unit</p>
+</hgroup>
+
+{{if .Error}}
+<div class="flash-danger">
+    {{.Error}}
+</div>
+{{end}}
+
+<form method="POST" action="{{.FormAction}}">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+    <label for="name">
+        Name
+        <input type="text" id="name" name="name" placeholder="Org Unit Name" value="{{.Form.Name}}" required>
+    </label>
+
+    <label for="orgUnitPath">
+        Org Unit Path
+        <input type="text" id="orgUnitPath" name="orgUnitPath" placeholder="/Engineering" value="{{.Form.OrgUnitPath}}" required>
+    </label>
+
+    <label for="parentOrgUnitPath">
+        Parent Org Unit Path
+        <input type="text" id="parentOrgUnitPath" name="parentOrgUnitPath" placeholder="/" value="{{.Form.ParentOrgUnitPath}}">
+    </label>
+
+    <label for="description">
+        Description
+        <textarea id="description" name="description" placeholder="Org unit description" rows="3">{{.Form.Description}}</textarea>
+    </label>
+
+    <div role="group">
+        <button type="submit">Create</button>
+        <a href="{{.CancelURL}}" role="button" class="secondary">Cancel</a>
+    </div>
+</form>
+{{end}}

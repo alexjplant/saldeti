@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	invopopjsonschema "github.com/invopop/jsonschema"
-	"github.com/saldeti/saldeti/internal/seed"
+	"github.com/saldeti/saldeti/internal/entra/seed"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 

@@ -27,11 +27,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/saldeti/saldeti/internal/auth"
-	"github.com/saldeti/saldeti/internal/handler"
-	"github.com/saldeti/saldeti/internal/seed"
-	"github.com/saldeti/saldeti/internal/store"
-	ui "github.com/saldeti/saldeti/internal/ui"
+	"github.com/saldeti/saldeti/internal/entra/auth"
+	"github.com/saldeti/saldeti/internal/entra/handler"
+	"github.com/saldeti/saldeti/internal/entra/seed"
+	"github.com/saldeti/saldeti/internal/entra/store"
+	gui "github.com/saldeti/saldeti/internal/google/ui"
+	gauth "github.com/saldeti/saldeti/internal/google/auth"
+	ui "github.com/saldeti/saldeti/internal/entra/ui"
+	ghandler "github.com/saldeti/saldeti/internal/google/handler"
+	gstore "github.com/saldeti/saldeti/internal/google/store"
 )
 
 func generateSelfSignedCert() (tls.Certificate, error) {
@@ -82,6 +86,7 @@ func main() {
 	stop := flag.Bool("stop", false, "Stop a running daemon")
 	baseURLFlag := flag.String("base-url", "", "External base URL (e.g. https://example.com). When set, X-Forwarded-Host/Proto headers are ignored.")
 	trustForwarded := flag.Bool("trust-forwarded-headers", false, "Trust X-Forwarded-Host/Proto headers for base URL detection")
+	google := flag.Bool("google", false, "Enable Google Workspace API simulator")
 
 	// Admin credential flags
 	adminClientID := flag.String("admin-client-id", "", "Admin app client ID (default: random UUID; if set, -admin-client-secret and -admin-tenant-id must also be set)")
@@ -221,16 +226,17 @@ func main() {
 	log.Info().Str("domain", *domain).Msg("Directory domain")
 
 	// Set JWT signing key
+	var signingKeyBytes []byte
 	if *signingKey == "" {
-		key := make([]byte, 32)
-		if _, err := rand.Read(key); err != nil {
+		signingKeyBytes = make([]byte, 32)
+		if _, err := rand.Read(signingKeyBytes); err != nil {
 			log.Fatal().Err(err).Msg("Failed to generate random signing key")
 		}
-		auth.SetSigningKey(key)
-		// Log the generated key so developers can reuse it
-		log.Info().Str("key", hex.EncodeToString(key)).Msg("Generated random JWT signing key")
+		auth.SetSigningKey(signingKeyBytes)
+		log.Info().Str("key", hex.EncodeToString(signingKeyBytes)).Msg("Generated random JWT signing key")
 	} else {
-		auth.SetSigningKey([]byte(*signingKey))
+		signingKeyBytes = []byte(*signingKey)
+		auth.SetSigningKey(signingKeyBytes)
 	}
 
 	// Create store
@@ -276,6 +282,30 @@ func main() {
 	if *uiEnabled {
 		baseURL := fmt.Sprintf("https://localhost:%d", *port)
 		ui.RegisterUIRoutes(router, baseURL, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID)
+	}
+
+	// Register Google Workspace routes if enabled
+	if *google {
+		// Set Google auth signing key (use same key as Entra)
+		gauth.SetSigningKey(signingKeyBytes)
+
+		googleStore := gstore.NewMemoryStore()
+		ghandler.RegisterRoutes(router, googleStore)
+
+		// Register admin client for Google UI
+		googleClientID := uuid.New().String()
+		googleClientSecret := uuid.New().String()
+		if err := googleStore.RegisterClient(ctx, googleClientID, googleClientSecret); err != nil {
+			log.Fatal().Err(err).Msg("Failed to register Google admin client")
+		}
+		log.Info().Str("client_id", googleClientID).Str("client_secret", googleClientSecret).Msg("Google admin app credentials")
+
+		if *uiEnabled {
+			baseURL := fmt.Sprintf("https://localhost:%d", *port)
+			gui.RegisterUIRoutes(router, baseURL, googleClientID, googleClientSecret)
+		}
+
+		log.Info().Msg("Google Workspace API simulator enabled")
 	}
 
 	// Generate self-signed TLS cert if not provided
