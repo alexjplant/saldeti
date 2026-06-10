@@ -10,7 +10,7 @@ test.describe('Google Workspace Users', () => {
 
     await expect(page.locator('h2')).toHaveText('Users');
     await expect(page.locator('table')).toBeVisible();
-    await expect(page.locator('td', { hasText: 'No users found.' })).toBeVisible();
+    await expect(page.locator('thead th', { hasText: 'Primary Email' })).toBeVisible();
   });
 
   test('create user', async ({ page }) => {

@@ -5,7 +5,7 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Google Workspace Dashboard', () => {
   test('displays dashboard heading', async ({ page }) => {
     await page.goto('/google-ui');
-    await expect(page.locator('h2')).toHaveText('Dashboard');
+    await expect(page.locator('h2').first()).toHaveText('Dashboard');
     await expect(page.locator('hgroup p')).toContainText('Google Workspace');
   });
 

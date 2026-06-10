@@ -664,12 +664,19 @@ func (s *MemoryStore) GetMember(ctx context.Context, groupKey, memberKey string)
 	if !ok {
 		return nil, ErrNotFound
 	}
-	m, ok := mMap[memberKey]
-	if !ok {
-		return nil, ErrNotFound
+	// Try direct lookup by email first (email is the map key)
+	if m, ok := mMap[memberKey]; ok {
+		cp := *m
+		return &cp, nil
 	}
-	cp := *m
-	return &cp, nil
+	// Fall back to searching by ID
+	for _, member := range mMap {
+		if member.ID == memberKey {
+			cp := *member
+			return &cp, nil
+		}
+	}
+	return nil, ErrNotFound
 }
 
 func (s *MemoryStore) AddMember(ctx context.Context, groupKey string, member model.Member) (model.Member, error) {
@@ -701,12 +708,26 @@ func (s *MemoryStore) UpdateMember(ctx context.Context, groupKey, memberKey stri
 	if !ok {
 		return nil, ErrNotFound
 	}
-	old, ok := mMap[memberKey]
-	if !ok {
+	// Resolve memberKey: try direct lookup by email first, then search by ID
+	var oldEmail string
+	var old *model.Member
+	if m, ok := mMap[memberKey]; ok {
+		oldEmail = memberKey
+		old = m
+	} else {
+		for email, m := range mMap {
+			if m.ID == memberKey {
+				oldEmail = email
+				old = m
+				break
+			}
+		}
+	}
+	if old == nil {
 		return nil, ErrNotFound
 	}
 	member.ID = old.ID
-	delete(mMap, memberKey)
+	delete(mMap, oldEmail)
 	mMap[member.Email] = &member
 	cp := member
 	return &cp, nil
@@ -723,11 +744,19 @@ func (s *MemoryStore) RemoveMember(ctx context.Context, groupKey, memberKey stri
 	if !ok {
 		return ErrNotFound
 	}
-	if _, ok := mMap[memberKey]; !ok {
-		return ErrNotFound
+	// Try direct lookup by email first (email is the map key)
+	if _, ok := mMap[memberKey]; ok {
+		delete(mMap, memberKey)
+		return nil
 	}
-	delete(mMap, memberKey)
-	return nil
+	// Fall back to searching by ID
+	for email, member := range mMap {
+		if member.ID == memberKey {
+			delete(mMap, email)
+			return nil
+		}
+	}
+	return ErrNotFound
 }
 
 func (s *MemoryStore) HasMember(ctx context.Context, groupKey, memberKey string) (bool, error) {
@@ -741,8 +770,17 @@ func (s *MemoryStore) HasMember(ctx context.Context, groupKey, memberKey string)
 	if !ok {
 		return false, nil
 	}
-	_, found := mMap[memberKey]
-	return found, nil
+	// Try direct lookup by email first (email is the map key)
+	if _, found := mMap[memberKey]; found {
+		return true, nil
+	}
+	// Fall back to searching by ID
+	for _, member := range mMap {
+		if member.ID == memberKey {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // OrgUnits

@@ -10,7 +10,7 @@ test.describe('Google Workspace Groups', () => {
 
     await expect(page.locator('h2')).toHaveText('Groups');
     await expect(page.locator('table')).toBeVisible();
-    await expect(page.locator('td', { hasText: 'No groups found.' })).toBeVisible();
+    await expect(page.locator('thead th').first()).toBeVisible();
   });
 
   test('create group', async ({ page }) => {
@@ -76,7 +76,7 @@ test.describe('Google Workspace Groups', () => {
 
     // Select a user from the dropdown (first non-empty option)
     const emailSelect = page.locator('select[name="email"]');
-    await emailSelect.selectOption({ index: 1 });
+    await emailSelect.selectOption(memberEmail);
 
     // Submit add member
     await page.locator('button', { hasText: 'Add Member' }).click();

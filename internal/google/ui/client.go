@@ -342,7 +342,7 @@ func (c *GoogleClient) GetOrgUnits(ctx context.Context, customer string) ([]mode
 	var resp struct {
 		OrganizationUnits []model.OrgUnit `json:"organizationUnits"`
 	}
-	if err := c.doGet(ctx, "/admin/directory/v1/customer/"+customer+"/orgunits", &resp); err != nil {
+	if err := c.doGet(ctx, "/admin/directory/v1/customer/"+customer+"/orgunits/", &resp); err != nil {
 		return nil, err
 	}
 	if resp.OrganizationUnits == nil {

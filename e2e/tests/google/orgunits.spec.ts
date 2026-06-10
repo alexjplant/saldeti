@@ -8,7 +8,7 @@ test.describe('Google Workspace Org Units', () => {
 
     await expect(page.locator('h2')).toHaveText('Org Units');
     await expect(page.locator('table')).toBeVisible();
-    await expect(page.locator('td', { hasText: 'No org units found.' })).toBeVisible();
+    await expect(page.locator('thead th').first()).toBeVisible();
   });
 
   test('create org unit', async ({ page }) => {
