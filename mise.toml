@@ -76,7 +76,7 @@ description = "Runs unit + integration tests"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test -tags e2e ./...
+go test -tags e2e,entra ./...
 """
 
 [tasks.ui-test]
@@ -84,7 +84,7 @@ description = "Runs Go UI unit tests (build tag: ui)"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test -tags ui -v -count=1 ./internal/ui_test/...
+go test -tags ui,entra -v -count=1 ./internal/entra/ui_test/...
 """
 
 [tasks.ui-e2e-install]
