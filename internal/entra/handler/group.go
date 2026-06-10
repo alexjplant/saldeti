@@ -173,26 +173,10 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#groups/$entity",
-			"@odata.type":    "#microsoft.graph.group",
-		}
-
-		// Merge group fields into response
-		groupJSON, err := json.Marshal(group)
+		response, err := buildEntityResponseWithType("https://graph.microsoft.com/v1.0/$metadata#groups/$entity", "#microsoft.graph.group", group)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var groupMap map[string]interface{}
-		if err := json.Unmarshal(groupJSON, &groupMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range groupMap {
-			response[k] = v
 		}
 
 		// Handle $expand
@@ -317,25 +301,10 @@ func createGroupHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#groups/$entity",
-		}
-
-		// Merge group fields into response
-		groupJSON, err := json.Marshal(createdGroup)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#groups/$entity", createdGroup)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var groupMap map[string]interface{}
-		if err := json.Unmarshal(groupJSON, &groupMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range groupMap {
-			response[k] = v
 		}
 
 		c.Header("Location", "/v1.0/groups/"+createdGroup.ID)
@@ -369,26 +338,10 @@ func updateGroupHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#groups/$entity",
-			"@odata.type":    "#microsoft.graph.group",
-		}
-
-		// Merge group fields into response
-		groupJSON, err := json.Marshal(group)
+		response, err := buildEntityResponseWithType("https://graph.microsoft.com/v1.0/$metadata#groups/$entity", "#microsoft.graph.group", group)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var groupMap map[string]interface{}
-		if err := json.Unmarshal(groupJSON, &groupMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range groupMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)

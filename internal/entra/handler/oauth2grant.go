@@ -101,25 +101,10 @@ func getGrantHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response map with @odata.context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#oauth2PermissionGrants/$entity",
-		}
-
-		// Marshal/unmarshal grant to map, merge into response
-		grantJSON, err := json.Marshal(grant)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#oauth2PermissionGrants/$entity", grant)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var grantMap map[string]interface{}
-		if err := json.Unmarshal(grantJSON, &grantMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range grantMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -178,25 +163,10 @@ func createGrantHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with @odata.context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#oauth2PermissionGrants/$entity",
-		}
-
-		// Marshal/unmarshal, merge
-		grantJSON, err := json.Marshal(createdGrant)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#oauth2PermissionGrants/$entity", createdGrant)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var grantMap map[string]interface{}
-		if err := json.Unmarshal(grantJSON, &grantMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range grantMap {
-			response[k] = v
 		}
 
 		// Set Location header
@@ -233,25 +203,10 @@ func updateGrantHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with @odata.context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#oauth2PermissionGrants/$entity",
-		}
-
-		// Marshal/unmarshal, merge
-		grantJSON, err := json.Marshal(grant)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#oauth2PermissionGrants/$entity", grant)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var grantMap map[string]interface{}
-		if err := json.Unmarshal(grantJSON, &grantMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range grantMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)

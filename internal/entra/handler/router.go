@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -97,12 +96,11 @@ func NewRouter(st store.Store) *gin.Engine {
 		}
 
 		// Users
-		// Add routes without trailing slash for SDK compatibility
-		v1.POST("/users", createUserHandler(st))
-		v1.GET("/users", listUsersHandler(st)) // List users without trailing slash
 		users := v1.Group("/users")
 		{
+			users.GET("", listUsersHandler(st))
 			users.GET("/", listUsersHandler(st))
+			users.POST("", createUserHandler(st))
 			// Register delta routes BEFORE the :id group to ensure they're matched first
 			users.GET("/delta", usersDeltaHandler(st))
 			users.GET("/delta/", usersDeltaHandler(st))
@@ -110,11 +108,11 @@ func NewRouter(st store.Store) *gin.Engine {
 			usersUID := users.Group("/:id")
 			{
 				usersUID.GET("/", getUserHandler(st))
-				usersUID.GET("", getUserHandler(st)) // Handle /users/:id without trailing slash
+				usersUID.GET("", getUserHandler(st))
 				usersUID.PATCH("/", updateUserHandler(st))
-				usersUID.PATCH("", updateUserHandler(st)) // Handle /users/:id without trailing slash
+				usersUID.PATCH("", updateUserHandler(st))
 				usersUID.DELETE("/", deleteUserHandler(st))
-				usersUID.DELETE("", deleteUserHandler(st)) // Handle /users/:id without trailing slash
+				usersUID.DELETE("", deleteUserHandler(st))
 				usersUID.GET("/memberOf", listUserMemberOfHandler(st))
 				usersUID.GET("/transitiveMemberOf", listUserTransitiveMemberOfHandler(st))
 				usersUID.GET("/manager", getManagerHandler(st))
@@ -123,35 +121,35 @@ func NewRouter(st store.Store) *gin.Engine {
 				usersUID.GET("/directReports", listDirectReportsHandler(st))
 				usersUID.POST("/checkMemberGroups", checkUserMemberGroupsHandler(st))
 				usersUID.POST("/getMemberGroups", getUserMemberGroupsHandler(st))
-			usersUID.POST("/assignLicense", assignLicenseHandler(st))
-			usersUID.GET("/photo", getUserPhotoHandler(st))
-			usersUID.GET("/photo/$value", getUserPhotoValueHandler(st))
-			usersUID.PATCH("/photo/$value", updateUserPhotoValueHandler(st))
-			usersUID.POST("/changePassword", changePasswordHandler(st))
-			usersUID.POST("/reprocessLicenseAssignment", reprocessLicenseHandler(st))
-			usersUID.GET("/licenseDetails", listLicenseDetailsHandler(st))
-			usersUID.GET("/appRoleAssignments", listUserAppRoleAssignmentsHandler(st))
-			usersUID.POST("/appRoleAssignments", createUserAppRoleAssignmentHandler(st))
-			usersUID.DELETE("/appRoleAssignments/:assignmentId", deleteUserAppRoleAssignmentHandler(st))
+				usersUID.POST("/assignLicense", assignLicenseHandler(st))
+				usersUID.GET("/photo", getUserPhotoHandler(st))
+				usersUID.GET("/photo/$value", getUserPhotoValueHandler(st))
+				usersUID.PATCH("/photo/$value", updateUserPhotoValueHandler(st))
+				usersUID.POST("/changePassword", changePasswordHandler(st))
+				usersUID.POST("/reprocessLicenseAssignment", reprocessLicenseHandler(st))
+				usersUID.GET("/licenseDetails", listLicenseDetailsHandler(st))
+				usersUID.GET("/appRoleAssignments", listUserAppRoleAssignmentsHandler(st))
+				usersUID.POST("/appRoleAssignments", createUserAppRoleAssignmentHandler(st))
+				usersUID.DELETE("/appRoleAssignments/:assignmentId", deleteUserAppRoleAssignmentHandler(st))
+			}
 		}
-	}
 
 		// Groups
-		// Add routes without trailing slash for SDK compatibility
-		v1.POST("/groups", createGroupHandler(st))
-		v1.GET("/groups", listGroupsHandler(st)) // List groups without trailing slash
 		groups := v1.Group("/groups")
 		{
+			groups.GET("", listGroupsHandler(st))
 			groups.GET("/", listGroupsHandler(st))
+			groups.POST("", createGroupHandler(st))
 			groups.GET("/delta", groupsDeltaHandler(st))
+			groups.GET("/delta/", groupsDeltaHandler(st))
 			groupsGID := groups.Group("/:id")
 			{
 				groupsGID.GET("/", getGroupHandler(st))
-				groupsGID.GET("", getGroupHandler(st)) // Handle /groups/:id without trailing slash
+				groupsGID.GET("", getGroupHandler(st))
 				groupsGID.PATCH("/", updateGroupHandler(st))
-				groupsGID.PATCH("", updateGroupHandler(st)) // Handle /groups/:id without trailing slash
+				groupsGID.PATCH("", updateGroupHandler(st))
 				groupsGID.DELETE("/", deleteGroupHandler(st))
-				groupsGID.DELETE("", deleteGroupHandler(st)) // Handle /groups/:id without trailing slash
+				groupsGID.DELETE("", deleteGroupHandler(st))
 				groupsGID.GET("/members", listMembersHandler(st))
 				groupsGID.POST("/members/$ref", addMemberHandler(st))
 				groupsGID.DELETE("/members/:memberId/$ref", removeMemberHandler(st))
@@ -162,12 +160,12 @@ func NewRouter(st store.Store) *gin.Engine {
 				groupsGID.GET("/memberOf", listGroupMemberOfHandler(st))
 				groupsGID.GET("/transitiveMemberOf", listGroupTransitiveMemberOfHandler(st))
 				groupsGID.POST("/checkMemberGroups", checkMemberGroupsHandler(st))
-			groupsGID.POST("/getMemberGroups", getMemberGroupsHandler(st))
-			groupsGID.GET("/appRoleAssignments", listGroupAppRoleAssignmentsHandler(st))
-			groupsGID.POST("/appRoleAssignments", createGroupAppRoleAssignmentHandler(st))
-			groupsGID.DELETE("/appRoleAssignments/:assignmentId", deleteGroupAppRoleAssignmentHandler(st))
-			groupsGID.POST("/getMemberObjects", getMemberObjectsHandler(st))
-			// Type-cast navigation for members
+				groupsGID.POST("/getMemberGroups", getMemberGroupsHandler(st))
+				groupsGID.GET("/appRoleAssignments", listGroupAppRoleAssignmentsHandler(st))
+				groupsGID.POST("/appRoleAssignments", createGroupAppRoleAssignmentHandler(st))
+				groupsGID.DELETE("/appRoleAssignments/:assignmentId", deleteGroupAppRoleAssignmentHandler(st))
+				groupsGID.POST("/getMemberObjects", getMemberObjectsHandler(st))
+				// Type-cast navigation for members
 				groupsGID.GET("/members/microsoft.graph.user", listMembersByTypeHandler(st, "user"))
 				groupsGID.GET("/members/microsoft.graph.group", listMembersByTypeHandler(st, "group"))
 				// Type-cast navigation for owners
@@ -176,32 +174,41 @@ func NewRouter(st store.Store) *gin.Engine {
 		}
 
 		// Applications
-		v1.POST("/applications", createApplicationHandler(st))
-		v1.GET("/applications", listApplicationsHandler(st))
-		v1.GET("/applications/", listApplicationsHandler(st))
-		v1.GET("/applications/delta", applicationsDeltaHandler(st))
-		v1.GET("/applications/delta/", applicationsDeltaHandler(st))
-		v1.GET("/applications/:id", getApplicationHandler(st))
-		v1.PATCH("/applications/:id", updateApplicationHandler(st))
-		v1.DELETE("/applications/:id", deleteApplicationHandler(st))
-		v1.POST("/applications/:id/addPassword", addPasswordHandler(st))
-		v1.POST("/applications/:id/removePassword", removePasswordHandler(st))
-		v1.POST("/applications/:id/addKey", addKeyHandler(st))
-		v1.POST("/applications/:id/removeKey", removeKeyHandler(st))
-		v1.GET("/applications/:id/owners", listApplicationOwnersHandler(st))
-		v1.POST("/applications/:id/owners/$ref", addApplicationOwnerHandler(st))
-		v1.DELETE("/applications/:id/owners/:ownerId/$ref", removeApplicationOwnerHandler(st))
-		v1.GET("/applications/:id/extensionProperties", listExtensionPropertiesHandler(st))
-		v1.POST("/applications/:id/extensionProperties", createExtensionPropertyHandler(st))
-		v1.DELETE("/applications/:id/extensionProperties/:extId", deleteExtensionPropertyHandler(st))
-		v1.POST("/applications/:id/setVerifiedPublisher", setVerifiedPublisherHandler(st))
+		apps := v1.Group("/applications")
+		{
+			apps.GET("", listApplicationsHandler(st))
+			apps.GET("/", listApplicationsHandler(st))
+			apps.POST("", createApplicationHandler(st))
+			apps.GET("/delta", applicationsDeltaHandler(st))
+			apps.GET("/delta/", applicationsDeltaHandler(st))
+			appsUID := apps.Group("/:id")
+			{
+				appsUID.GET("", getApplicationHandler(st))
+				appsUID.GET("/", getApplicationHandler(st))
+				appsUID.PATCH("", updateApplicationHandler(st))
+				appsUID.PATCH("/", updateApplicationHandler(st))
+				appsUID.DELETE("", deleteApplicationHandler(st))
+				appsUID.DELETE("/", deleteApplicationHandler(st))
+				appsUID.POST("addPassword", addPasswordHandler(st))
+				appsUID.POST("removePassword", removePasswordHandler(st))
+				appsUID.POST("addKey", addKeyHandler(st))
+				appsUID.POST("removeKey", removeKeyHandler(st))
+				appsUID.GET("owners", listApplicationOwnersHandler(st))
+				appsUID.POST("owners/$ref", addApplicationOwnerHandler(st))
+				appsUID.DELETE("owners/:ownerId/$ref", removeApplicationOwnerHandler(st))
+				appsUID.GET("extensionProperties", listExtensionPropertiesHandler(st))
+				appsUID.POST("extensionProperties", createExtensionPropertyHandler(st))
+				appsUID.DELETE("extensionProperties/:extId", deleteExtensionPropertyHandler(st))
+				appsUID.POST("setVerifiedPublisher", setVerifiedPublisherHandler(st))
+			}
+		}
 
 		// Service Principals - handle /servicePrincipals(appId='{appId}') format via middleware (added above)
-		v1.POST("/servicePrincipals", createServicePrincipalHandler(st))
-		v1.GET("/servicePrincipals", listServicePrincipalsHandler(st))
 		sps := v1.Group("/servicePrincipals")
 		{
+			sps.GET("", listServicePrincipalsHandler(st))
 			sps.GET("/", listServicePrincipalsHandler(st))
+			sps.POST("", createServicePrincipalHandler(st))
 			spsGID := sps.Group("/:id")
 			{
 				spsGID.GET("/", getServicePrincipalHandler(st))
@@ -253,24 +260,10 @@ func meHandler(st store.Store) gin.HandlerFunc {
 		// Try to get user by subject (UPN) first
 		user, err := st.GetUserByUPN(c.Request.Context(), claims.Subject)
 		if err == nil {
-			// Build response with proper context, same pattern as other get handlers
-			response := map[string]interface{}{
-				"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-			}
-
-			userJSON, err := json.Marshal(user)
+			response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#users/$entity", user)
 			if err != nil {
 				writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 				return
-			}
-			var userMap map[string]interface{}
-			if err := json.Unmarshal(userJSON, &userMap); err != nil {
-				writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-				return
-			}
-
-			for k, v := range userMap {
-				response[k] = v
 			}
 
 			writeJSON(c, http.StatusOK, response)
@@ -290,24 +283,10 @@ func meHandler(st store.Store) gin.HandlerFunc {
 					return
 				}
 
-				// Build response with proper context, same pattern as getServicePrincipalHandler
-				response := map[string]interface{}{
-					"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
-				}
-
-				spJSON, err := json.Marshal(sp)
+				response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity", sp)
 				if err != nil {
 					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 					return
-				}
-				var spMap map[string]interface{}
-				if err := json.Unmarshal(spJSON, &spMap); err != nil {
-					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-					return
-				}
-
-				for k, v := range spMap {
-					response[k] = v
 				}
 
 				writeJSON(c, http.StatusOK, response)

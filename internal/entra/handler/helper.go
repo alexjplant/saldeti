@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -97,4 +99,45 @@ func isFilterError(err error) bool {
 		strings.Contains(errStr, "function value must be string") ||
 		strings.Contains(errStr, "unknown function") ||
 		strings.Contains(errStr, "invalid filter node")
+}
+
+// buildEntityResponse creates a response map with @odata.context and merges in
+// all fields from the entity by marshaling it to JSON and back.
+func buildEntityResponse(odataCtx string, entity any) (map[string]interface{}, error) {
+	response := map[string]interface{}{
+		"@odata.context": odataCtx,
+	}
+	entityJSON, err := json.Marshal(entity)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to marshal entity: %w", err)
+	}
+	var entityMap map[string]interface{}
+	if err := json.Unmarshal(entityJSON, &entityMap); err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal entity: %w", err)
+	}
+	for k, v := range entityMap {
+		response[k] = v
+	}
+	return response, nil
+}
+
+// buildEntityResponseWithType creates a response map with @odata.context and
+// @odata.type, then merges in all fields from the entity.
+func buildEntityResponseWithType(odataCtx string, odataType string, entity any) (map[string]interface{}, error) {
+	response := map[string]interface{}{
+		"@odata.context": odataCtx,
+		"@odata.type":    odataType,
+	}
+	entityJSON, err := json.Marshal(entity)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to marshal entity: %w", err)
+	}
+	var entityMap map[string]interface{}
+	if err := json.Unmarshal(entityJSON, &entityMap); err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal entity: %w", err)
+	}
+	for k, v := range entityMap {
+		response[k] = v
+	}
+	return response, nil
 }

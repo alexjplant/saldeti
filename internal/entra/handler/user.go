@@ -165,6 +165,8 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
+		opts := parseListOptions(c.Request.URL.Query())
+
 		var user *model.User
 		var err error
 
@@ -185,62 +187,43 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-		}
-
-		// Merge user fields into response
-		userJSON, err := json.Marshal(user)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#users/$entity", user)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var userMap map[string]interface{}
-		if err := json.Unmarshal(userJSON, &userMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range userMap {
-			response[k] = v
-		}
 
 		// Handle $expand
-		if expandStr := c.Request.URL.Query().Get("$expand"); expandStr != "" {
-			expandProps := strings.Split(expandStr, ",")
-			for _, prop := range expandProps {
-				prop = strings.TrimSpace(prop)
-				switch prop {
-				case "manager":
-					mgr, err := st.GetManager(c.Request.Context(), id)
-					if err == nil && mgr != nil {
-						response["manager"] = mgr
-					} else {
-						response["manager"] = nil
+		for _, prop := range opts.Expand {
+			prop = strings.TrimSpace(prop)
+			switch prop {
+			case "manager":
+				mgr, err := st.GetManager(c.Request.Context(), id)
+				if err == nil && mgr != nil {
+					response["manager"] = mgr
+				} else {
+					response["manager"] = nil
+				}
+			case "directReports":
+				reports, _, err := st.ListDirectReports(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					if reports == nil {
+						reports = []model.DirectoryObject{}
 					}
-				case "directReports":
-					reports, _, err := st.ListDirectReports(c.Request.Context(), id, model.ListOptions{Top: 999})
-					if err == nil {
-						if reports == nil {
-							reports = []model.DirectoryObject{}
-						}
-						response["directReports"] = reports
+					response["directReports"] = reports
+				}
+			case "memberOf":
+				groups, _, err := st.ListUserMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					if groups == nil {
+						groups = []model.DirectoryObject{}
 					}
-				case "memberOf":
-					groups, _, err := st.ListUserMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
-					if err == nil {
-						if groups == nil {
-							groups = []model.DirectoryObject{}
-						}
-						response["memberOf"] = groups
-					}
+					response["memberOf"] = groups
 				}
 			}
 		}
 
 		// Apply $select if specified
-		opts := parseListOptions(c.Request.URL.Query())
 		if len(opts.Select) > 0 {
 			response = applySelect(response, opts.Select)
 		}
@@ -293,25 +276,10 @@ func createUserHandler(st store.Store) gin.HandlerFunc {
 		// Set Location header
 		c.Header("Location", "/v1.0/users/"+createdUser.ID)
 
-		// Build response with OData context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-		}
-
-		// Merge user fields into response
-		userJSON, err := json.Marshal(createdUser)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#users/$entity", createdUser)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var userMap map[string]interface{}
-		if err := json.Unmarshal(userJSON, &userMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range userMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusCreated, response)
@@ -346,25 +314,10 @@ func updateUserHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-		}
-
-		// Merge user fields into response
-		userJSON, err := json.Marshal(updatedUser)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#users/$entity", updatedUser)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var userMap map[string]interface{}
-		if err := json.Unmarshal(userJSON, &userMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range userMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -528,23 +481,10 @@ func reprocessLicenseHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-		}
-
-		userJSON, err := json.Marshal(user)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#users/$entity", user)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var userMap map[string]interface{}
-		if err := json.Unmarshal(userJSON, &userMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range userMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)

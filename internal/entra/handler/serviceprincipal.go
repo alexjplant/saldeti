@@ -122,25 +122,10 @@ func getServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
-		}
-
-		// Merge service principal fields into response
-		spJSON, err := json.Marshal(sp)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity", sp)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var spMap map[string]interface{}
-		if err := json.Unmarshal(spJSON, &spMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range spMap {
-			response[k] = v
 		}
 
 		// Apply $select if specified
@@ -178,25 +163,10 @@ func getSPByAppIDHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
-		}
-
-		// Merge service principal fields into response
-		spJSON, err := json.Marshal(sp)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity", sp)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var spMap map[string]interface{}
-		if err := json.Unmarshal(spJSON, &spMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range spMap {
-			response[k] = v
 		}
 
 		// Apply $select if specified
@@ -212,20 +182,8 @@ func getSPByAppIDHandler(st store.Store) gin.HandlerFunc {
 // createServicePrincipalHandler handles POST /v1.0/servicePrincipals
 func createServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// First, read the raw request body
-		var requestBody map[string]interface{}
-		bodyBytes, err := io.ReadAll(io.LimitReader(c.Request.Body, maxBodyBytes))
-		if err != nil {
-			writeError(c, http.StatusBadRequest, "InvalidRequest", "Failed to read request body")
-			return
-		}
-		if err := json.Unmarshal(bodyBytes, &requestBody); err != nil {
-			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
-			return
-		}
-
 		var sp model.ServicePrincipal
-		if err := json.Unmarshal(bodyBytes, &sp); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&sp); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
@@ -248,25 +206,10 @@ func createServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
-		}
-
-		// Merge service principal fields into response
-		spJSON, err := json.Marshal(createdSP)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity", createdSP)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var spMap map[string]interface{}
-		if err := json.Unmarshal(spJSON, &spMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range spMap {
-			response[k] = v
 		}
 
 		c.Header("Location", "/v1.0/servicePrincipals/"+createdSP.ID)
@@ -300,25 +243,10 @@ func updateServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
-		}
-
-		// Merge service principal fields into response
-		spJSON, err := json.Marshal(sp)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity", sp)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var spMap map[string]interface{}
-		if err := json.Unmarshal(spJSON, &spMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range spMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -678,18 +606,11 @@ func createSPAppRoleAssignmentHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		assignmentJSON, err := json.Marshal(assignment)
+		assignmentMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment", assignment)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var assignmentMap map[string]interface{}
-		if err := json.Unmarshal(assignmentJSON, &assignmentMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		assignmentMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment"
 
 		writeJSON(c, http.StatusCreated, assignmentMap)
 	}
@@ -804,18 +725,11 @@ func createSPAppRoleAssignedToHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		assignmentJSON, err := json.Marshal(assignment)
+		assignmentMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment", assignment)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var assignmentMap map[string]interface{}
-		if err := json.Unmarshal(assignmentJSON, &assignmentMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		assignmentMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment"
 
 		writeJSON(c, http.StatusCreated, assignmentMap)
 	}
@@ -993,18 +907,11 @@ func spAddPasswordHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		credJSON, err := json.Marshal(resultCred)
+		credMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.passwordCredential", resultCred)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var credMap map[string]interface{}
-		if err := json.Unmarshal(credJSON, &credMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		credMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.passwordCredential"
 		// Explicitly include secretText in addPassword response since the json tag is "-"
 		credMap["secretText"] = resultCred.SecretText
 
@@ -1103,18 +1010,11 @@ func spAddKeyHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		credJSON, err := json.Marshal(resultCred)
+		credMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.keyCredential", resultCred)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var credMap map[string]interface{}
-		if err := json.Unmarshal(credJSON, &credMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		credMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.keyCredential"
 
 		writeJSON(c, http.StatusOK, credMap)
 	}

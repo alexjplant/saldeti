@@ -64,24 +64,10 @@ func assignLicenseHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-		}
-
-		userJSON, err := json.Marshal(updatedUser)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#users/$entity", updatedUser)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var userMap map[string]interface{}
-		if err := json.Unmarshal(userJSON, &userMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range userMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)

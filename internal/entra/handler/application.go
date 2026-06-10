@@ -120,25 +120,10 @@ func getApplicationHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
-		}
-
-		// Merge application fields into response
-		appJSON, err := json.Marshal(application)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#applications/$entity", application)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var appMap map[string]interface{}
-		if err := json.Unmarshal(appJSON, &appMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range appMap {
-			response[k] = v
 		}
 
 		// Apply $select if specified
@@ -176,25 +161,10 @@ func getApplicationByAppIDHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
-		}
-
-		// Merge application fields into response
-		appJSON, err := json.Marshal(application)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#applications/$entity", application)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var appMap map[string]interface{}
-		if err := json.Unmarshal(appJSON, &appMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range appMap {
-			response[k] = v
 		}
 
 		// Apply $select if specified
@@ -266,25 +236,10 @@ func createApplicationHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
-		}
-
-		// Merge application fields into response
-		appJSON, err := json.Marshal(createdApp)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#applications/$entity", createdApp)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var appMap map[string]interface{}
-		if err := json.Unmarshal(appJSON, &appMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range appMap {
-			response[k] = v
 		}
 
 		c.Header("Location", "/v1.0/applications/"+createdApp.ID)
@@ -318,25 +273,10 @@ func updateApplicationHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with proper context
-		response := map[string]interface{}{
-			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
-		}
-
-		// Merge application fields into response
-		appJSON, err := json.Marshal(application)
+		response, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#applications/$entity", application)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
-		}
-		var appMap map[string]interface{}
-		if err := json.Unmarshal(appJSON, &appMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-
-		for k, v := range appMap {
-			response[k] = v
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -393,18 +333,11 @@ func addPasswordHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		credJSON, err := json.Marshal(addedCred)
+		credMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.passwordCredential", addedCred)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var credMap map[string]interface{}
-		if err := json.Unmarshal(credJSON, &credMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		credMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.passwordCredential"
 		// Explicitly include secretText in addPassword response since the json tag is "-"
 		credMap["secretText"] = addedCred.SecretText
 
@@ -477,18 +410,11 @@ func addKeyHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		credJSON, err := json.Marshal(addedCred)
+		credMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.keyCredential", addedCred)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var credMap map[string]interface{}
-		if err := json.Unmarshal(credJSON, &credMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		credMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.keyCredential"
 
 		writeJSON(c, http.StatusOK, credMap)
 	}
@@ -745,18 +671,11 @@ func createExtensionPropertyHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response with OData context
-		epJSON, err := json.Marshal(createdEP)
+		epMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#extensionProperties/$entity", createdEP)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var epMap map[string]interface{}
-		if err := json.Unmarshal(epJSON, &epMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		epMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#extensionProperties/$entity"
 
 		c.Header("Location", "/v1.0/applications/"+id+"/extensionProperties/"+createdEP.ID)
 		writeJSON(c, http.StatusCreated, epMap)

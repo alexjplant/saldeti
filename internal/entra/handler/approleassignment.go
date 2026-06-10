@@ -97,18 +97,11 @@ func createUserAppRoleAssignmentHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response: marshal assignment to JSON, unmarshal to map, add @odata.context
-		assignmentJSON, err := json.Marshal(assignment)
+		assignmentMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment", assignment)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var assignmentMap map[string]interface{}
-		if err := json.Unmarshal(assignmentJSON, &assignmentMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		assignmentMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment"
 
 		writeJSON(c, http.StatusCreated, assignmentMap)
 	}
@@ -222,18 +215,11 @@ func createGroupAppRoleAssignmentHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Build response
-		assignmentJSON, err := json.Marshal(assignment)
+		assignmentMap, err := buildEntityResponse("https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment", assignment)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 			return
 		}
-		var assignmentMap map[string]interface{}
-		if err := json.Unmarshal(assignmentJSON, &assignmentMap); err != nil {
-			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
-			return
-		}
-		assignmentMap["@odata.context"] = "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.appRoleAssignment"
 
 		writeJSON(c, http.StatusCreated, assignmentMap)
 	}
