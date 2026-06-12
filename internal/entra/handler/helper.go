@@ -70,13 +70,19 @@ func getBaseURL(c *gin.Context) string {
 	return scheme + "://" + host
 }
 
-func applySelect(itemMap map[string]interface{}, selects []string) map[string]interface{} {
+func applySelect(itemMap map[string]interface{}, selects []string, extraPreserve ...map[string]bool) map[string]interface{} {
 	if len(selects) == 0 {
 		return itemMap
 	}
 	selectSet := make(map[string]bool, len(selects))
 	for _, s := range selects {
 		selectSet[s] = true
+	}
+	// Merge any extra keys to preserve (e.g. $expand properties)
+	if len(extraPreserve) > 0 {
+		for k := range extraPreserve[0] {
+			selectSet[k] = true
+		}
 	}
 	result := make(map[string]interface{}, 0)
 	for k, v := range itemMap {
