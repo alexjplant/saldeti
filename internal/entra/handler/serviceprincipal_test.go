@@ -1609,3 +1609,245 @@ func TestServicePrincipalEmptyPolicies(t *testing.T) {
 		assert.Contains(t, policyResp, "@odata.context")
 	}
 }
+
+func TestListServicePrincipalsExpandMemberOf(t *testing.T) {
+	st := store.NewMemoryStore()
+	router := NewRouter(st)
+	ctx := context.Background()
+
+	mailEnabled := false
+	securityEnabled := true
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "testgroup",
+	}
+	createdGroup, err := st.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := st.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	sp, err := findSPByAppID(st, createdApp.AppID)
+	require.NoError(t, err)
+
+	err = st.AddMember(ctx, createdGroup.ID, sp.ID, "servicePrincipal")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/servicePrincipals?$expand=memberOf", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	sps := listResp["value"].([]interface{})
+	foundSP := false
+	for _, spItem := range sps {
+		spMap := spItem.(map[string]interface{})
+		if spMap["appId"] == createdApp.AppID {
+			foundSP = true
+			memberOf, ok := spMap["memberOf"].([]interface{})
+			require.True(t, ok, "SP should have memberOf key when expanded")
+			assert.Len(t, memberOf, 1)
+			groupEntry := memberOf[0].(map[string]interface{})
+			assert.Equal(t, createdGroup.ID, groupEntry["id"])
+			assert.Contains(t, groupEntry, "@odata.type")
+			break
+		}
+	}
+	assert.True(t, foundSP, "should find the test SP")
+}
+
+func TestGetServicePrincipalByAppIDExpandMemberOf(t *testing.T) {
+	st := store.NewMemoryStore()
+	router := NewRouter(st)
+	ctx := context.Background()
+
+	mailEnabled := false
+	securityEnabled := true
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "testgroup",
+	}
+	createdGroup, err := st.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := st.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	sp, err := findSPByAppID(st, createdApp.AppID)
+	require.NoError(t, err)
+
+	err = st.AddMember(ctx, createdGroup.ID, sp.ID, "servicePrincipal")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/servicePrincipals/(appId="+createdApp.AppID+")?$expand=memberOf", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var spResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &spResp)
+	require.NoError(t, err)
+
+	memberOf, ok := spResp["memberOf"].([]interface{})
+	require.True(t, ok, "SP response should have memberOf key when expanded")
+	assert.Len(t, memberOf, 1)
+	groupEntry := memberOf[0].(map[string]interface{})
+	assert.Equal(t, createdGroup.ID, groupEntry["id"])
+	assert.Contains(t, groupEntry, "@odata.type")
+}
+
+func TestGetServicePrincipalByAppIDExpandOwnersWithSelect(t *testing.T) {
+	st := store.NewMemoryStore()
+	router := NewRouter(st)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := st.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := st.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	sp, err := findSPByAppID(st, createdApp.AppID)
+	require.NoError(t, err)
+
+	err = st.AddSPOwner(ctx, sp.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/servicePrincipals/(appId="+createdApp.AppID+")?$expand=owners($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var spResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &spResp)
+	require.NoError(t, err)
+
+	owners, ok := spResp["owners"].([]interface{})
+	require.True(t, ok, "SP response should have owners key when expanded")
+	assert.Len(t, owners, 1)
+	owner := owners[0].(map[string]interface{})
+	assert.Contains(t, owner, "id")
+	assert.Contains(t, owner, "displayName")
+	assert.Contains(t, owner, "@odata.type")
+	assert.NotContains(t, owner, "mail")
+}
+
+func TestGetServicePrincipalByAppIDExpandOwners(t *testing.T) {
+	st := store.NewMemoryStore()
+	router := NewRouter(st)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := st.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := st.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	sp, err := findSPByAppID(st, createdApp.AppID)
+	require.NoError(t, err)
+
+	err = st.AddSPOwner(ctx, sp.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/servicePrincipals/(appId="+createdApp.AppID+")?$expand=owners", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var spResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &spResp)
+	require.NoError(t, err)
+
+	owners, ok := spResp["owners"].([]interface{})
+	require.True(t, ok, "SP response should have owners key when expanded")
+	assert.Len(t, owners, 1)
+	owner := owners[0].(map[string]interface{})
+	assert.Equal(t, createdUser.ID, owner["id"])
+	assert.Contains(t, owner, "@odata.type")
+}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/saldeti/saldeti/internal/entra/model"
 )
 
 const maxBodyBytes int64 = 1 << 20 // 1MB
@@ -146,4 +147,58 @@ func buildEntityResponseWithType(odataCtx string, odataType string, entity any) 
 		response[k] = v
 	}
 	return response, nil
+}
+
+// applyNestedSelectToDirectoryObjects applies nested $select from an ExpandOption
+// to a slice of DirectoryObject. Returns the raw slice if no select fields are specified,
+// or a slice of filtered maps if select fields are present.
+func applyNestedSelectToDirectoryObjects(objects []model.DirectoryObject, selectFields []string) interface{} {
+	if len(selectFields) == 0 {
+		return objects
+	}
+	maps := make([]map[string]interface{}, 0, len(objects))
+	for _, obj := range objects {
+		objJSON, err := json.Marshal(obj)
+		if err != nil {
+			maps = append(maps, map[string]interface{}{})
+			continue
+		}
+		var m map[string]interface{}
+		json.Unmarshal(objJSON, &m)
+		m = applySelect(m, selectFields)
+		maps = append(maps, m)
+	}
+	return maps
+}
+
+// applyNestedSelectToUser applies nested $select from an ExpandOption
+// to a User object. Serializes the user to a map, applies select filtering,
+// and ensures @odata.type is set to #microsoft.graph.user.
+func applyNestedSelectToUser(user *model.User, selectFields []string) map[string]interface{} {
+	userJSON, _ := json.Marshal(user)
+	var m map[string]interface{}
+	json.Unmarshal(userJSON, &m)
+	if len(selectFields) > 0 {
+		m = applySelect(m, selectFields)
+	}
+	m["@odata.type"] = "#microsoft.graph.user"
+	return m
+}
+
+// nilToEmptyDirectoryObjects replaces nil slice with empty slice.
+func nilToEmptyDirectoryObjects(objects []model.DirectoryObject) []model.DirectoryObject {
+	if objects == nil {
+		return []model.DirectoryObject{}
+	}
+	return objects
+}
+
+// computeExpandedPropertyNames returns a set of expanded property names for preserving
+// them when $select is also applied.
+func computeExpandedPropertyNames(expandOptions []model.ExpandOption) map[string]bool {
+	expanded := make(map[string]bool)
+	for _, eo := range expandOptions {
+		expanded[eo.Property] = true
+	}
+	return expanded
 }

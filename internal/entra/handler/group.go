@@ -70,62 +70,17 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 				case "members":
 					members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
 					if err == nil {
-						if members == nil {
-							members = []model.DirectoryObject{}
-						}
-						if len(expand.Select) > 0 {
-							memberMaps := make([]map[string]interface{}, 0, len(members))
-							for _, m := range members {
-								mJSON, _ := json.Marshal(m)
-								var mMap map[string]interface{}
-								json.Unmarshal(mJSON, &mMap)
-								mMap = applySelect(mMap, expand.Select)
-								memberMaps = append(memberMaps, mMap)
-							}
-							groupMap["members"] = memberMaps
-						} else {
-							groupMap["members"] = members
-						}
+						groupMap["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
 					}
 				case "owners":
 					owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
 					if err == nil {
-						if owners == nil {
-							owners = []model.DirectoryObject{}
-						}
-						if len(expand.Select) > 0 {
-							ownerMaps := make([]map[string]interface{}, 0, len(owners))
-							for _, o := range owners {
-								oJSON, _ := json.Marshal(o)
-								var oMap map[string]interface{}
-								json.Unmarshal(oJSON, &oMap)
-								oMap = applySelect(oMap, expand.Select)
-								ownerMaps = append(ownerMaps, oMap)
-							}
-							groupMap["owners"] = ownerMaps
-						} else {
-							groupMap["owners"] = owners
-						}
+						groupMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 					}
 				case "memberOf":
 					memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
 					if err == nil {
-						if memberOf == nil {
-							memberOf = []model.DirectoryObject{}
-						}
-						if len(expand.Select) > 0 {
-							memberOfMaps := make([]map[string]interface{}, 0, len(memberOf))
-							for _, m := range memberOf {
-								mJSON, _ := json.Marshal(m)
-								var mMap map[string]interface{}
-								json.Unmarshal(mJSON, &mMap)
-								mMap = applySelect(mMap, expand.Select)
-								memberOfMaps = append(memberOfMaps, mMap)
-							}
-							groupMap["memberOf"] = memberOfMaps
-						} else {
-							groupMap["memberOf"] = memberOf
-						}
+						groupMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
 					}
 				}
 			}
@@ -139,10 +94,7 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 			if len(opts.ExpandOptions) > 0 {
 				// Items are already maps from expand handling.
 				// Build a set of expanded property names so applySelect doesn't strip them.
-				expandedProps := make(map[string]bool)
-				for _, eo := range opts.ExpandOptions {
-					expandedProps[eo.Property] = true
-				}
+				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 				maps := responseValue.([]map[string]interface{})
 				for i, m := range maps {
 					maps[i] = applySelect(m, opts.Select, expandedProps)
@@ -227,62 +179,17 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 			case "members":
 				members, _, err := st.ListMembers(c.Request.Context(), id, model.ListOptions{Top: 999})
 				if err == nil {
-					if members == nil {
-						members = []model.DirectoryObject{}
-					}
-					if len(expand.Select) > 0 {
-						memberMaps := make([]map[string]interface{}, 0, len(members))
-						for _, m := range members {
-							mJSON, _ := json.Marshal(m)
-							var mMap map[string]interface{}
-							json.Unmarshal(mJSON, &mMap)
-							mMap = applySelect(mMap, expand.Select)
-							memberMaps = append(memberMaps, mMap)
-						}
-						response["members"] = memberMaps
-					} else {
-						response["members"] = members
-					}
+					response["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
 				}
 			case "owners":
 				owners, _, err := st.ListOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
 				if err == nil {
-					if owners == nil {
-						owners = []model.DirectoryObject{}
-					}
-					if len(expand.Select) > 0 {
-						ownerMaps := make([]map[string]interface{}, 0, len(owners))
-						for _, o := range owners {
-							oJSON, _ := json.Marshal(o)
-							var oMap map[string]interface{}
-							json.Unmarshal(oJSON, &oMap)
-							oMap = applySelect(oMap, expand.Select)
-							ownerMaps = append(ownerMaps, oMap)
-						}
-						response["owners"] = ownerMaps
-					} else {
-						response["owners"] = owners
-					}
+					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 				}
 			case "memberOf":
 				memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
 				if err == nil {
-					if memberOf == nil {
-						memberOf = []model.DirectoryObject{}
-					}
-					if len(expand.Select) > 0 {
-						memberOfMaps := make([]map[string]interface{}, 0, len(memberOf))
-						for _, m := range memberOf {
-							mJSON, _ := json.Marshal(m)
-							var mMap map[string]interface{}
-							json.Unmarshal(mJSON, &mMap)
-							mMap = applySelect(mMap, expand.Select)
-							memberOfMaps = append(memberOfMaps, mMap)
-						}
-						response["memberOf"] = memberOfMaps
-					} else {
-						response["memberOf"] = memberOf
-					}
+					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
 				}
 			}
 		}
@@ -290,10 +197,7 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 		// Apply $select if specified
 		if len(opts.Select) > 0 {
 			// Preserve expanded properties so $select doesn't strip them
-			expandedProps := make(map[string]bool)
-			for _, eo := range opts.ExpandOptions {
-				expandedProps[eo.Property] = true
-			}
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 			response = applySelect(response, opts.Select, expandedProps)
 		}
 

@@ -72,26 +72,11 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 
 				for _, expand := range opts.ExpandOptions {
 					switch expand.Property {
-					case "owners":
-						owners, _, err := st.ListApplicationOwners(c.Request.Context(), app.ID, model.ListOptions{Top: 999})
-						if err == nil {
-							if owners == nil {
-								owners = []model.DirectoryObject{}
-							}
-							if len(expand.Select) > 0 {
-								ownerMaps := make([]map[string]interface{}, 0, len(owners))
-								for _, o := range owners {
-									oJSON, _ := json.Marshal(o)
-									var oMap map[string]interface{}
-									json.Unmarshal(oJSON, &oMap)
-									oMap = applySelect(oMap, expand.Select)
-									ownerMaps = append(ownerMaps, oMap)
-								}
-								appMap["owners"] = ownerMaps
-							} else {
-								appMap["owners"] = owners
-							}
-						}
+			case "owners":
+					owners, _, err := st.ListApplicationOwners(c.Request.Context(), app.ID, model.ListOptions{Top: 999})
+					if err == nil {
+						appMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+					}
 					}
 				}
 				expandedApps = append(expandedApps, appMap)
@@ -102,10 +87,7 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 		// Apply $select if specified
 		if len(opts.Select) > 0 {
 			if len(opts.ExpandOptions) > 0 {
-				expandedProps := make(map[string]bool)
-				for _, eo := range opts.ExpandOptions {
-					expandedProps[eo.Property] = true
-				}
+				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 				maps := responseValue.([]map[string]interface{})
 				for i, m := range maps {
 					maps[i] = applySelect(m, opts.Select, expandedProps)
@@ -188,22 +170,7 @@ func getApplicationHandler(st store.Store) gin.HandlerFunc {
 			case "owners":
 				owners, _, err := st.ListApplicationOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
 				if err == nil {
-					if owners == nil {
-						owners = []model.DirectoryObject{}
-					}
-					if len(expand.Select) > 0 {
-						ownerMaps := make([]map[string]interface{}, 0, len(owners))
-						for _, o := range owners {
-							oJSON, _ := json.Marshal(o)
-							var oMap map[string]interface{}
-							json.Unmarshal(oJSON, &oMap)
-							oMap = applySelect(oMap, expand.Select)
-							ownerMaps = append(ownerMaps, oMap)
-						}
-						response["owners"] = ownerMaps
-					} else {
-						response["owners"] = owners
-					}
+					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 				}
 			}
 		}
@@ -211,10 +178,7 @@ func getApplicationHandler(st store.Store) gin.HandlerFunc {
 		// Apply $select if specified
 		if len(opts.Select) > 0 {
 			// Preserve expanded properties so $select doesn't strip them
-			expandedProps := make(map[string]bool)
-			for _, eo := range opts.ExpandOptions {
-				expandedProps[eo.Property] = true
-			}
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 			response = applySelect(response, opts.Select, expandedProps)
 		}
 
@@ -253,10 +217,23 @@ func getApplicationByAppIDHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Apply $select if specified
 		opts := parseListOptions(c.Request.URL.Query())
+
+		// Handle $expand
+		for _, expand := range opts.ExpandOptions {
+			switch expand.Property {
+			case "owners":
+				owners, _, err := st.ListApplicationOwners(c.Request.Context(), application.ID, model.ListOptions{Top: 999})
+				if err == nil {
+					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+				}
+			}
+		}
+
+		// Apply $select if specified
 		if len(opts.Select) > 0 {
-			response = applySelect(response, opts.Select)
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
+			response = applySelect(response, opts.Select, expandedProps)
 		}
 
 		writeJSON(c, http.StatusOK, response)

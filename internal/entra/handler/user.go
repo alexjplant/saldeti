@@ -76,70 +76,29 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 							// Get full user object for the manager to support nested $select
 							mgrUser, mgrErr := st.GetUser(c.Request.Context(), mgr.ID)
 							if mgrErr == nil && mgrUser != nil {
-								mgrJSON, _ := json.Marshal(mgrUser)
+								userMap["manager"] = applyNestedSelectToUser(mgrUser, expand.Select)
+							} else if len(expand.Select) > 0 {
+								// Fallback: use DirectoryObject with nested select
+								mgrJSON, _ := json.Marshal(mgr)
 								var mgrMap map[string]interface{}
 								json.Unmarshal(mgrJSON, &mgrMap)
-								// Apply nested $select if specified
-								if len(expand.Select) > 0 {
-									mgrMap = applySelect(mgrMap, expand.Select)
-								}
-								// Always ensure @odata.type is present
+								mgrMap = applySelect(mgrMap, expand.Select)
 								mgrMap["@odata.type"] = "#microsoft.graph.user"
 								userMap["manager"] = mgrMap
 							} else {
-								// Fallback: use DirectoryObject if GetUser fails
-								if len(expand.Select) > 0 {
-									mgrJSON, _ := json.Marshal(mgr)
-									var mgrMap map[string]interface{}
-									json.Unmarshal(mgrJSON, &mgrMap)
-									mgrMap = applySelect(mgrMap, expand.Select)
-									mgrMap["@odata.type"] = "#microsoft.graph.user"
-									userMap["manager"] = mgrMap
-								} else {
-									userMap["manager"] = mgr
-								}
+								userMap["manager"] = mgr
 							}
 						}
 						// If no manager, don't set the key at all (omit it)
 					case "directReports":
 						reports, _, err := st.ListDirectReports(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
 						if err == nil {
-							if reports == nil {
-								reports = []model.DirectoryObject{}
-							}
-							if len(expand.Select) > 0 {
-								reportMaps := make([]map[string]interface{}, 0, len(reports))
-								for _, r := range reports {
-									rJSON, _ := json.Marshal(r)
-									var rMap map[string]interface{}
-									json.Unmarshal(rJSON, &rMap)
-									rMap = applySelect(rMap, expand.Select)
-									reportMaps = append(reportMaps, rMap)
-								}
-								userMap["directReports"] = reportMaps
-							} else {
-								userMap["directReports"] = reports
-							}
+							userMap["directReports"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(reports), expand.Select)
 						}
 					case "memberOf":
 						groups, _, err := st.ListUserMemberOf(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
 						if err == nil {
-							if groups == nil {
-								groups = []model.DirectoryObject{}
-							}
-							if len(expand.Select) > 0 {
-								groupMaps := make([]map[string]interface{}, 0, len(groups))
-								for _, g := range groups {
-									gJSON, _ := json.Marshal(g)
-									var gMap map[string]interface{}
-									json.Unmarshal(gJSON, &gMap)
-									gMap = applySelect(gMap, expand.Select)
-									groupMaps = append(groupMaps, gMap)
-								}
-								userMap["memberOf"] = groupMaps
-							} else {
-								userMap["memberOf"] = groups
-							}
+							userMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 						}
 					}
 				}
@@ -153,10 +112,7 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 			if len(opts.ExpandOptions) > 0 {
 				// Items are already maps from expand handling.
 				// Build a set of expanded property names so applySelect doesn't strip them.
-				expandedProps := make(map[string]bool)
-				for _, eo := range opts.ExpandOptions {
-					expandedProps[eo.Property] = true
-				}
+				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 				maps := responseValue.([]map[string]interface{})
 				for i, m := range maps {
 					maps[i] = applySelect(m, opts.Select, expandedProps)
@@ -250,71 +206,30 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 			case "manager":
 				mgr, err := st.GetManager(c.Request.Context(), user.ID)
 				if err == nil && mgr != nil {
-					// Get full user object for the manager to support nested $select
 					mgrUser, mgrErr := st.GetUser(c.Request.Context(), mgr.ID)
 					if mgrErr == nil && mgrUser != nil {
-						mgrJSON, _ := json.Marshal(mgrUser)
+						response["manager"] = applyNestedSelectToUser(mgrUser, expand.Select)
+					} else if len(expand.Select) > 0 {
+						mgrJSON, _ := json.Marshal(mgr)
 						var mgrMap map[string]interface{}
 						json.Unmarshal(mgrJSON, &mgrMap)
-						if len(expand.Select) > 0 {
-							mgrMap = applySelect(mgrMap, expand.Select)
-						}
+						mgrMap = applySelect(mgrMap, expand.Select)
 						mgrMap["@odata.type"] = "#microsoft.graph.user"
 						response["manager"] = mgrMap
 					} else {
-						// Fallback: use DirectoryObject if GetUser fails
-						if len(expand.Select) > 0 {
-							mgrJSON, _ := json.Marshal(mgr)
-							var mgrMap map[string]interface{}
-							json.Unmarshal(mgrJSON, &mgrMap)
-							mgrMap = applySelect(mgrMap, expand.Select)
-							mgrMap["@odata.type"] = "#microsoft.graph.user"
-							response["manager"] = mgrMap
-						} else {
-							response["manager"] = mgr
-						}
+						response["manager"] = mgr
 					}
 				}
 				// If no manager, don't set the key at all (omit it)
 			case "directReports":
 				reports, _, err := st.ListDirectReports(c.Request.Context(), user.ID, model.ListOptions{Top: 999})
 				if err == nil {
-					if reports == nil {
-						reports = []model.DirectoryObject{}
-					}
-					if len(expand.Select) > 0 {
-						reportMaps := make([]map[string]interface{}, 0, len(reports))
-						for _, r := range reports {
-							rJSON, _ := json.Marshal(r)
-							var rMap map[string]interface{}
-							json.Unmarshal(rJSON, &rMap)
-							rMap = applySelect(rMap, expand.Select)
-							reportMaps = append(reportMaps, rMap)
-						}
-						response["directReports"] = reportMaps
-					} else {
-						response["directReports"] = reports
-					}
+					response["directReports"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(reports), expand.Select)
 				}
 			case "memberOf":
 				groups, _, err := st.ListUserMemberOf(c.Request.Context(), user.ID, model.ListOptions{Top: 999})
 				if err == nil {
-					if groups == nil {
-						groups = []model.DirectoryObject{}
-					}
-					if len(expand.Select) > 0 {
-						groupMaps := make([]map[string]interface{}, 0, len(groups))
-						for _, g := range groups {
-							gJSON, _ := json.Marshal(g)
-							var gMap map[string]interface{}
-							json.Unmarshal(gJSON, &gMap)
-							gMap = applySelect(gMap, expand.Select)
-							groupMaps = append(groupMaps, gMap)
-						}
-						response["memberOf"] = groupMaps
-					} else {
-						response["memberOf"] = groups
-					}
+					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 				}
 			}
 		}
@@ -322,10 +237,7 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 		// Apply $select if specified
 		if len(opts.Select) > 0 {
 			// Preserve expanded properties so $select doesn't strip them
-			expandedProps := make(map[string]bool)
-			for _, eo := range opts.ExpandOptions {
-				expandedProps[eo.Property] = true
-			}
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 			response = applySelect(response, opts.Select, expandedProps)
 		}
 
