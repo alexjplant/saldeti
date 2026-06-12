@@ -55,24 +55,78 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 			applications = []model.Application{}
 		}
 
-		// Apply $select if specified
 		var responseValue interface{} = applications
-		if len(opts.Select) > 0 {
-			filteredItems := make([]map[string]interface{}, 0, len(applications))
-			for i := range applications {
-				itemJSON, err := json.Marshal(applications[i])
+		if len(opts.ExpandOptions) > 0 {
+			expandedApps := make([]map[string]interface{}, 0, len(applications))
+			for _, app := range applications {
+				appMap := make(map[string]interface{})
+				appJSON, err := json.Marshal(app)
 				if err != nil {
-					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process application expansion")
 					return
 				}
-				var itemMap map[string]interface{}
-				if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
-					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+				if err := json.Unmarshal(appJSON, &appMap); err != nil {
+					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process application expansion")
 					return
 				}
-				filteredItems = append(filteredItems, applySelect(itemMap, opts.Select))
+
+				for _, expand := range opts.ExpandOptions {
+					switch expand.Property {
+					case "owners":
+						owners, _, err := st.ListApplicationOwners(c.Request.Context(), app.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							if owners == nil {
+								owners = []model.DirectoryObject{}
+							}
+							if len(expand.Select) > 0 {
+								ownerMaps := make([]map[string]interface{}, 0, len(owners))
+								for _, o := range owners {
+									oJSON, _ := json.Marshal(o)
+									var oMap map[string]interface{}
+									json.Unmarshal(oJSON, &oMap)
+									oMap = applySelect(oMap, expand.Select)
+									ownerMaps = append(ownerMaps, oMap)
+								}
+								appMap["owners"] = ownerMaps
+							} else {
+								appMap["owners"] = owners
+							}
+						}
+					}
+				}
+				expandedApps = append(expandedApps, appMap)
 			}
-			responseValue = filteredItems
+			responseValue = expandedApps
+		}
+
+		// Apply $select if specified
+		if len(opts.Select) > 0 {
+			if len(opts.ExpandOptions) > 0 {
+				expandedProps := make(map[string]bool)
+				for _, eo := range opts.ExpandOptions {
+					expandedProps[eo.Property] = true
+				}
+				maps := responseValue.([]map[string]interface{})
+				for i, m := range maps {
+					maps[i] = applySelect(m, opts.Select, expandedProps)
+				}
+			} else {
+				filteredItems := make([]map[string]interface{}, 0, len(applications))
+				for i := range applications {
+					itemJSON, err := json.Marshal(applications[i])
+					if err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					var itemMap map[string]interface{}
+					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					filteredItems = append(filteredItems, applySelect(itemMap, opts.Select))
+				}
+				responseValue = filteredItems
+			}
 		}
 
 		// Build response
@@ -126,10 +180,42 @@ func getApplicationHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Apply $select if specified
 		opts := parseListOptions(c.Request.URL.Query())
+
+		// Handle $expand
+		for _, expand := range opts.ExpandOptions {
+			switch expand.Property {
+			case "owners":
+				owners, _, err := st.ListApplicationOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					if owners == nil {
+						owners = []model.DirectoryObject{}
+					}
+					if len(expand.Select) > 0 {
+						ownerMaps := make([]map[string]interface{}, 0, len(owners))
+						for _, o := range owners {
+							oJSON, _ := json.Marshal(o)
+							var oMap map[string]interface{}
+							json.Unmarshal(oJSON, &oMap)
+							oMap = applySelect(oMap, expand.Select)
+							ownerMaps = append(ownerMaps, oMap)
+						}
+						response["owners"] = ownerMaps
+					} else {
+						response["owners"] = owners
+					}
+				}
+			}
+		}
+
+		// Apply $select if specified
 		if len(opts.Select) > 0 {
-			response = applySelect(response, opts.Select)
+			// Preserve expanded properties so $select doesn't strip them
+			expandedProps := make(map[string]bool)
+			for _, eo := range opts.ExpandOptions {
+				expandedProps[eo.Property] = true
+			}
+			response = applySelect(response, opts.Select, expandedProps)
 		}
 
 		writeJSON(c, http.StatusOK, response)

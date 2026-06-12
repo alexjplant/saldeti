@@ -65,34 +65,70 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 					return
 				}
 
-				for _, expand := range opts.ExpandOptions {
-					switch expand.Property {
-					case "members":
-						members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-						if err == nil {
-							if members == nil {
-								members = []model.DirectoryObject{}
+			for _, expand := range opts.ExpandOptions {
+				switch expand.Property {
+				case "members":
+					members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+					if err == nil {
+						if members == nil {
+							members = []model.DirectoryObject{}
+						}
+						if len(expand.Select) > 0 {
+							memberMaps := make([]map[string]interface{}, 0, len(members))
+							for _, m := range members {
+								mJSON, _ := json.Marshal(m)
+								var mMap map[string]interface{}
+								json.Unmarshal(mJSON, &mMap)
+								mMap = applySelect(mMap, expand.Select)
+								memberMaps = append(memberMaps, mMap)
 							}
+							groupMap["members"] = memberMaps
+						} else {
 							groupMap["members"] = members
 						}
-					case "owners":
-						owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-						if err == nil {
-							if owners == nil {
-								owners = []model.DirectoryObject{}
+					}
+				case "owners":
+					owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+					if err == nil {
+						if owners == nil {
+							owners = []model.DirectoryObject{}
+						}
+						if len(expand.Select) > 0 {
+							ownerMaps := make([]map[string]interface{}, 0, len(owners))
+							for _, o := range owners {
+								oJSON, _ := json.Marshal(o)
+								var oMap map[string]interface{}
+								json.Unmarshal(oJSON, &oMap)
+								oMap = applySelect(oMap, expand.Select)
+								ownerMaps = append(ownerMaps, oMap)
 							}
+							groupMap["owners"] = ownerMaps
+						} else {
 							groupMap["owners"] = owners
 						}
-					case "memberOf":
-						memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-						if err == nil {
-							if memberOf == nil {
-								memberOf = []model.DirectoryObject{}
+					}
+				case "memberOf":
+					memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+					if err == nil {
+						if memberOf == nil {
+							memberOf = []model.DirectoryObject{}
+						}
+						if len(expand.Select) > 0 {
+							memberOfMaps := make([]map[string]interface{}, 0, len(memberOf))
+							for _, m := range memberOf {
+								mJSON, _ := json.Marshal(m)
+								var mMap map[string]interface{}
+								json.Unmarshal(mJSON, &mMap)
+								mMap = applySelect(mMap, expand.Select)
+								memberOfMaps = append(memberOfMaps, mMap)
 							}
+							groupMap["memberOf"] = memberOfMaps
+						} else {
 							groupMap["memberOf"] = memberOf
 						}
 					}
 				}
+			}
 				expandedGroups = append(expandedGroups, groupMap)
 			}
 			responseValue = expandedGroups
@@ -194,7 +230,19 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 					if members == nil {
 						members = []model.DirectoryObject{}
 					}
-					response["members"] = members
+					if len(expand.Select) > 0 {
+						memberMaps := make([]map[string]interface{}, 0, len(members))
+						for _, m := range members {
+							mJSON, _ := json.Marshal(m)
+							var mMap map[string]interface{}
+							json.Unmarshal(mJSON, &mMap)
+							mMap = applySelect(mMap, expand.Select)
+							memberMaps = append(memberMaps, mMap)
+						}
+						response["members"] = memberMaps
+					} else {
+						response["members"] = members
+					}
 				}
 			case "owners":
 				owners, _, err := st.ListOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
@@ -202,7 +250,19 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 					if owners == nil {
 						owners = []model.DirectoryObject{}
 					}
-					response["owners"] = owners
+					if len(expand.Select) > 0 {
+						ownerMaps := make([]map[string]interface{}, 0, len(owners))
+						for _, o := range owners {
+							oJSON, _ := json.Marshal(o)
+							var oMap map[string]interface{}
+							json.Unmarshal(oJSON, &oMap)
+							oMap = applySelect(oMap, expand.Select)
+							ownerMaps = append(ownerMaps, oMap)
+						}
+						response["owners"] = ownerMaps
+					} else {
+						response["owners"] = owners
+					}
 				}
 			case "memberOf":
 				memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
@@ -210,7 +270,19 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 					if memberOf == nil {
 						memberOf = []model.DirectoryObject{}
 					}
-					response["memberOf"] = memberOf
+					if len(expand.Select) > 0 {
+						memberOfMaps := make([]map[string]interface{}, 0, len(memberOf))
+						for _, m := range memberOf {
+							mJSON, _ := json.Marshal(m)
+							var mMap map[string]interface{}
+							json.Unmarshal(mJSON, &mMap)
+							mMap = applySelect(mMap, expand.Select)
+							memberOfMaps = append(memberOfMaps, mMap)
+						}
+						response["memberOf"] = memberOfMaps
+					} else {
+						response["memberOf"] = memberOf
+					}
 				}
 			}
 		}
