@@ -8,3 +8,5 @@ e2e/playwright-report/
 .opencode
 
 .playwright-mcp
+docs-site/node_modules/
+docs-site/.vitepress/dist/

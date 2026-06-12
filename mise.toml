@@ -187,3 +187,21 @@ run = """
 set -euo pipefail
 go run cmd/genschema/main.go
 """
+
+[tasks.docs-dev]
+description = "Starts the VitePress docs dev server"
+dir = "docs-site"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npm run docs:dev
+"""
+
+[tasks.docs-build]
+description = "Builds the VitePress docs site"
+dir = "docs-site"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npm run docs:build
+"""
