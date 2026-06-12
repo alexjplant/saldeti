@@ -1317,6 +1317,414 @@ func TestListOwnersByTypeWithCount(t *testing.T) {
 	assert.Equal(t, float64(2), count, "@odata.count should reflect filtered count, not total")
 }
 
+func TestListGroupsExpandMembers(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	// Create a group and add a user as member
+	securityEnabled := true
+	mailEnabled := false
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups?$expand=members", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	groups := listResp["value"].([]interface{})
+	require.GreaterOrEqual(t, len(groups), 1)
+
+	// Find our group and verify members
+	found := false
+	for _, g := range groups {
+		groupMap := g.(map[string]interface{})
+		if groupMap["displayName"] == "Test Group" {
+			found = true
+			members, ok := groupMap["members"].([]interface{})
+			require.True(t, ok, "group should have members key")
+			assert.Len(t, members, 1)
+			member := members[0].(map[string]interface{})
+			assert.Equal(t, createdUser.ID, member["id"])
+			assert.Contains(t, member, "@odata.type")
+			break
+		}
+	}
+	assert.True(t, found, "should find the test group")
+}
+
+func TestListGroupsExpandMembersWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	securityEnabled := true
+	mailEnabled := false
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups?$expand=members($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	groups := listResp["value"].([]interface{})
+	for _, g := range groups {
+		groupMap := g.(map[string]interface{})
+		if groupMap["displayName"] == "Test Group" {
+			members, ok := groupMap["members"].([]interface{})
+			require.True(t, ok)
+			assert.Len(t, members, 1)
+			member := members[0].(map[string]interface{})
+			assert.Contains(t, member, "id")
+			assert.Contains(t, member, "displayName")
+			assert.Contains(t, member, "@odata.type")
+			assert.NotContains(t, member, "mail")
+			break
+		}
+	}
+}
+
+func TestGetGroupExpandMembersWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	securityEnabled := true
+	mailEnabled := false
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups/"+createdGroup.ID+"?$expand=members($select=id)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var groupResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &groupResp)
+	require.NoError(t, err)
+
+	members, ok := groupResp["members"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, members, 1)
+	member := members[0].(map[string]interface{})
+	assert.Contains(t, member, "id")
+	assert.Contains(t, member, "@odata.type")
+	assert.NotContains(t, member, "displayName")
+	assert.NotContains(t, member, "mail")
+}
+
+func TestListGroupsExpandOwnersWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	securityEnabled := true
+	mailEnabled := false
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	err = store.AddOwner(ctx, createdGroup.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups?$expand=owners($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	groups := listResp["value"].([]interface{})
+	for _, g := range groups {
+		groupMap := g.(map[string]interface{})
+		if groupMap["displayName"] == "Test Group" {
+			owners, ok := groupMap["owners"].([]interface{})
+			require.True(t, ok)
+			assert.Len(t, owners, 1)
+			owner := owners[0].(map[string]interface{})
+			assert.Contains(t, owner, "id")
+			assert.Contains(t, owner, "displayName")
+			assert.Contains(t, owner, "@odata.type")
+			assert.NotContains(t, owner, "mail")
+			break
+		}
+	}
+}
+
+func TestListGroupsExpandMemberOfWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	securityEnabled := true
+	mailEnabled := false
+	parentGroup := model.Group{
+		DisplayName:     "Parent Group",
+		MailNickname:    "parentgroup",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+	}
+	createdParent, err := store.CreateGroup(ctx, parentGroup)
+	require.NoError(t, err)
+
+	childGroup := model.Group{
+		DisplayName:     "Child Group",
+		MailNickname:    "childgroup",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+	}
+	createdChild, err := store.CreateGroup(ctx, childGroup)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdParent.ID, createdChild.ID, "group")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All"}, []string{"Group"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups?$expand=memberOf($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	groups := listResp["value"].([]interface{})
+	for _, g := range groups {
+		groupMap := g.(map[string]interface{})
+		if groupMap["displayName"] == "Child Group" {
+			memberOf, ok := groupMap["memberOf"].([]interface{})
+			require.True(t, ok)
+			assert.Len(t, memberOf, 1)
+			parent := memberOf[0].(map[string]interface{})
+			assert.Contains(t, parent, "id")
+			assert.Contains(t, parent, "displayName")
+			assert.Contains(t, parent, "@odata.type")
+			assert.NotContains(t, parent, "mail")
+			break
+		}
+	}
+}
+
+func TestListGroupsExpandMembersWithGroupSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	securityEnabled := true
+	mailEnabled := false
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		SecurityEnabled: &securityEnabled,
+		MailEnabled:     &mailEnabled,
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Group.Read.All", "User.Read.All"}, []string{"Group", "User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/groups?$select=displayName&$expand=members($select=id)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	groups := listResp["value"].([]interface{})
+	for _, g := range groups {
+		groupMap := g.(map[string]interface{})
+		if groupMap["displayName"] == "Test Group" {
+			// Outer $select should limit group fields to displayName, id, @odata.*
+			assert.Contains(t, groupMap, "displayName")
+			assert.Contains(t, groupMap, "id")
+			assert.NotContains(t, groupMap, "mailNickname")
+			// But members should be preserved because it's an expanded property
+			members, ok := groupMap["members"].([]interface{})
+			require.True(t, ok, "members should be preserved even with outer $select")
+			assert.Len(t, members, 1)
+			member := members[0].(map[string]interface{})
+			assert.Contains(t, member, "id")
+			assert.NotContains(t, member, "displayName") // nested $select=id only
+			break
+		}
+	}
+}
+
 func TestGetMemberObjects(t *testing.T) {
 	store := store.NewMemoryStore()
 	router := NewRouter(store)

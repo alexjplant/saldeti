@@ -50,9 +50,9 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 			users = []model.User{}
 		}
 
-		// Handle $expand - convert users to maps with expanded properties
+	// Handle $expand - convert users to maps with expanded properties
 		var responseValue interface{} = users
-		if len(opts.Expand) > 0 {
+		if len(opts.ExpandOptions) > 0 {
 			expandedUsers := make([]map[string]interface{}, 0, len(users))
 			for _, u := range users {
 				userMap := make(map[string]interface{})
@@ -67,33 +67,38 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 					return
 				}
 
-
 				// Add expanded properties
-				for _, prop := range opts.Expand {
-					prop = strings.TrimSpace(prop)
-					switch prop {
+				for _, expand := range opts.ExpandOptions {
+					switch expand.Property {
 					case "manager":
 						mgr, err := st.GetManager(c.Request.Context(), u.ID)
 						if err == nil && mgr != nil {
-							userMap["manager"] = mgr
-						} else {
-							userMap["manager"] = nil
+							// Get full user object for the manager to support nested $select
+							mgrUser, mgrErr := st.GetUser(c.Request.Context(), mgr.ID)
+							if mgrErr == nil && mgrUser != nil {
+								userMap["manager"] = applyNestedSelectToUser(mgrUser, expand.Select)
+							} else if len(expand.Select) > 0 {
+								// Fallback: use DirectoryObject with nested select
+								mgrJSON, _ := json.Marshal(mgr)
+								var mgrMap map[string]interface{}
+								json.Unmarshal(mgrJSON, &mgrMap)
+								mgrMap = applySelect(mgrMap, expand.Select)
+								mgrMap["@odata.type"] = "#microsoft.graph.user"
+								userMap["manager"] = mgrMap
+							} else {
+								userMap["manager"] = mgr
+							}
 						}
+						// If no manager, don't set the key at all (omit it)
 					case "directReports":
 						reports, _, err := st.ListDirectReports(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
 						if err == nil {
-							if reports == nil {
-								reports = []model.DirectoryObject{}
-							}
-							userMap["directReports"] = reports
+							userMap["directReports"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(reports), expand.Select)
 						}
 					case "memberOf":
 						groups, _, err := st.ListUserMemberOf(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
 						if err == nil {
-							if groups == nil {
-								groups = []model.DirectoryObject{}
-							}
-							userMap["memberOf"] = groups
+							userMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 						}
 					}
 				}
@@ -104,11 +109,13 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 
 		// Apply $select if specified
 		if len(opts.Select) > 0 {
-			if len(opts.Expand) > 0 {
-				// Items are already maps from expand handling
+			if len(opts.ExpandOptions) > 0 {
+				// Items are already maps from expand handling.
+				// Build a set of expanded property names so applySelect doesn't strip them.
+				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 				maps := responseValue.([]map[string]interface{})
 				for i, m := range maps {
-					maps[i] = applySelect(m, opts.Select)
+					maps[i] = applySelect(m, opts.Select, expandedProps)
 				}
 			} else {
 				// Items are structs, serialize to maps first
@@ -194,38 +201,44 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Handle $expand
-		for _, prop := range opts.Expand {
-			prop = strings.TrimSpace(prop)
-			switch prop {
+		for _, expand := range opts.ExpandOptions {
+			switch expand.Property {
 			case "manager":
-				mgr, err := st.GetManager(c.Request.Context(), id)
+				mgr, err := st.GetManager(c.Request.Context(), user.ID)
 				if err == nil && mgr != nil {
-					response["manager"] = mgr
-				} else {
-					response["manager"] = nil
-				}
-			case "directReports":
-				reports, _, err := st.ListDirectReports(c.Request.Context(), id, model.ListOptions{Top: 999})
-				if err == nil {
-					if reports == nil {
-						reports = []model.DirectoryObject{}
+					mgrUser, mgrErr := st.GetUser(c.Request.Context(), mgr.ID)
+					if mgrErr == nil && mgrUser != nil {
+						response["manager"] = applyNestedSelectToUser(mgrUser, expand.Select)
+					} else if len(expand.Select) > 0 {
+						mgrJSON, _ := json.Marshal(mgr)
+						var mgrMap map[string]interface{}
+						json.Unmarshal(mgrJSON, &mgrMap)
+						mgrMap = applySelect(mgrMap, expand.Select)
+						mgrMap["@odata.type"] = "#microsoft.graph.user"
+						response["manager"] = mgrMap
+					} else {
+						response["manager"] = mgr
 					}
-					response["directReports"] = reports
+				}
+				// If no manager, don't set the key at all (omit it)
+			case "directReports":
+				reports, _, err := st.ListDirectReports(c.Request.Context(), user.ID, model.ListOptions{Top: 999})
+				if err == nil {
+					response["directReports"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(reports), expand.Select)
 				}
 			case "memberOf":
-				groups, _, err := st.ListUserMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+				groups, _, err := st.ListUserMemberOf(c.Request.Context(), user.ID, model.ListOptions{Top: 999})
 				if err == nil {
-					if groups == nil {
-						groups = []model.DirectoryObject{}
-					}
-					response["memberOf"] = groups
+					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 				}
 			}
 		}
 
 		// Apply $select if specified
 		if len(opts.Select) > 0 {
-			response = applySelect(response, opts.Select)
+			// Preserve expanded properties so $select doesn't strip them
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
+			response = applySelect(response, opts.Select, expandedProps)
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -349,6 +362,67 @@ func deleteUserHandler(st store.Store) gin.HandlerFunc {
 	}
 }
 
+// parseExpandOptions parses $expand query parameter value, handling
+// nested $select inside parentheses.
+// Examples:
+//   "manager" → []ExpandOption{{Property:"manager"}}
+//   "manager($select=userPrincipalName)" → []ExpandOption{{Property:"manager", Select:[]string{"userPrincipalName"}}}
+//   "manager($select=userPrincipalName,displayName),directReports" → two ExpandOptions
+func parseExpandOptions(expandStr string) []model.ExpandOption {
+	if expandStr == "" {
+		return nil
+	}
+
+	// Split on commas that are OUTSIDE parentheses
+	var segments []string
+	depth := 0
+	current := strings.Builder{}
+	for _, ch := range expandStr {
+		if ch == '(' {
+			depth++
+			current.WriteRune(ch)
+		} else if ch == ')' {
+			depth--
+			current.WriteRune(ch)
+		} else if ch == ',' && depth == 0 {
+			segments = append(segments, strings.TrimSpace(current.String()))
+			current.Reset()
+		} else {
+			current.WriteRune(ch)
+		}
+	}
+	if current.Len() > 0 {
+		segments = append(segments, strings.TrimSpace(current.String()))
+	}
+
+	var options []model.ExpandOption
+	for _, seg := range segments {
+		if seg == "" {
+			continue
+		}
+		opt := model.ExpandOption{}
+		parenIdx := strings.Index(seg, "($select=")
+		if parenIdx >= 0 {
+			opt.Property = seg[:parenIdx]
+			inner := seg[parenIdx+9:] // len("($select=") is 9
+			if strings.HasSuffix(inner, ")") {
+				inner = inner[:len(inner)-1]
+			}
+			fields := strings.Split(inner, ",")
+			for _, s := range fields {
+				s = strings.TrimSpace(s)
+				if s != "" {
+					opt.Select = append(opt.Select, s)
+				}
+			}
+		} else {
+			opt.Property = seg
+		}
+		options = append(options, opt)
+	}
+	return options
+}
+
 // parseListOptions parses OData query parameters
 func parseListOptions(query url.Values) model.ListOptions {
 	opts := model.ListOptions{
@@ -397,7 +471,7 @@ func parseListOptions(query url.Values) model.ListOptions {
 
 	// Parse $expand
 	if expandStr := query.Get("$expand"); expandStr != "" {
-		opts.Expand = strings.Split(expandStr, ",")
+		opts.ExpandOptions = parseExpandOptions(expandStr)
 	}
 
 	return opts

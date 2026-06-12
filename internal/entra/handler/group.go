@@ -51,7 +51,7 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 
 		// Handle $expand - convert groups to maps with expanded properties
 		var responseValue interface{} = groups
-		if len(opts.Expand) > 0 {
+		if len(opts.ExpandOptions) > 0 {
 			expandedGroups := make([]map[string]interface{}, 0, len(groups))
 			for _, g := range groups {
 				groupMap := make(map[string]interface{})
@@ -65,35 +65,25 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 					return
 				}
 
-				for _, prop := range opts.Expand {
-					prop = strings.TrimSpace(prop)
-					switch prop {
-					case "members":
-						members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-						if err == nil {
-							if members == nil {
-								members = []model.DirectoryObject{}
-							}
-							groupMap["members"] = members
-						}
-					case "owners":
-						owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-						if err == nil {
-							if owners == nil {
-								owners = []model.DirectoryObject{}
-							}
-							groupMap["owners"] = owners
-						}
-					case "memberOf":
-						memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-						if err == nil {
-							if memberOf == nil {
-								memberOf = []model.DirectoryObject{}
-							}
-							groupMap["memberOf"] = memberOf
-						}
+			for _, expand := range opts.ExpandOptions {
+				switch expand.Property {
+				case "members":
+					members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+					if err == nil {
+						groupMap["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
+					}
+				case "owners":
+					owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+					if err == nil {
+						groupMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+					}
+				case "memberOf":
+					memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+					if err == nil {
+						groupMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
 					}
 				}
+			}
 				expandedGroups = append(expandedGroups, groupMap)
 			}
 			responseValue = expandedGroups
@@ -101,11 +91,13 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 
 		// Apply $select if specified
 		if len(opts.Select) > 0 {
-			if len(opts.Expand) > 0 {
-				// Items are already maps from expand handling
+			if len(opts.ExpandOptions) > 0 {
+				// Items are already maps from expand handling.
+				// Build a set of expanded property names so applySelect doesn't strip them.
+				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
 				maps := responseValue.([]map[string]interface{})
 				for i, m := range maps {
-					maps[i] = applySelect(m, opts.Select)
+					maps[i] = applySelect(m, opts.Select, expandedProps)
 				}
 			} else {
 				// Items are structs, serialize to maps first
@@ -173,6 +165,8 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
+		opts := parseListOptions(c.Request.URL.Query())
+
 		response, err := buildEntityResponseWithType("https://graph.microsoft.com/v1.0/$metadata#groups/$entity", "#microsoft.graph.group", group)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
@@ -180,43 +174,31 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Handle $expand
-		if expandStr := c.Request.URL.Query().Get("$expand"); expandStr != "" {
-			expandProps := strings.Split(expandStr, ",")
-			for _, prop := range expandProps {
-				prop = strings.TrimSpace(prop)
-				switch prop {
-				case "members":
-					members, _, err := st.ListMembers(c.Request.Context(), id, model.ListOptions{Top: 999})
-					if err == nil {
-						if members == nil {
-							members = []model.DirectoryObject{}
-						}
-						response["members"] = members
-					}
-				case "owners":
-					owners, _, err := st.ListOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
-					if err == nil {
-						if owners == nil {
-							owners = []model.DirectoryObject{}
-						}
-						response["owners"] = owners
-					}
-				case "memberOf":
-					memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
-					if err == nil {
-						if memberOf == nil {
-							memberOf = []model.DirectoryObject{}
-						}
-						response["memberOf"] = memberOf
-					}
+		for _, expand := range opts.ExpandOptions {
+			switch expand.Property {
+			case "members":
+				members, _, err := st.ListMembers(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					response["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
+				}
+			case "owners":
+				owners, _, err := st.ListOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+				}
+			case "memberOf":
+				memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
 				}
 			}
 		}
 
 		// Apply $select if specified
-		opts := parseListOptions(c.Request.URL.Query())
 		if len(opts.Select) > 0 {
-			response = applySelect(response, opts.Select)
+			// Preserve expanded properties so $select doesn't strip them
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
+			response = applySelect(response, opts.Select, expandedProps)
 		}
 
 		writeJSON(c, http.StatusOK, response)

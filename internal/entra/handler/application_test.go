@@ -161,6 +161,116 @@ func TestGetApplicationNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
+func TestGetApplicationByAppIDExpandOwners(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := store.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	err = store.AddApplicationOwner(ctx, createdApp.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/applications/(appId="+createdApp.AppID+")?$expand=owners", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var appResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &appResp)
+	require.NoError(t, err)
+
+	owners, ok := appResp["owners"].([]interface{})
+	require.True(t, ok, "Application response should have owners key when expanded")
+	assert.Len(t, owners, 1)
+	owner := owners[0].(map[string]interface{})
+	assert.Equal(t, createdUser.ID, owner["id"])
+	assert.Contains(t, owner, "@odata.type")
+}
+
+func TestGetApplicationByAppIDExpandOwnersWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := store.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	err = store.AddApplicationOwner(ctx, createdApp.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/applications/(appId="+createdApp.AppID+")?$expand=owners($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var appResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &appResp)
+	require.NoError(t, err)
+
+	owners, ok := appResp["owners"].([]interface{})
+	require.True(t, ok, "Application response should have owners key when expanded")
+	assert.Len(t, owners, 1)
+	owner := owners[0].(map[string]interface{})
+	assert.Contains(t, owner, "id")
+	assert.Contains(t, owner, "displayName")
+	assert.Contains(t, owner, "@odata.type")
+	assert.NotContains(t, owner, "mail")
+}
+
 func TestListApplications(t *testing.T) {
 	store := store.NewMemoryStore()
 	router := NewRouter(store)
@@ -473,6 +583,187 @@ func TestRemoveKey(t *testing.T) {
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestListApplicationsExpandOwners(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := store.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	err = store.AddApplicationOwner(ctx, createdApp.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/applications?$expand=owners", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	apps := listResp["value"].([]interface{})
+	foundApp := false
+	for _, a := range apps {
+		appMap := a.(map[string]interface{})
+		if appMap["displayName"] == "Test App" {
+			foundApp = true
+			owners, ok := appMap["owners"].([]interface{})
+			require.True(t, ok, "application should have owners key when expanded")
+			assert.Len(t, owners, 1)
+			owner := owners[0].(map[string]interface{})
+			assert.Equal(t, createdUser.ID, owner["id"])
+			assert.Contains(t, owner, "@odata.type")
+			break
+		}
+	}
+	assert.True(t, foundApp, "should find the test application")
+}
+
+func TestListApplicationsExpandOwnersWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := store.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	err = store.AddApplicationOwner(ctx, createdApp.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/applications?$expand=owners($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	apps := listResp["value"].([]interface{})
+	for _, a := range apps {
+		appMap := a.(map[string]interface{})
+		if appMap["displayName"] == "Test App" {
+			owners, ok := appMap["owners"].([]interface{})
+			require.True(t, ok)
+			assert.Len(t, owners, 1)
+			owner := owners[0].(map[string]interface{})
+			assert.Contains(t, owner, "id")
+			assert.Contains(t, owner, "displayName")
+			assert.Contains(t, owner, "@odata.type")
+			assert.NotContains(t, owner, "mail")
+			break
+		}
+	}
+}
+
+func TestGetApplicationExpandOwners(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	app := model.Application{
+		DisplayName: "Test App",
+	}
+	createdApp, err := store.CreateApplication(ctx, app)
+	require.NoError(t, err)
+
+	err = store.AddApplicationOwner(ctx, createdApp.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"Application.Read.All"}, []string{"Application"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/applications/"+createdApp.ID+"?$expand=owners", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var appResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &appResp)
+	require.NoError(t, err)
+
+	owners, ok := appResp["owners"].([]interface{})
+	require.True(t, ok, "application response should have owners key when expanded")
+	assert.Len(t, owners, 1)
+	owner := owners[0].(map[string]interface{})
+	assert.Equal(t, createdUser.ID, owner["id"])
+	assert.Contains(t, owner, "@odata.type")
 }
 
 func TestListApplicationOwners(t *testing.T) {

@@ -92,10 +92,10 @@ func TestExpandUserManagerNull(t *testing.T) {
 	var result map[string]interface{}
 	require.NoError(t, json.Unmarshal(body, &result))
 
-	// Assert response contains "manager" field with null
-	manager, ok := result["manager"]
-	require.True(t, ok, "Expected manager field to be present")
-	assert.Nil(t, manager, "Expected manager to be null")
+	// Per Microsoft Graph API behavior, when a user has no manager,
+	// the "manager" key is omitted entirely from the response (not null).
+	_, hasManager := result["manager"]
+	assert.False(t, hasManager, "Expected manager field to be absent when user has no manager")
 
 	t.Logf("Successfully verified null manager expansion for user %s", user1ID)
 }

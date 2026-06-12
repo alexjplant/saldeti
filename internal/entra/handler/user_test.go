@@ -841,3 +841,912 @@ func TestODataInvalidFilter(t *testing.T) {
 	assert.Contains(t, errorObj, "message")
 	assert.Equal(t, "InvalidRequest", errorObj["code"])
 }
+
+func TestListUsersExpandManager(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	// Create different users
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Director",
+		AccountEnabled:    &accountEnabled,
+	}
+	_, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	solo := model.User{
+		DisplayName:       "Solo User",
+		UserPrincipalName: "solo@example.com",
+		Mail:              "solo@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Engineer",
+		AccountEnabled:    &accountEnabled,
+	}
+	_, err = store.CreateUser(ctx, solo)
+	require.NoError(t, err)
+
+	// Create a proper chain of management
+	topManager := model.User{
+		DisplayName:       "Top Manager",
+		UserPrincipalName: "topmanager@example.com",
+		Mail:              "topmanager@example.com",
+		Department:        "Engineering",
+		JobTitle:          "VP",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdTopManager, err := store.CreateUser(ctx, topManager)
+	require.NoError(t, err)
+
+	employee := model.User{
+		DisplayName:       "Employee User",
+		UserPrincipalName: "employee@example.com",
+		Mail:              "employee@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Developer",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdEmployee, err := store.CreateUser(ctx, employee)
+	require.NoError(t, err)
+
+	// Set topManager as manager of employee
+	err = store.SetManager(ctx, createdEmployee.ID, createdTopManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request with $expand=manager
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$expand=manager", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	require.Len(t, users, 4)
+
+	// Find employee and verify manager
+	for _, u := range users {
+		userMap := u.(map[string]interface{})
+		if userMap["userPrincipalName"] == "employee@example.com" {
+			// Employee should have a manager
+			assert.Contains(t, userMap, "manager", "employee should have manager key")
+			mgrMap, ok := userMap["manager"].(map[string]interface{})
+			require.True(t, ok, "manager should be a map")
+			assert.Equal(t, createdTopManager.ID, mgrMap["id"])
+			assert.Equal(t, "Top Manager", mgrMap["displayName"])
+			assert.Equal(t, "topmanager@example.com", mgrMap["userPrincipalName"])
+		}
+		if userMap["userPrincipalName"] == "topmanager@example.com" {
+			// Top manager has no manager set - should NOT have manager key
+			_, hasManager := userMap["manager"]
+			assert.False(t, hasManager, "top manager should not have manager key at all")
+		}
+	}
+}
+
+func TestListUsersExpandManagerWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Director",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	employee := model.User{
+		DisplayName:       "Employee User",
+		UserPrincipalName: "employee@example.com",
+		Mail:              "employee@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Developer",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdEmployee, err := store.CreateUser(ctx, employee)
+	require.NoError(t, err)
+
+	err = store.SetManager(ctx, createdEmployee.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request with $expand=manager($select=userPrincipalName)
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$expand=manager($select=userPrincipalName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	require.Len(t, users, 2)
+
+	// Find employee and verify manager has only selected fields
+	for _, u := range users {
+		userMap := u.(map[string]interface{})
+		if userMap["userPrincipalName"] == "employee@example.com" {
+			mgrMap, ok := userMap["manager"].(map[string]interface{})
+			require.True(t, ok, "manager should be a map")
+			// Should have userPrincipalName, id, @odata.type
+			assert.Contains(t, mgrMap, "userPrincipalName", "manager should have userPrincipalName from $select")
+			assert.Contains(t, mgrMap, "id", "manager should always have id")
+			assert.Contains(t, mgrMap, "@odata.type", "manager should always have @odata.type")
+			// Should NOT have displayName, mail, department, jobTitle
+			assert.NotContains(t, mgrMap, "displayName", "manager should not have displayName when not selected")
+			assert.NotContains(t, mgrMap, "mail", "manager should not have mail when not selected")
+			assert.NotContains(t, mgrMap, "department", "manager should not have department when not selected")
+			assert.NotContains(t, mgrMap, "jobTitle", "manager should not have jobTitle when not selected")
+		}
+	}
+}
+
+func TestGetUserExpandManager(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Director",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	employee := model.User{
+		DisplayName:       "Employee User",
+		UserPrincipalName: "employee@example.com",
+		Mail:              "employee@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Developer",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdEmployee, err := store.CreateUser(ctx, employee)
+	require.NoError(t, err)
+
+	err = store.SetManager(ctx, createdEmployee.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request single user with $expand=manager
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users/"+createdEmployee.ID+"?$expand=manager", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var userResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &userResp)
+	require.NoError(t, err)
+
+	// Should have manager object
+	assert.Contains(t, userResp, "manager", "response should have manager key")
+	mgrMap, ok := userResp["manager"].(map[string]interface{})
+	require.True(t, ok, "manager should be a map")
+	assert.Equal(t, createdManager.ID, mgrMap["id"])
+	assert.Equal(t, "Manager User", mgrMap["displayName"])
+	assert.Equal(t, "manager@example.com", mgrMap["userPrincipalName"])
+	// Should include @odata.type
+	assert.Equal(t, "#microsoft.graph.user", mgrMap["@odata.type"])
+}
+
+func TestGetUserExpandManagerByUPN(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Director",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	employee := model.User{
+		DisplayName:       "Employee User",
+		UserPrincipalName: "employee@example.com",
+		Mail:              "employee@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Developer",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdEmployee, err := store.CreateUser(ctx, employee)
+	require.NoError(t, err)
+
+	err = store.SetManager(ctx, createdEmployee.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request single user by UPN with $expand=manager
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users/employee@example.com?$expand=manager", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var userResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &userResp)
+	require.NoError(t, err)
+
+	// Should have manager object when fetched by UPN
+	assert.Contains(t, userResp, "manager", "response should have manager key when fetched by UPN")
+	mgrMap, ok := userResp["manager"].(map[string]interface{})
+	require.True(t, ok, "manager should be a map")
+	assert.Equal(t, createdManager.ID, mgrMap["id"])
+	assert.Equal(t, "manager@example.com", mgrMap["userPrincipalName"])
+	assert.Equal(t, "#microsoft.graph.user", mgrMap["@odata.type"])
+}
+
+func TestGetUserExpandManagerWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Director",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	employee := model.User{
+		DisplayName:       "Employee User",
+		UserPrincipalName: "employee@example.com",
+		Mail:              "employee@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Developer",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdEmployee, err := store.CreateUser(ctx, employee)
+	require.NoError(t, err)
+
+	err = store.SetManager(ctx, createdEmployee.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request single user with $expand=manager($select=userPrincipalName,displayName)
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users/"+createdEmployee.ID+"?$expand=manager($select=userPrincipalName,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var userResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &userResp)
+	require.NoError(t, err)
+
+	// Should have manager object
+	mgrMap, ok := userResp["manager"].(map[string]interface{})
+	require.True(t, ok, "manager should be a map")
+	// Should have id, @odata.type, userPrincipalName, displayName
+	assert.Contains(t, mgrMap, "id")
+	assert.Contains(t, mgrMap, "@odata.type")
+	assert.Contains(t, mgrMap, "userPrincipalName")
+	assert.Contains(t, mgrMap, "displayName")
+	// Should NOT have mail, department, jobTitle
+	assert.NotContains(t, mgrMap, "mail")
+	assert.NotContains(t, mgrMap, "department")
+	assert.NotContains(t, mgrMap, "jobTitle")
+}
+
+func TestListUsersExpandManagerNoManager(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Solo User",
+		UserPrincipalName: "solo@example.com",
+		Mail:              "solo@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	_, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request with $expand=manager
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$expand=manager", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	require.Len(t, users, 1)
+
+	userMap := users[0].(map[string]interface{})
+	// User without manager should NOT have "manager" key at all
+	_, hasManager := userMap["manager"]
+	assert.False(t, hasManager, "user without manager should not have manager key in response")
+}
+
+func TestListUsersExpandManagerWithUserSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Director",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	employee := model.User{
+		DisplayName:       "Employee User",
+		UserPrincipalName: "employee@example.com",
+		Mail:              "employee@example.com",
+		Department:        "Engineering",
+		JobTitle:          "Developer",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdEmployee, err := store.CreateUser(ctx, employee)
+	require.NoError(t, err)
+
+	err = store.SetManager(ctx, createdEmployee.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request with both $select on user and nested $select on manager
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$select=userPrincipalName&$expand=manager($select=userPrincipalName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	require.Len(t, users, 2)
+
+	for _, u := range users {
+		userMap := u.(map[string]interface{})
+		// User should only have id, userPrincipalName, @odata.context
+		assert.Contains(t, userMap, "id")
+		assert.Contains(t, userMap, "userPrincipalName")
+		// Should NOT have displayName, mail, department, jobTitle on the user itself
+		assert.NotContains(t, userMap, "displayName")
+		assert.NotContains(t, userMap, "mail")
+
+		// If this is the employee, check the manager
+		if userMap["userPrincipalName"] == "employee@example.com" {
+			mgrMap, ok := userMap["manager"].(map[string]interface{})
+			require.True(t, ok)
+			assert.Contains(t, mgrMap, "id")
+			assert.Contains(t, mgrMap, "userPrincipalName")
+			assert.Contains(t, mgrMap, "@odata.type")
+			assert.NotContains(t, mgrMap, "displayName")
+			assert.NotContains(t, mgrMap, "mail")
+		}
+	}
+}
+
+func TestListUsersExpandDirectReports(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	// Create a manager and 2 direct reports
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	report1 := model.User{
+		DisplayName:       "Report One",
+		UserPrincipalName: "report1@example.com",
+		Mail:              "report1@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdReport1, err := store.CreateUser(ctx, report1)
+	require.NoError(t, err)
+
+	report2 := model.User{
+		DisplayName:       "Report Two",
+		UserPrincipalName: "report2@example.com",
+		Mail:              "report2@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdReport2, err := store.CreateUser(ctx, report2)
+	require.NoError(t, err)
+
+	// Set manager for both reports
+	err = store.SetManager(ctx, createdReport1.ID, createdManager.ID)
+	require.NoError(t, err)
+	err = store.SetManager(ctx, createdReport2.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$expand=directReports", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	// Find the manager and verify directReports
+	for _, u := range users {
+		userMap := u.(map[string]interface{})
+		if userMap["userPrincipalName"] == "manager@example.com" {
+			dr, ok := userMap["directReports"].([]interface{})
+			require.True(t, ok, "manager should have directReports key")
+			assert.Len(t, dr, 2, "manager should have 2 direct reports")
+		}
+		if userMap["userPrincipalName"] == "report1@example.com" || userMap["userPrincipalName"] == "report2@example.com" {
+			// Reports should have empty or absent directReports
+			drRaw, hasDR := userMap["directReports"]
+			if hasDR {
+				dr, ok := drRaw.([]interface{})
+				if ok {
+					assert.Len(t, dr, 0, "reports should have empty directReports")
+				}
+			}
+		}
+	}
+}
+
+func TestListUsersExpandMemberOf(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	mailEnabled := false
+	securityEnabled := true
+	group1 := model.Group{
+		DisplayName:     "Group 1",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "group1",
+	}
+	createdGroup1, err := store.CreateGroup(ctx, group1)
+	require.NoError(t, err)
+
+	group2 := model.Group{
+		DisplayName:     "Group 2",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "group2",
+	}
+	createdGroup2, err := store.CreateGroup(ctx, group2)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdGroup1.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+	err = store.AddMember(ctx, createdGroup2.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All", "GroupMember.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$expand=memberOf", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	for _, u := range users {
+		userMap := u.(map[string]interface{})
+		if userMap["id"] == createdUser.ID {
+			memberOf, ok := userMap["memberOf"].([]interface{})
+			require.True(t, ok, "user should have memberOf key")
+			assert.Len(t, memberOf, 2, "user should be member of 2 groups")
+		}
+	}
+}
+
+func TestListUsersExpandDirectReportsWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	report := model.User{
+		DisplayName:       "Direct Report",
+		UserPrincipalName: "report@example.com",
+		Mail:              "report@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdReport, err := store.CreateUser(ctx, report)
+	require.NoError(t, err)
+
+	err = store.SetManager(ctx, createdReport.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$expand=directReports($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	for _, u := range users {
+		userMap := u.(map[string]interface{})
+		if userMap["id"] == createdManager.ID {
+			dr, ok := userMap["directReports"].([]interface{})
+			require.True(t, ok, "manager should have directReports key")
+			require.Len(t, dr, 1, "manager should have 1 direct report")
+			drMap := dr[0].(map[string]interface{})
+			assert.Contains(t, drMap, "id")
+			assert.Contains(t, drMap, "displayName")
+			assert.Contains(t, drMap, "@odata.type")
+			assert.NotContains(t, drMap, "mail")
+			assert.NotContains(t, drMap, "userPrincipalName")
+		}
+	}
+}
+
+func TestGetUserExpandDirectReports(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	manager := model.User{
+		DisplayName:       "Manager User",
+		UserPrincipalName: "manager@example.com",
+		Mail:              "manager@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdManager, err := store.CreateUser(ctx, manager)
+	require.NoError(t, err)
+
+	report := model.User{
+		DisplayName:       "Direct Report",
+		UserPrincipalName: "report@example.com",
+		Mail:              "report@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdReport, err := store.CreateUser(ctx, report)
+	require.NoError(t, err)
+
+	// Set manager as the report's manager
+	err = store.SetManager(ctx, createdReport.ID, createdManager.ID)
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	// Request the manager with $expand=directReports
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users/"+createdManager.ID+"?$expand=directReports", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var userResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &userResp)
+	require.NoError(t, err)
+
+	directReports, ok := userResp["directReports"].([]interface{})
+	require.True(t, ok, "user should have directReports key when expanded")
+	assert.Len(t, directReports, 1)
+	dr := directReports[0].(map[string]interface{})
+	assert.Equal(t, createdReport.ID, dr["id"])
+	assert.Contains(t, dr, "@odata.type")
+}
+
+func TestGetUserExpandMemberOf(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	mailEnabled := false
+	securityEnabled := true
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "testgroup",
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All", "GroupMember.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users/"+createdUser.ID+"?$expand=memberOf", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var userResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &userResp)
+	require.NoError(t, err)
+
+	memberOf, ok := userResp["memberOf"].([]interface{})
+	require.True(t, ok, "user should have memberOf key when expanded")
+	assert.Len(t, memberOf, 1)
+	groupEntry := memberOf[0].(map[string]interface{})
+	assert.Equal(t, createdGroup.ID, groupEntry["id"])
+	assert.Contains(t, groupEntry, "@odata.type")
+}
+
+func TestListUsersExpandMemberOfWithSelect(t *testing.T) {
+	store := store.NewMemoryStore()
+	router := NewRouter(store)
+	ctx := context.Background()
+
+	accountEnabled := true
+	user := model.User{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		Mail:              "testuser@example.com",
+		AccountEnabled:    &accountEnabled,
+	}
+	createdUser, err := store.CreateUser(ctx, user)
+	require.NoError(t, err)
+
+	mailEnabled := false
+	securityEnabled := true
+	group := model.Group{
+		DisplayName:     "Test Group",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "testgroup",
+	}
+	createdGroup, err := store.CreateGroup(ctx, group)
+	require.NoError(t, err)
+
+	err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.Read.All", "GroupMember.Read.All"}, []string{"User"}, time.Hour, "", "")
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", server.URL+"/v1.0/users?$expand=memberOf($select=id,displayName)", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var listResp map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(body, &listResp)
+	require.NoError(t, err)
+
+	users := listResp["value"].([]interface{})
+	for _, u := range users {
+		userMap := u.(map[string]interface{})
+		if userMap["id"] == createdUser.ID {
+			memberOf, ok := userMap["memberOf"].([]interface{})
+			require.True(t, ok, "user should have memberOf key")
+			require.Len(t, memberOf, 1, "user should be member of 1 group")
+			groupMap := memberOf[0].(map[string]interface{})
+			assert.Contains(t, groupMap, "id")
+			assert.Contains(t, groupMap, "displayName")
+			assert.Contains(t, groupMap, "@odata.type")
+			assert.NotContains(t, groupMap, "mailNickname")
+			assert.NotContains(t, groupMap, "mail")
+		}
+	}
+}

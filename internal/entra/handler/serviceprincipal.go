@@ -57,24 +57,65 @@ func listServicePrincipalsHandler(st store.Store) gin.HandlerFunc {
 			sps = []model.ServicePrincipal{}
 		}
 
-		// Apply $select if specified
 		var responseValue interface{} = sps
-		if len(opts.Select) > 0 {
-			filteredItems := make([]map[string]interface{}, 0, len(sps))
-			for i := range sps {
-				itemJSON, err := json.Marshal(sps[i])
+		if len(opts.ExpandOptions) > 0 {
+			expandedSPs := make([]map[string]interface{}, 0, len(sps))
+			for _, sp := range sps {
+				spMap := make(map[string]interface{})
+				spJSON, err := json.Marshal(sp)
 				if err != nil {
-					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process service principal expansion")
 					return
 				}
-				var itemMap map[string]interface{}
-				if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
-					writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+				if err := json.Unmarshal(spJSON, &spMap); err != nil {
+					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process service principal expansion")
 					return
 				}
-				filteredItems = append(filteredItems, applySelect(itemMap, opts.Select))
+
+				for _, expand := range opts.ExpandOptions {
+					switch expand.Property {
+					case "owners":
+						owners, _, err := st.ListSPOwners(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							spMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+						}
+					case "memberOf":
+						groups, _, err := st.ListSPMemberOf(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							spMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
+						}
+					}
+				}
+				expandedSPs = append(expandedSPs, spMap)
 			}
-			responseValue = filteredItems
+			responseValue = expandedSPs
+		}
+
+		// Apply $select if specified
+		if len(opts.Select) > 0 {
+			if len(opts.ExpandOptions) > 0 {
+				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
+				maps := responseValue.([]map[string]interface{})
+				for i, m := range maps {
+					maps[i] = applySelect(m, opts.Select, expandedProps)
+				}
+			} else {
+				filteredItems := make([]map[string]interface{}, 0, len(sps))
+				for i := range sps {
+					itemJSON, err := json.Marshal(sps[i])
+					if err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					var itemMap map[string]interface{}
+					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
+						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
+						return
+					}
+					filteredItems = append(filteredItems, applySelect(itemMap, opts.Select))
+				}
+				responseValue = filteredItems
+			}
 		}
 
 		// Build response
@@ -128,10 +169,29 @@ func getServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Apply $select if specified
 		opts := parseListOptions(c.Request.URL.Query())
+
+		// Handle $expand
+		for _, expand := range opts.ExpandOptions {
+			switch expand.Property {
+			case "owners":
+				owners, _, err := st.ListSPOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+				}
+			case "memberOf":
+				groups, _, err := st.ListSPMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+				if err == nil {
+					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
+				}
+			}
+		}
+
+		// Apply $select if specified
 		if len(opts.Select) > 0 {
-			response = applySelect(response, opts.Select)
+			// Preserve expanded properties so $select doesn't strip them
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
+			response = applySelect(response, opts.Select, expandedProps)
 		}
 
 		writeJSON(c, http.StatusOK, response)
@@ -169,10 +229,28 @@ func getSPByAppIDHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Apply $select if specified
 		opts := parseListOptions(c.Request.URL.Query())
+
+		// Handle $expand
+		for _, expand := range opts.ExpandOptions {
+			switch expand.Property {
+			case "owners":
+				owners, _, err := st.ListSPOwners(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+				if err == nil {
+					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+				}
+			case "memberOf":
+				groups, _, err := st.ListSPMemberOf(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+				if err == nil {
+					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
+				}
+			}
+		}
+
+		// Apply $select if specified
 		if len(opts.Select) > 0 {
-			response = applySelect(response, opts.Select)
+			expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
+			response = applySelect(response, opts.Select, expandedProps)
 		}
 
 		writeJSON(c, http.StatusOK, response)
