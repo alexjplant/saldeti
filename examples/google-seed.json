@@ -1,0 +1,206 @@
+{
+  "clients": [
+    {
+      "client_id": "google-sim-client-id.apps.googleusercontent.com",
+      "client_secret": "GOCSPX-sim-client-secret"
+    }
+  ],
+  "users": [
+    {
+      "primary_email": "admin@saldeti.com",
+      "given_name": "Admin",
+      "family_name": "User",
+      "password": "Simulator123!",
+      "is_admin": true,
+      "org_unit_path": "/"
+    },
+    {
+      "primary_email": "alice.smith@saldeti.com",
+      "given_name": "Alice",
+      "family_name": "Smith",
+      "password": "Simulator123!",
+      "org_unit_path": "/Engineering"
+    },
+    {
+      "primary_email": "bob.jones@saldeti.com",
+      "given_name": "Bob",
+      "family_name": "Jones",
+      "password": "Simulator123!",
+      "org_unit_path": "/Engineering"
+    },
+    {
+      "primary_email": "charlie.brown@saldeti.com",
+      "given_name": "Charlie",
+      "family_name": "Brown",
+      "password": "Simulator123!",
+      "org_unit_path": "/Marketing"
+    },
+    {
+      "primary_email": "diana.prince@saldeti.com",
+      "given_name": "Diana",
+      "family_name": "Prince",
+      "password": "Simulator123!",
+      "org_unit_path": "/HR"
+    },
+    {
+      "primary_email": "eve.wilson@saldeti.com",
+      "given_name": "Eve",
+      "family_name": "Wilson",
+      "password": "Simulator123!",
+      "suspended": true,
+      "org_unit_path": "/"
+    },
+    {
+      "primary_email": "frank.miller@saldeti.com",
+      "given_name": "Frank",
+      "family_name": "Miller",
+      "password": "Simulator123!",
+      "org_unit_path": "/Engineering/Frontend"
+    },
+    {
+      "primary_email": "grace.lee@saldeti.com",
+      "given_name": "Grace",
+      "family_name": "Lee",
+      "password": "Simulator123!",
+      "org_unit_path": "/Marketing",
+      "aliases": ["g.lee@saldeti.com"]
+    }
+  ],
+  "groups": [
+    {
+      "email": "engineering@saldeti.com",
+      "name": "Engineering Team",
+      "description": "Engineering department group",
+      "member_emails": [
+        "alice.smith@saldeti.com",
+        "bob.jones@saldeti.com",
+        "frank.miller@saldeti.com"
+      ]
+    },
+    {
+      "email": "marketing@saldeti.com",
+      "name": "Marketing Team",
+      "description": "Marketing department group",
+      "member_emails": [
+        "charlie.brown@saldeti.com",
+        "grace.lee@saldeti.com"
+      ]
+    },
+    {
+      "email": "all-staff@saldeti.com",
+      "name": "All Staff",
+      "description": "Everyone in the organization",
+      "member_emails": [
+        "admin@saldeti.com",
+        "alice.smith@saldeti.com",
+        "bob.jones@saldeti.com",
+        "charlie.brown@saldeti.com",
+        "diana.prince@saldeti.com",
+        "frank.miller@saldeti.com",
+        "grace.lee@saldeti.com"
+      ]
+    },
+    {
+      "email": "leadership@saldeti.com",
+      "name": "Leadership",
+      "description": "Leadership team",
+      "member_emails": [
+        "admin@saldeti.com",
+        "diana.prince@saldeti.com"
+      ]
+    }
+  ],
+  "org_units": [
+    {
+      "name": "Engineering",
+      "description": "Engineering department",
+      "parent_org_unit_path": "/"
+    },
+    {
+      "name": "Frontend",
+      "description": "Frontend engineering team",
+      "parent_org_unit_path": "/Engineering"
+    },
+    {
+      "name": "Marketing",
+      "description": "Marketing department",
+      "parent_org_unit_path": "/"
+    },
+    {
+      "name": "HR",
+      "description": "Human Resources",
+      "parent_org_unit_path": "/"
+    }
+  ],
+  "roles": [
+    {
+      "role_name": "HelpdeskAdmin",
+      "role_description": "Helpdesk administrator with limited privileges",
+      "privileges": [
+        "USERS_READ",
+        "USERS_UPDATE",
+        "GROUPS_READ"
+      ]
+    },
+    {
+      "role_name": "ReadOnlyAdmin",
+      "role_description": "Read-only access to all resources",
+      "privileges": [
+        "USERS_READ",
+        "GROUPS_READ",
+        "ORG_UNITS_READ",
+        "DEVICES_READ"
+      ]
+    }
+  ],
+  "role_assignments": [
+    {
+      "assigned_to_email": "diana.prince@saldeti.com",
+      "role_id_or_name": "HelpdeskAdmin"
+    },
+    {
+      "assigned_to_email": "bob.jones@saldeti.com",
+      "role_id_or_name": "ReadOnlyAdmin"
+    }
+  ],
+  "domains": [
+    {
+      "domain_name": "saldeti.com",
+      "is_primary": true
+    }
+  ],
+  "chromeos_devices": [
+    {
+      "serial_number": "CHROME-001-ABC",
+      "annotated_user": "alice.smith@saldeti.com",
+      "org_unit_path": "/Engineering",
+      "notes": "Engineering Chromebook - Alice"
+    },
+    {
+      "serial_number": "CHROME-002-DEF",
+      "annotated_user": "charlie.brown@saldeti.com",
+      "org_unit_path": "/Marketing",
+      "notes": "Marketing Chromebook - Charlie"
+    },
+    {
+      "serial_number": "CHROME-003-GHI",
+      "annotated_user": "frank.miller@saldeti.com",
+      "org_unit_path": "/Engineering/Frontend",
+      "notes": "Frontend team kiosk device"
+    }
+  ],
+  "mobile_devices": [
+    {
+      "serial_number": "MOB-001-JKL",
+      "model": "Pixel 8",
+      "os": "Android 14",
+      "status": "ACTIVE"
+    },
+    {
+      "serial_number": "MOB-002-MNO",
+      "model": "iPhone 15",
+      "os": "iOS 17",
+      "status": "ACTIVE"
+    }
+  ]
+}

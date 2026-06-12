@@ -1,0 +1,304 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/saldeti/saldeti/internal/seed/google-seed-config",
+  "$ref": "#/$defs/GoogleSeedConfig",
+  "$defs": {
+    "GoogleSeedChromeOSDevice": {
+      "properties": {
+        "serial_number": {
+          "type": "string",
+          "description": "Device serial number"
+        },
+        "annotated_user": {
+          "type": "string",
+          "description": "Email of the user assigned to this device"
+        },
+        "org_unit_path": {
+          "type": "string",
+          "description": "Org unit path where the device resides"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Administrator notes about the device"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "GoogleSeedClient": {
+      "properties": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth2 client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "description": "OAuth2 client secret"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "client_id",
+        "client_secret"
+      ]
+    },
+    "GoogleSeedConfig": {
+      "properties": {
+        "clients": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedClient"
+          },
+          "type": "array",
+          "description": "OAuth2 client credentials (at least one required)"
+        },
+        "users": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedUser"
+          },
+          "type": "array",
+          "description": "Google Workspace users to seed"
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedGroup"
+          },
+          "type": "array",
+          "description": "Google Workspace groups to seed"
+        },
+        "org_units": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedOrgUnit"
+          },
+          "type": "array",
+          "description": "Organizational units to create"
+        },
+        "roles": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedRole"
+          },
+          "type": "array",
+          "description": "Custom admin roles to create"
+        },
+        "role_assignments": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedRoleAssignment"
+          },
+          "type": "array",
+          "description": "Role assignments linking users to roles"
+        },
+        "domains": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedDomain"
+          },
+          "type": "array",
+          "description": "Domains associated with the account"
+        },
+        "chromeos_devices": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedChromeOSDevice"
+          },
+          "type": "array",
+          "description": "Chrome OS devices to register"
+        },
+        "mobile_devices": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedMobileDevice"
+          },
+          "type": "array",
+          "description": "Mobile devices to register"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "clients"
+      ]
+    },
+    "GoogleSeedDomain": {
+      "properties": {
+        "domain_name": {
+          "type": "string",
+          "description": "The domain name"
+        },
+        "is_primary": {
+          "type": "boolean",
+          "description": "Whether this is the primary domain"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "domain_name"
+      ]
+    },
+    "GoogleSeedGroup": {
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Group email address"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the group"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the group"
+        },
+        "member_emails": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Email addresses of group members (must reference existing users)"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Alternative email addresses for the group"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "email"
+      ]
+    },
+    "GoogleSeedMobileDevice": {
+      "properties": {
+        "serial_number": {
+          "type": "string",
+          "description": "Device serial number"
+        },
+        "model": {
+          "type": "string",
+          "description": "Device model (e.g. Pixel 8, iPhone 15)"
+        },
+        "os": {
+          "type": "string",
+          "description": "Operating system (e.g. Android 14, iOS 17)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Device status (e.g. ACTIVE, DISABLED)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "GoogleSeedOrgUnit": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the organizational unit"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the organizational unit"
+        },
+        "parent_org_unit_path": {
+          "type": "string",
+          "description": "Path of the parent org unit (e.g. '/' for top-level)"
+        },
+        "block_inheritance": {
+          "type": "boolean",
+          "description": "Whether settings inheritance from parent is blocked"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "GoogleSeedRole": {
+      "properties": {
+        "role_name": {
+          "type": "string",
+          "description": "Name of the custom role"
+        },
+        "role_description": {
+          "type": "string",
+          "description": "Description of the custom role"
+        },
+        "privileges": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "List of privilege names assigned to this role"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "role_name"
+      ]
+    },
+    "GoogleSeedRoleAssignment": {
+      "properties": {
+        "assigned_to_email": {
+          "type": "string",
+          "description": "Email of the user to assign the role to"
+        },
+        "role_id_or_name": {
+          "type": "string",
+          "description": "Role ID or the role_name of a custom role defined in roles"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "assigned_to_email",
+        "role_id_or_name"
+      ]
+    },
+    "GoogleSeedUser": {
+      "properties": {
+        "primary_email": {
+          "type": "string",
+          "description": "Primary email address for the user"
+        },
+        "given_name": {
+          "type": "string",
+          "description": "Given (first) name"
+        },
+        "family_name": {
+          "type": "string",
+          "description": "Family (last) name"
+        },
+        "password": {
+          "type": "string",
+          "description": "Initial password for the user"
+        },
+        "suspended": {
+          "type": "boolean",
+          "description": "Whether the user account is suspended"
+        },
+        "is_admin": {
+          "type": "boolean",
+          "description": "Whether the user is a super admin"
+        },
+        "org_unit_path": {
+          "type": "string",
+          "description": "Org unit path for the user (e.g. /Engineering)"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Alternative email addresses for the user"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "primary_email"
+      ]
+    }
+  }
+}
