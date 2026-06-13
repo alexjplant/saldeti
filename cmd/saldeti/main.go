@@ -24,6 +24,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -280,6 +281,11 @@ func main() {
 	// Create router
 	router := handler.NewRouter(store)
 
+	// Health check endpoint
+	router.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	// Register UI routes if enabled
 	if *uiEnabled {
 		baseURL := fmt.Sprintf("https://localhost:%d", *port)
@@ -340,6 +346,10 @@ func main() {
 		log.Info().Str("addr", addr).Msg("Starting HTTPS server (self-signed certificate)")
 	}
 
+	// Create cancellable context for background goroutines
+	appCtx, appCancel := context.WithCancel(context.Background())
+	defer appCancel()
+
 	// Start server with graceful shutdown
 	srv := &http.Server{
 		Addr:    addr,
@@ -356,12 +366,17 @@ func main() {
 	}()
 
 	// Start refresh token cleanup
-	auth.StartRefreshTokenCleanup(context.Background(), 10*time.Minute)
+	auth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
+
+	if *google {
+		gauth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
+	}
 
 	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	appCancel()
 	log.Info().Msg("Shutting down server...")
 
 	// Dump store if -dump is set
