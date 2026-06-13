@@ -9,14 +9,16 @@ Seed files let you pre-populate the Saldeti simulator with realistic data on sta
 
 ## Overview
 
-Pass a seed file with the `-seed` flag (currently **Entra ID mode only**):
+Pass a seed file with the `-seed` flag for Entra ID or the `-google-seed` flag for Google Workspace:
 
 ```sh
-saldeti -seed examples/seed.json         # Entra ID mode
+saldeti -seed examples/seed.json                       # Entra ID mode
+saldeti -google -google-seed examples/google-seed.json  # Google Workspace mode
+saldeti -google -google-seed examples/google-seed.json -seed examples/seed.json  # Both modes simultaneously
 ```
 
-::: warning
-Google Workspace seed file loading is not yet implemented. The `-seed` flag currently only loads Entra ID seed files. The Google schema and example are provided as a reference for the planned feature.
+::: tip
+Both Entra ID and Google Workspace seed loading are supported. Use `-seed` for Entra ID seed files and `-google-seed` for Google Workspace seed files.
 :::
 
 The simulator parses the file at startup and creates all the declared resources in memory. There is no database — everything lives in process memory, so restarting with a different seed file gives you a completely fresh environment.
@@ -97,8 +99,8 @@ Index-based references are order-dependent. If you reorder the `users` array, al
 
 The Google Workspace seed file follows the schema defined in [`google-seed.schema.json`](https://raw.githubusercontent.com/saldeti/saldeti/main/schema/google-seed.schema.json).
 
-::: warning
-Google Workspace seed file loading is not yet implemented. The schema and example below are provided as a reference for the planned feature. The `-seed` flag currently only loads Entra ID seed files.
+::: tip
+Google Workspace seed loading is supported via the `-google-seed` flag. Use `-google -google-seed examples/google-seed.json` to load Google Workspace data on startup.
 :::
 
 ### Top-level properties
@@ -193,13 +195,13 @@ npx ajv-cli validate -s schema/google-seed.schema.json -d examples/google-seed.j
 
 ### Validating with Go
 
-The project includes a schema generator that also validates the Entra ID example:
+The project includes a schema generator that also validates both example seed files:
 
 ```sh
 go run cmd/genschema/main.go
 ```
 
-This regenerates `schema/seed.schema.json` from the Go types in `internal/entra/seed/schema.go` and validates `examples/seed.json` against it.
+This regenerates `schema/seed.schema.json` from the Go types in `internal/entra/seed/schema.go`, `schema/google-seed.schema.json` from the Go types in `internal/google/seed/schema.go`, and validates both `examples/seed.json` and `examples/google-seed.json` against their respective schemas.
 
 ### Online validation
 

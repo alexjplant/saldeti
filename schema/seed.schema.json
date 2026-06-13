@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/saldeti/saldeti/internal/seed/seed-config",
+  "$id": "https://github.com/saldeti/saldeti/internal/entra/seed/seed-config",
   "$ref": "#/$defs/SeedConfig",
   "$defs": {
     "SeedAppRole": {

@@ -108,12 +108,14 @@ type Store interface {
 	CountChromeOSDevices(ctx context.Context, customerID string) (int64, error)
 	IssueChromeOSCommand(ctx context.Context, customerID, deviceID string, cmd model.ChromeOSCommand) (model.ChromeOSCommandResult, error)
 	GetChromeOSCommand(ctx context.Context, customerID, deviceID, commandID string) (*model.ChromeOSCommandResult, error)
+	CreateChromeOSDevice(ctx context.Context, customerID string, device model.ChromeOSDevice) (model.ChromeOSDevice, error)
 
 	// Mobile Devices (Tier 4B)
 	ListMobileDevices(ctx context.Context, customerID string, opts model.ListOptions) ([]model.MobileDevice, string, error)
 	GetMobileDevice(ctx context.Context, customerID, resourceID string) (*model.MobileDevice, error)
 	DeleteMobileDevice(ctx context.Context, customerID, resourceID string) error
 	MobileDeviceAction(ctx context.Context, customerID, resourceID string, action model.MobileDeviceAction) error
+	CreateMobileDevice(ctx context.Context, customerID string, device model.MobileDevice) (model.MobileDevice, error)
 
 	// Cloud Identity Devices (Tier 4C)
 	ListCIDevices(ctx context.Context, opts model.ListOptions) ([]model.CloudIdentityDevice, string, error)

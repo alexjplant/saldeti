@@ -33,6 +33,7 @@ import (
 	"github.com/saldeti/saldeti/internal/entra/store"
 	gui "github.com/saldeti/saldeti/internal/google/ui"
 	gauth "github.com/saldeti/saldeti/internal/google/auth"
+	gseed "github.com/saldeti/saldeti/internal/google/seed"
 	ui "github.com/saldeti/saldeti/internal/entra/ui"
 	ghandler "github.com/saldeti/saldeti/internal/google/handler"
 	gstore "github.com/saldeti/saldeti/internal/google/store"
@@ -87,6 +88,7 @@ func main() {
 	baseURLFlag := flag.String("base-url", "", "External base URL (e.g. https://example.com). When set, X-Forwarded-Host/Proto headers are ignored.")
 	trustForwarded := flag.Bool("trust-forwarded-headers", false, "Trust X-Forwarded-Host/Proto headers for base URL detection")
 	google := flag.Bool("google", false, "Enable Google Workspace API simulator")
+	googleSeedPath := flag.String("google-seed", "", "Path to Google Workspace JSON seed file (optional, requires -google)")
 
 	// Admin credential flags
 	adminClientID := flag.String("admin-client-id", "", "Admin app client ID (default: random UUID; if set, -admin-client-secret and -admin-tenant-id must also be set)")
@@ -299,6 +301,17 @@ func main() {
 			log.Fatal().Err(err).Msg("Failed to register Google admin client")
 		}
 		log.Info().Str("client_id", googleClientID).Str("client_secret", googleClientSecret).Msg("Google admin app credentials")
+
+		if *googleSeedPath != "" {
+			gcfg, err := gseed.LoadFromFile(*googleSeedPath)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Failed to load Google seed file")
+			}
+			if err := gseed.SeedFromConfig(googleStore, gcfg); err != nil {
+				log.Fatal().Err(err).Msg("Failed to seed Google data")
+			}
+			log.Info().Int("count", len(gcfg.Users)).Msg("Seeded Google users")
+		}
 
 		if *uiEnabled {
 			baseURL := fmt.Sprintf("https://localhost:%d", *port)

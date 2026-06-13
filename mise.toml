@@ -181,7 +181,7 @@ npx playwright test --headed "$@"
 """
 
 [tasks.schema]
-description = "Generates JSON Schema from SeedConfig and validates examples/seed.json"
+description = "Generates JSON Schemas from seed config types and validates example seed files"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
