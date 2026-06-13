@@ -28,7 +28,7 @@ export default defineConfig({
       provider: 'local',
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/saldeti/saldeti' },
+      { icon: 'github', link: 'https://github.com/alexjplant/saldeti' },
     ],
   },
 })

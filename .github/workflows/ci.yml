@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
+      # lint runs: go vet ./...
       - run: mise run lint
 
   test:
@@ -19,6 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
+      # test runs: go test ./internal/... ./cmd/... -v -count=1
       - run: mise run test
 
   ui-test:
@@ -26,6 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
+      # ui-test runs: go test -tags ui,entra -v -count=1 ./internal/entra/ui_test/...
       - run: mise run ui-test
 
   e2e:
@@ -33,6 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
+      # e2e runs: go test ./test/ -v -count=1 -tags=e2e,entra
       - run: mise run e2e
 
   ui-e2e:
@@ -40,5 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
+      # ui-e2e-install runs: npm install && npx playwright install --with-deps chromium
       - run: mise run ui-e2e-install
+      # ui-e2e runs: npx playwright test --project=chromium
       - run: mise run ui-e2e
