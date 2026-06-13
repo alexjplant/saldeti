@@ -1335,6 +1335,20 @@ func (s *MemoryStore) IssueChromeOSCommand(ctx context.Context, customerID, devi
 	return result, nil
 }
 
+func (s *MemoryStore) CreateChromeOSDevice(ctx context.Context, customerID string, device model.ChromeOSDevice) (model.ChromeOSDevice, error) {
+	s.store.mu.Lock()
+	defer s.store.mu.Unlock()
+	if device.DeviceID == "" {
+		device.DeviceID = uuid.New().String()
+	}
+	device.Kind = "admin#directory#chromeosdevice"
+	if s.store.chromeDevices[customerID] == nil {
+		s.store.chromeDevices[customerID] = make(map[string]*model.ChromeOSDevice)
+	}
+	s.store.chromeDevices[customerID][device.DeviceID] = &device
+	return device, nil
+}
+
 func (s *MemoryStore) GetChromeOSCommand(ctx context.Context, customerID, deviceID, commandID string) (*model.ChromeOSCommandResult, error) {
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
@@ -1409,6 +1423,20 @@ func (s *MemoryStore) DeleteMobileDevice(ctx context.Context, customerID, resour
 	}
 	delete(dMap, resourceID)
 	return nil
+}
+
+func (s *MemoryStore) CreateMobileDevice(ctx context.Context, customerID string, device model.MobileDevice) (model.MobileDevice, error) {
+	s.store.mu.Lock()
+	defer s.store.mu.Unlock()
+	if device.ResourceId == "" {
+		device.ResourceId = uuid.New().String()
+	}
+	device.Kind = "admin#directory#mobiledevice"
+	if s.store.mobileDevices[customerID] == nil {
+		s.store.mobileDevices[customerID] = make(map[string]*model.MobileDevice)
+	}
+	s.store.mobileDevices[customerID][device.ResourceId] = &device
+	return device, nil
 }
 
 func (s *MemoryStore) MobileDeviceAction(ctx context.Context, customerID, resourceID string, action model.MobileDeviceAction) error {

@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/saldeti/saldeti/internal/google/seed/google-seed-config",
+  "$ref": "#/$defs/GoogleSeedConfig",
+  "$defs": {
+    "GoogleSeedChromeOSDevice": {
+      "properties": {
+        "serial_number": {
+          "type": "string"
+        },
+        "annotated_user": {
+          "type": "string"
+        },
+        "org_unit_path": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "serial_number"
+      ]
+    },
+    "GoogleSeedClient": {
+      "properties": {
+        "client_id": {
+          "type": "string"
+        },
+        "client_secret": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "client_id",
+        "client_secret"
+      ]
+    },
+    "GoogleSeedConfig": {
+      "properties": {
+        "clients": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedClient"
+          },
+          "type": "array"
+        },
+        "users": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedUser"
+          },
+          "type": "array"
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedGroup"
+          },
+          "type": "array"
+        },
+        "org_units": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedOrgUnit"
+          },
+          "type": "array"
+        },
+        "roles": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedRole"
+          },
+          "type": "array"
+        },
+        "role_assignments": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedRoleAssignment"
+          },
+          "type": "array"
+        },
+        "domains": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedDomain"
+          },
+          "type": "array"
+        },
+        "chromeos_devices": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedChromeOSDevice"
+          },
+          "type": "array"
+        },
+        "mobile_devices": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedMobileDevice"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "clients"
+      ]
+    },
+    "GoogleSeedDomain": {
+      "properties": {
+        "domain_name": {
+          "type": "string"
+        },
+        "is_primary": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "domain_name"
+      ]
+    },
+    "GoogleSeedGroup": {
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "member_emails": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "email"
+      ]
+    },
+    "GoogleSeedMobileDevice": {
+      "properties": {
+        "serial_number": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "os": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "serial_number"
+      ]
+    },
+    "GoogleSeedOrgUnit": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "parent_org_unit_path": {
+          "type": "string"
+        },
+        "block_inheritance": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "GoogleSeedRole": {
+      "properties": {
+        "role_name": {
+          "type": "string"
+        },
+        "role_description": {
+          "type": "string"
+        },
+        "privileges": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "role_name"
+      ]
+    },
+    "GoogleSeedRoleAssignment": {
+      "properties": {
+        "assigned_to_email": {
+          "type": "string"
+        },
+        "role_id_or_name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "assigned_to_email",
+        "role_id_or_name"
+      ]
+    },
+    "GoogleSeedUser": {
+      "properties": {
+        "primary_email": {
+          "type": "string"
+        },
+        "given_name": {
+          "type": "string"
+        },
+        "family_name": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "suspended": {
+          "type": "boolean"
+        },
+        "is_admin": {
+          "type": "boolean"
+        },
+        "org_unit_path": {
+          "type": "string"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "primary_email"
+      ]
+    }
+  }
+}

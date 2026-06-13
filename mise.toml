@@ -8,7 +8,7 @@ node = "22"
 "npm:typescript-language-server" = "latest"
 "npm:typescript" = "latest"
 "npm:vscode-langservers-extracted" = "latest"
-"github:tamasfe/taplo" = "latest"
+"npm:@taplo/cli" = "latest"
 uv = "latest"
 
 [env]
@@ -181,9 +181,39 @@ npx playwright test --headed "$@"
 """
 
 [tasks.schema]
-description = "Generates JSON Schema from SeedConfig and validates examples/seed.json"
+description = "Generates JSON Schemas from seed config types and validates example seed files"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
 go run cmd/genschema/main.go
+"""
+
+[tasks.docs-dev]
+description = "Starts the VitePress docs dev server"
+dir = "docs-site"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npm install --silent
+npm run docs:dev
+"""
+
+[tasks.docs-build]
+description = "Builds the VitePress docs site"
+dir = "docs-site"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npm install --silent
+npm run docs:build
+"""
+
+[tasks.docs-preview]
+description = "Serves the built VitePress docs site locally"
+depends = ["docs-build"]
+dir = "docs-site"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+npm run docs:preview
 """
