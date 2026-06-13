@@ -439,3 +439,64 @@ func TestApplySelect_PreservesId(t *testing.T) {
 	_, hasId := result["id"]
 	assert.False(t, hasId, "id should not be fabricated if not in source")
 }
+
+func TestSelectFields_PreservesODataType(t *testing.T) {
+	item := map[string]interface{}{
+		"@odata.type": "#microsoft.graph.user",
+		"id":          "user-123",
+		"displayName": "Alice Smith",
+		"mail":        "alice@example.com",
+	}
+
+	// Select only displayName — @odata.type and id must survive
+	result := selectFields(item, []string{"displayName"})
+
+	assert.Equal(t, "#microsoft.graph.user", result["@odata.type"], "@odata.type should always be preserved")
+	assert.Equal(t, "user-123", result["id"], "id should always be preserved")
+	assert.Equal(t, "Alice Smith", result["displayName"])
+	_, hasMail := result["mail"]
+	assert.False(t, hasMail, "mail should not be included when not in $select")
+
+	// When @odata.type is not in source map, nothing should be added
+	itemNoType := map[string]interface{}{
+		"id":          "user-456",
+		"displayName": "Bob",
+	}
+	result = selectFields(itemNoType, []string{"displayName"})
+	_, hasType := result["@odata.type"]
+	assert.False(t, hasType, "@odata.type should not be fabricated if not in source")
+}
+
+func TestApplyOData_Select_PreservesODataType(t *testing.T) {
+	users := []model.User{
+		{
+			ODataType:         "#microsoft.graph.user",
+			ID:                "u-1",
+			DisplayName:       "Alice",
+			UserPrincipalName: "alice@example.com",
+			Mail:              "alice@example.com",
+		},
+		{
+			ODataType:         "#microsoft.graph.user",
+			ID:                "u-2",
+			DisplayName:       "Bob",
+			UserPrincipalName: "bob@example.com",
+			Mail:              "bob@example.com",
+		},
+	}
+
+	opts := model.ListOptions{
+		Select: []string{"displayName"},
+	}
+
+	result, totalCount, err := ApplyOData(users, opts)
+	require.NoError(t, err)
+	assert.Equal(t, 2, totalCount)
+	require.Len(t, result, 2)
+
+	// Verify @odata.type is preserved even though not in $select
+	for _, u := range result {
+		assert.Equal(t, "#microsoft.graph.user", u.ODataType, "@odata.type must be preserved by $select")
+		assert.Equal(t, "user", u.ODataType[len("#microsoft.graph."):]) // sanity check value
+	}
+}

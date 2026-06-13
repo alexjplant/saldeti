@@ -1186,5 +1186,11 @@ func selectFields(m map[string]interface{}, fields []string) map[string]interfac
 	if val, ok := m["id"]; ok {
 		result["id"] = val
 	}
+	// Always preserve @odata.* annotations (e.g., @odata.type)
+	for k, v := range m {
+		if strings.HasPrefix(k, "@odata.") {
+			result[k] = v
+		}
+	}
 	return result
 }
