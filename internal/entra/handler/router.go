@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -300,12 +299,7 @@ func meHandler(st store.Store) gin.HandlerFunc {
 
 func openIDConfigurationHandler(c *gin.Context) {
 	tenantID := c.Param("tenant")
-	scheme := "https"
-	if c.Request.TLS == nil {
-		scheme = "http"
-	}
-	host := c.Request.Host
-	baseURL := fmt.Sprintf("%s://%s/%s", scheme, host, tenantID)
+	baseURL := getBaseURL(c) + "/" + tenantID
 
 	c.JSON(http.StatusOK, gin.H{
 		"issuer":                                baseURL,

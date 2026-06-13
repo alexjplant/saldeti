@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -68,15 +67,12 @@ type refreshTokenClaims struct {
 // SetSigningKey sets the JWT signing key
 func SetSigningKey(key []byte) {
 	signingKey = key
-	// Generate a short hash of the key for logging
-	hash := sha256.Sum256(key)
-	shortHash := hex.EncodeToString(hash[:])[:16]
 	if key == nil || len(key) == 0 {
 		log.Warn().Msg("JWT signing key is empty")
 	} else if len(key) < 32 {
 		log.Warn().Int("key_len", len(key)).Msg("JWT signing key is less than 32 bytes (insecure)")
 	} else {
-		log.Info().Str("hash", shortHash).Msg("JWT signing key configured")
+		log.Info().Msg("JWT signing key configured")
 	}
 }
 
@@ -234,6 +230,14 @@ func handleClientCredentials(c *gin.Context, store store.Store, tenant string) {
 	writeTokenResponse(c, token, time.Hour)
 }
 
+// handleAuthorizationCode implements a simplified authorization code flow for the
+// simulator. In a real OAuth2/OIDC implementation, the authorization code would be
+// an opaque string issued by an authorization endpoint after user consent, stored
+// server-side, and exchanged for tokens exactly once. Here, the "code" parameter is
+// treated directly as a user principal name (UPN) or user ID to look up the target
+// user. This avoids the need for a separate authorize endpoint, code storage, and
+// PKCE/state validation while still exercising the token minting and refresh token
+// logic that SDKs rely on during testing.
 func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
 	code := c.Request.FormValue("code")
 	clientID := c.Request.FormValue("client_id")
