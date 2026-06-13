@@ -194,6 +194,7 @@ dir = "docs-site"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
+npm install --silent
 npm run docs:dev
 """
 
@@ -203,5 +204,6 @@ dir = "docs-site"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
+npm install --silent
 npm run docs:build
 """
