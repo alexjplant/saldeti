@@ -9,12 +9,15 @@ Seed files let you pre-populate the Saldeti simulator with realistic data on sta
 
 ## Overview
 
-Pass a seed file with the `-seed` flag:
+Pass a seed file with the `-seed` flag (currently **Entra ID mode only**):
 
 ```sh
 saldeti -seed examples/seed.json         # Entra ID mode
-saldeti -seed examples/google-seed.json  # Google Workspace mode
 ```
+
+::: warning
+Google Workspace seed file loading is not yet implemented. The `-seed` flag currently only loads Entra ID seed files. The Google schema and example are provided as a reference for the planned feature.
+:::
 
 The simulator parses the file at startup and creates all the declared resources in memory. There is no database — everything lives in process memory, so restarting with a different seed file gives you a completely fresh environment.
 
@@ -93,6 +96,10 @@ Index-based references are order-dependent. If you reorder the `users` array, al
 ## Google Workspace Mode Seed File
 
 The Google Workspace seed file follows the schema defined in [`google-seed.schema.json`](https://raw.githubusercontent.com/saldeti/saldeti/main/schema/google-seed.schema.json).
+
+::: warning
+Google Workspace seed file loading is not yet implemented. The schema and example below are provided as a reference for the planned feature. The `-seed` flag currently only loads Entra ID seed files.
+:::
 
 ### Top-level properties
 

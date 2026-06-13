@@ -10,3 +10,4 @@ e2e/playwright-report/
 .playwright-mcp
 docs-site/node_modules/
 docs-site/.vitepress/dist/
+docs-site/.vitepress/cache/

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/saldeti/',
   title: 'Saldeti',
   description: 'API Simulator for Entra ID and Google Workspace',
   themeConfig: {

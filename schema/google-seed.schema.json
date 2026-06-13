@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/saldeti/saldeti/internal/seed/google-seed-config",
+  "$id": "https://github.com/saldeti/saldeti/internal/google/seed/google-seed-config",
   "$ref": "#/$defs/GoogleSeedConfig",
   "$defs": {
     "GoogleSeedChromeOSDevice": {
@@ -23,6 +23,7 @@
         }
       },
       "additionalProperties": false,
+      "required": ["serial_number"],
       "type": "object"
     },
     "GoogleSeedClient": {
@@ -187,6 +188,7 @@
         }
       },
       "additionalProperties": false,
+      "required": ["serial_number"],
       "type": "object"
     },
     "GoogleSeedOrgUnit": {
