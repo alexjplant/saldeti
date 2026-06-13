@@ -4,12 +4,12 @@ A local API simulator for Microsoft Entra ID (Azure AD) and Google Workspace. sa
 
 ## Documentation
 
-Full documentation is available at [saldeti.github.io](https://saldeti.github.io/).
+Full documentation is available at [saldeti.github.io](https://saldeti.github.io/saldeti/).
 
-- [CLI Reference](https://saldeti.github.io/cli-reference) -- build flags, seed data, dump options
-- [Seed Files](https://saldeti.github.io/seed-files) -- JSON schema and round-trip workflow
-- [Entra ID Endpoints](https://saldeti.github.io/entra-endpoints) -- Microsoft Graph API coverage
-- [Google Workspace Endpoints](https://saldeti.github.io/google-endpoints) -- Google Admin SDK coverage
+- [CLI Reference](https://saldeti.github.io/saldeti/cli-reference) -- build flags, seed data, dump options
+- [Seed Files](https://saldeti.github.io/saldeti/seed-files) -- JSON schema and round-trip workflow
+- [Entra ID Endpoints](https://saldeti.github.io/saldeti/entra-endpoints) -- Microsoft Graph API coverage
+- [Google Workspace Endpoints](https://saldeti.github.io/saldeti/google-endpoints) -- Google Admin SDK coverage
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ mise run clean        # Clean build artifacts
 ## Questions
 
 **What is this for?**  
-Testing your apps and scripts against a make-believe directory so that you can perform integration testing in CI without spinning up a tenant.
+Testing your apps and scripts against a make-believe directory so that you ~~don't write a garbage script that overwrites everybody's phone number with your own then task a 15-year-old helpdesk intern with manually fixing it while you run down the hall to save your job by finding somebody with a recent backup of the domain controller.~~ can perform integration testing in CI without spinning up a tenant.
 
 **Is this vibe-coded?**  
 Very yes. GLM-5.1 for orchestration and planning, GLM-4.7 for implementation, Gemini 3 Flash for UI iteration, and DeepSeek for review.
