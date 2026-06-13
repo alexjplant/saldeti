@@ -65,25 +65,25 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 					return
 				}
 
-			for _, expand := range opts.ExpandOptions {
-				switch expand.Property {
-				case "members":
-					members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-					if err == nil {
-						groupMap["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
-					}
-				case "owners":
-					owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-					if err == nil {
-						groupMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
-					}
-				case "memberOf":
-					memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
-					if err == nil {
-						groupMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
+				for _, expand := range opts.ExpandOptions {
+					switch expand.Property {
+					case "members":
+						members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							groupMap["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
+						}
+					case "owners":
+						owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							groupMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+						}
+					case "memberOf":
+						memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							groupMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
+						}
 					}
 				}
-			}
 				expandedGroups = append(expandedGroups, groupMap)
 			}
 			responseValue = expandedGroups
@@ -995,4 +995,3 @@ func getMemberObjectsHandler(st store.Store) gin.HandlerFunc {
 		writeJSON(c, http.StatusOK, response)
 	}
 }
-

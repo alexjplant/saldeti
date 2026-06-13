@@ -37,15 +37,8 @@ func listServicePrincipalsHandler(st store.Store) gin.HandlerFunc {
 		// Call store to list service principals
 		sps, totalCount, err := st.ListServicePrincipals(c.Request.Context(), opts)
 		if err != nil {
-			// Check if error is a filter parsing error
-			errStr := err.Error()
-			if strings.Contains(errStr, "unable to parse filter expression") ||
-				strings.Contains(errStr, "cannot compare values") ||
-				strings.Contains(errStr, "operator not supported") ||
-				strings.Contains(errStr, "function value must be string") ||
-				strings.Contains(errStr, "unknown function") ||
-				strings.Contains(errStr, "invalid filter node") {
-				writeError(c, http.StatusBadRequest, "InvalidRequest", errStr)
+			if isFilterError(err) {
+				writeError(c, http.StatusBadRequest, "InvalidRequest", err.Error())
 			} else {
 				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to list service principals")
 			}

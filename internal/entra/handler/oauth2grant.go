@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -36,15 +35,8 @@ func listGrantsHandler(st store.Store) gin.HandlerFunc {
 		// Call store to list grants
 		grants, totalCount, err := st.ListOAuth2PermissionGrants(c.Request.Context(), opts)
 		if err != nil {
-			// Handle filter parse errors (same pattern as application handler)
-			errStr := err.Error()
-			if strings.Contains(errStr, "unable to parse filter expression") ||
-			   strings.Contains(errStr, "cannot compare values") ||
-			   strings.Contains(errStr, "operator not supported") ||
-			   strings.Contains(errStr, "function value must be string") ||
-			   strings.Contains(errStr, "unknown function") ||
-			   strings.Contains(errStr, "invalid filter node") {
-				writeError(c, http.StatusBadRequest, "InvalidRequest", errStr)
+			if isFilterError(err) {
+				writeError(c, http.StatusBadRequest, "InvalidRequest", err.Error())
 			} else {
 				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to list oauth2 permission grants")
 			}
