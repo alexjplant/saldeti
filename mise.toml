@@ -8,7 +8,7 @@ node = "22"
 "npm:typescript-language-server" = "latest"
 "npm:typescript" = "latest"
 "npm:vscode-langservers-extracted" = "latest"
-"github:tamasfe/taplo" = "latest"
+"npm:@taplo/cli" = "latest"
 uv = "latest"
 
 [env]
