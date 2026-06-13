@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"flag"
@@ -236,7 +235,6 @@ func main() {
 			log.Fatal().Err(err).Msg("Failed to generate random signing key")
 		}
 		auth.SetSigningKey(signingKeyBytes)
-		log.Info().Str("key", hex.EncodeToString(signingKeyBytes)).Msg("Generated random JWT signing key")
 	} else {
 		signingKeyBytes = []byte(*signingKey)
 		auth.SetSigningKey(signingKeyBytes)
