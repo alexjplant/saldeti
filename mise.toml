@@ -207,3 +207,12 @@ set -euo pipefail
 npm install --silent
 npm run docs:build
 """
+
+[tasks.docs-preview]
+description = "Serves the built VitePress docs site locally"
+depends = ["docs-build"]
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+serve docs-site/.vitepress/dist -p 3000
+"""
