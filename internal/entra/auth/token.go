@@ -330,12 +330,11 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 	// Filter unknown scopes (Entra-like behavior: silently filter)
 	scopes = FilterKnownScopes(scopes)
 
-	// Look up and validate refresh token
+	// Look up and validate refresh token under lock, then release before calling GenerateRefreshToken
 	refreshTokensMutex.Lock()
-	defer refreshTokensMutex.Unlock()
-
 	claims, exists := refreshTokens[refreshToken]
 	if !exists {
+		refreshTokensMutex.Unlock()
 		writeTokenError(c, "invalid_grant", "Invalid refresh token")
 		return
 	}
@@ -343,12 +342,14 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 	// Validate token hasn't expired
 	if time.Now().After(claims.ExpiresAt) {
 		delete(refreshTokens, refreshToken)
+		refreshTokensMutex.Unlock()
 		writeTokenError(c, "invalid_grant", "Refresh token has expired")
 		return
 	}
 
 	// Validate client matches
 	if claims.ClientID != clientID || claims.TenantID != tenant {
+		refreshTokensMutex.Unlock()
 		writeTokenError(c, "invalid_grant", "Refresh token client mismatch")
 		return
 	}
@@ -361,15 +362,16 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 
 	// Refresh token rotation: invalidate old refresh token
 	delete(refreshTokens, refreshToken)
+	refreshTokensMutex.Unlock()
 
-	// Mint new access token
+	// Mint new access token (no lock needed)
 	token, err := MintToken(claims.TenantID, claims.ClientID, claims.Subject, finalScopes, claims.Roles, time.Hour, "", "")
 	if err != nil {
 		writeTokenError(c, "server_error", "Failed to mint token")
 		return
 	}
 
-	// Generate new refresh token
+	// Generate new refresh token (acquires its own lock internally)
 	newRefreshToken, err := GenerateRefreshToken(claims.TenantID, claims.ClientID, claims.Subject, finalScopes, claims.Roles)
 	if err != nil {
 		writeTokenError(c, "server_error", "Failed to generate refresh token")
