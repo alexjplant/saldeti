@@ -1,5 +1,7 @@
 # Google Workspace API Simulator — Tiered Implementation Plan
 
+> **Disclaimer:** Saldeti is an independent project and is not affiliated with, endorsed by, or sponsored by Microsoft Corporation or Google LLC. All product names and trademarks are property of their respective owners.
+
 > **Base URL:** `https://admin.googleapis.com`  
 > **Auth:** OAuth 2.0 (service account with domain-wide delegation, OAuth client, API key)  
 > **Scopes:** `https://www.googleapis.com/auth/admin.directory.user`, `.group`, `.device.chromeos`, etc.  

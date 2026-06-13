@@ -59,6 +59,14 @@ Very yes. GLM-5.1 for orchestration and planning, GLM-4.7 for implementation, Ge
 **...but why?**  
 Because I wanted it and would rather spend time learning about LLMs and coding harnesses than manually replicating a Microsoft Azure product.
 
+## Disclaimer
+
+Saldeti is an independent, open-source project and is **not affiliated with, endorsed by, sponsored by, or officially connected to** Microsoft Corporation, Google LLC, or Alphabet Inc. 
+
+"Microsoft Entra ID", "Azure Active Directory", "Microsoft Graph", and related marks are trademarks of Microsoft Corporation. "Google Workspace", "Google Cloud", "Admin SDK", and related marks are trademarks of Google LLC. All product names, logos, and brands are property of their respective owners.
+
+Saldeti simulates these APIs for local development and testing purposes only. It does not connect to, replicate, or access any real Microsoft or Google cloud services.
+
 ## License
 
 [GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). Use it, improve it, don't make money on it.

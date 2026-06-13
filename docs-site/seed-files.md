@@ -206,3 +206,10 @@ This regenerates `schema/seed.schema.json` from the Go types in `internal/entra/
 ### Online validation
 
 Paste your seed file and the corresponding schema into any JSON Schema validator such as [https://www.jsonschemavalidator.net/](https://www.jsonschemavalidator.net/).
+
+
+---
+
+::: tip Disclaimer
+Saldeti is an independent project, not affiliated with or endorsed by Microsoft Corporation or Google LLC. All trademarks are property of their respective owners.
+:::

@@ -146,3 +146,10 @@ You can specify a custom PID file path if the daemon was started with `-pidfile`
 ```sh
 saldeti -stop -pidfile /var/run/saldeti.pid
 ```
+
+
+---
+
+::: tip Disclaimer
+Saldeti is an independent project, not affiliated with or endorsed by Microsoft Corporation or Google LLC. All trademarks are property of their respective owners.
+:::

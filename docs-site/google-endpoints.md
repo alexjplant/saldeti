@@ -389,3 +389,10 @@ For base URL, authentication, scopes, and common query parameters, refer to the 
 | 7 | Tokens, ASPs, Verification Codes, User Invitations | 15 |
 | 8 | Schemas, Calendar Resources, Buildings, Features, Groups Settings, Data Transfer, Subscriptions | 39 |
 | **Total** | | **171** |
+
+
+---
+
+::: tip Disclaimer
+Saldeti is an independent project, not affiliated with or endorsed by Microsoft Corporation or Google LLC. All trademarks are property of their respective owners.
+:::

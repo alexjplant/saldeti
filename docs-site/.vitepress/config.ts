@@ -30,5 +30,9 @@ export default defineConfig({
     socialLinks: [
       { icon: 'github', link: 'https://github.com/alexjplant/saldeti' },
     ],
+    footer: {
+      message: 'Released under the <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">AGPL-3.0</a> License.',
+      copyright: 'Saldeti is not affiliated with, endorsed by, or sponsored by Microsoft Corporation or Google LLC. All trademarks are property of their respective owners.',
+    },
   },
 })
