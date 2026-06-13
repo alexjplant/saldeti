@@ -14,7 +14,6 @@ hero:
       link: /seed-files
 ---
 
-
 ::: warning Trademark Notice
 Saldeti is an independent project and is not affiliated with, endorsed by, or sponsored by Microsoft Corporation or Google LLC. All product names and trademarks are property of their respective owners.
 :::

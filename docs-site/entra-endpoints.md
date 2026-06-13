@@ -130,9 +130,8 @@ This page documents every Microsoft Graph v1.0 API endpoint currently implemente
 |----------|---------|-------------|
 | `/v1.0/directoryObjects/getByIds` | POST | Batch object lookup |
 
-
 ---
 
-::: tip Disclaimer
-Saldeti is an independent project, not affiliated with or endorsed by Microsoft Corporation or Google LLC. All trademarks are property of their respective owners.
+::: warning Trademark Notice
+Saldeti is an independent project and is not affiliated with, endorsed by, or sponsored by Microsoft Corporation or Google LLC. All product names and trademarks are property of their respective owners.
 :::

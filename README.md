@@ -61,7 +61,7 @@ Because I wanted it and would rather spend time learning about LLMs and coding h
 
 ## Disclaimer
 
-Saldeti is an independent, open-source project and is **not affiliated with, endorsed by, sponsored by, or officially connected to** Microsoft Corporation, Google LLC, or Alphabet Inc. 
+Saldeti is an independent, open-source project and is **not affiliated with, endorsed by, sponsored by, or officially connected to** Microsoft Corporation, Google LLC, or Alphabet Inc.
 
 "Microsoft Entra ID", "Azure Active Directory", "Microsoft Graph", and related marks are trademarks of Microsoft Corporation. "Google Workspace", "Google Cloud", "Admin SDK", and related marks are trademarks of Google LLC. All product names, logos, and brands are property of their respective owners.
 
