@@ -4,12 +4,12 @@ A local API simulator for Microsoft Entra ID (Azure AD) and Google Workspace. sa
 
 ## Documentation
 
-Full documentation is available at [saldeti.github.io](https://saldeti.github.io/saldeti/).
+Full documentation is available at [alexjplant.github.io](https://alexjplant.github.io/saldeti/).
 
-- [CLI Reference](https://saldeti.github.io/saldeti/cli-reference) -- build flags, seed data, dump options
-- [Seed Files](https://saldeti.github.io/saldeti/seed-files) -- JSON schema and round-trip workflow
-- [Entra ID Endpoints](https://saldeti.github.io/saldeti/entra-endpoints) -- Microsoft Graph API coverage
-- [Google Workspace Endpoints](https://saldeti.github.io/saldeti/google-endpoints) -- Google Admin SDK coverage
+- [CLI Reference](https://alexjplant.github.io/saldeti/cli-reference) -- build flags, seed data, dump options
+- [Seed Files](https://alexjplant.github.io/saldeti/seed-files) -- JSON schema and round-trip workflow
+- [Entra ID Endpoints](https://alexjplant.github.io/saldeti/entra-endpoints) -- Microsoft Graph API coverage
+- [Google Workspace Endpoints](https://alexjplant.github.io/saldeti/google-endpoints) -- Google Admin SDK coverage
 
 ## Quick Start
 
