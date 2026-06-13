@@ -50,26 +50,14 @@ mise run clean        # Clean build artifacts
 
 ## Questions
 
-<details>
-<summary>What is this for?</summary>
+**What is this for?**  
+Testing your apps and scripts against a make-believe directory so that you can perform integration testing in CI without spinning up a tenant.
 
-Testing your apps and scripts against a make-believe directory so that you can perform integration testing in CI without spinning up a tenant -- rather than writing a garbage script that overwrites everybody's phone number with your own, then tasking a 15-year-old helpdesk intern with manually fixing it while you run down the hall to save your job by finding somebody with a recent backup of the domain controller.
-
-</details>
-
-<details>
-<summary>Is this vibe-coded?</summary>
-
+**Is this vibe-coded?**  
 Very yes. GLM-5.1 for orchestration and planning, GLM-4.7 for implementation, Gemini 3 Flash for UI iteration, and DeepSeek for review.
 
-</details>
-
-<details>
-<summary>...but why?</summary>
-
+**...but why?**  
 Because I wanted it and would rather spend time learning about LLMs and coding harnesses than manually replicating a Microsoft Azure product.
-
-</details>
 
 ## License
 
