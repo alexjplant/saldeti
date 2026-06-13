@@ -7,7 +7,7 @@ type Token struct {
 	DisplayText     string   `json:"displayText,omitempty"`
 	Scopes          []string `json:"scopes,omitempty"`
 	UserKey         string   `json:"userKey,omitempty"`
-	Anonymous       bool     `json:"anonymous,omitempty"`
+	Anonymous       bool     `json:"anonymous"`
 	ApplicationName string   `json:"applicationName,omitempty"`
 }
 

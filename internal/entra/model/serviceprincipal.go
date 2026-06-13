@@ -4,8 +4,8 @@ import "time"
 
 type ServicePrincipal struct {
 	ODataType                          string               `json:"@odata.type,omitempty"`
-	ID                                 string               `json:"id,omitempty"`
-	AppID                              string               `json:"appId,omitempty"`
+	ID                                 string               `json:"id"`
+	AppID                              string               `json:"appId"`
 	DisplayName                        string               `json:"displayName,omitempty"`
 	Description                        string               `json:"description,omitempty"`
 	AppOwnerOrganizationID             string               `json:"appOwnerOrganizationId,omitempty"`

@@ -31,7 +31,7 @@ type ChromeOSDevice struct {
 	SystemRamFreeReport  []SystemRamFreeReport `json:"systemRamFreeReport,omitempty"`
 	LastKnownNetwork     []NetworkInterface `json:"lastKnownNetwork,omitempty"`
 	DeprovisionReason    string             `json:"deprovisionReason,omitempty"`
-	WillAutoRenew        bool               `json:"willAutoRenew,omitempty"`
+	WillAutoRenew        bool               `json:"willAutoRenew"`
 	Meid                 string             `json:"meid,omitempty"`
 	Manufacturer         string             `json:"manufacturer,omitempty"`
 	Sku                  string             `json:"sku,omitempty"`
@@ -130,7 +130,7 @@ type MobileDevice struct {
 	Applications        []MobileApplication `json:"applications,omitempty"`
 	OtherAccountsInfo   []string `json:"otherAccountsInfo,omitempty"`
 	AccountPermissions  []string `json:"accountPermissions,omitempty"`
-	SupportsWorkProfile bool     `json:"supportsWorkProfile,omitempty"`
+	SupportsWorkProfile bool     `json:"supportsWorkProfile"`
 	AdvancedSecurityState string  `json:"advancedSecurityState,omitempty"`
 	EnrollmentTime      string   `json:"enrollmentTime,omitempty"`
 	EncryptionStatus    string   `json:"encryptionStatus,omitempty"`
@@ -189,14 +189,14 @@ type CloudIdentityDevice struct {
 type EndpointVerificationMetadata struct {
 	BrowserVersion                      string `json:"browserVersion,omitempty"`
 	ChromeVersion                       string `json:"chromeVersion,omitempty"`
-	IsBrowserManaged                    bool   `json:"isBrowserManaged,omitempty"`
-	IsBuiltInDnsClientEnabled           bool   `json:"isBuiltInDnsClientEnabled,omitempty"`
-	IsChromeRemoteDesktopAppBlocked     bool   `json:"isChromeRemoteDesktopAppBlocked,omitempty"`
-	IsFileDownloadAnalysisEnabled       bool   `json:"isFileDownloadAnalysisEnabled,omitempty"`
-	IsFileUploadAnalysisEnabled         bool   `json:"isFileUploadAnalysisEnabled,omitempty"`
-	IsRealtimeUrlCheckEnabled           bool   `json:"isRealtimeUrlCheckEnabled,omitempty"`
-	IsSecurityEventAnalysisEnabled      bool   `json:"isSecurityEventAnalysisEnabled,omitempty"`
-	IsSiteIsolationEnabled              bool   `json:"isSiteIsolationEnabled,omitempty"`
+	IsBrowserManaged                    bool   `json:"isBrowserManaged"`
+	IsBuiltInDnsClientEnabled           bool   `json:"isBuiltInDnsClientEnabled"`
+	IsChromeRemoteDesktopAppBlocked     bool   `json:"isChromeRemoteDesktopAppBlocked"`
+	IsFileDownloadAnalysisEnabled       bool   `json:"isFileDownloadAnalysisEnabled"`
+	IsFileUploadAnalysisEnabled         bool   `json:"isFileUploadAnalysisEnabled"`
+	IsRealtimeUrlCheckEnabled           bool   `json:"isRealtimeUrlCheckEnabled"`
+	IsSecurityEventAnalysisEnabled      bool   `json:"isSecurityEventAnalysisEnabled"`
+	IsSiteIsolationEnabled              bool   `json:"isSiteIsolationEnabled"`
 	LastDeviceInfoReportTime            string `json:"lastDeviceInfoReportTime,omitempty"`
 	LastPolicyFetchTime                 string `json:"lastPolicyFetchTime,omitempty"`
 	PasswordProtectionWarningTrigger    string `json:"passwordProtectionWarningTrigger,omitempty"`

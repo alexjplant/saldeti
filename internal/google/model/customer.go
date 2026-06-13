@@ -9,7 +9,7 @@ type Customer struct {
 	CustomerName   string        `json:"customerName,omitempty"`
 	PostalAddress  *PostalAddress `json:"postalAddress,omitempty"`
 	Language       string        `json:"language,omitempty"`
-	AdminCreated   bool          `json:"adminCreated,omitempty"`
+	AdminCreated   bool          `json:"adminCreated"`
 	PhoneNumber    string        `json:"phoneNumber,omitempty"`
 	AlternateEmail string        `json:"alternateEmail,omitempty"`
 }

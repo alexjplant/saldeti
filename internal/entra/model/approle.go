@@ -4,10 +4,10 @@ import "time"
 
 // AppRole represents an application role that can be assigned to users, groups, or service principals
 type AppRole struct {
-	ID                 string   `json:"id,omitempty"`
+	ID                 string   `json:"id"`
 	AllowedMemberTypes []string `json:"allowedMemberTypes,omitempty"`
 	Description        string   `json:"description,omitempty"`
-	DisplayName        string   `json:"displayName,omitempty"`
+	DisplayName        string   `json:"displayName"`
 	IsEnabled          *bool    `json:"isEnabled,omitempty"`
 	Origin             string   `json:"origin,omitempty"`
 	Value              string   `json:"value,omitempty"`
@@ -17,24 +17,24 @@ type AppRole struct {
 type OAuth2PermissionGrant struct {
 	ODataType   string `json:"@odata.type,omitempty"`
 	ID          string `json:"id,omitempty"`
-	ClientID    string `json:"clientId,omitempty"`
+	ClientID    string `json:"clientId"`
 	ConsentType string `json:"consentType,omitempty"` // "AllPrincipals" or "Principal"
 	PrincipalID string `json:"principalId,omitempty"`
-	ResourceID  string `json:"resourceId,omitempty"`
+	ResourceID  string `json:"resourceId"`
 	Scope       string `json:"scope,omitempty"`
 }
 
 // AppRoleAssignment represents an assignment of an app role to a principal
 type AppRoleAssignment struct {
 	ODataType             string     `json:"@odata.type,omitempty"`
-	ID                    string     `json:"id,omitempty"`
-	AppRoleID             string     `json:"appRoleId,omitempty"`
+	ID                    string     `json:"id"`
+	AppRoleID             string     `json:"appRoleId"`
 	CreatedDateTime       *time.Time `json:"createdDateTime,omitempty"`
 	PrincipalDisplayName  string     `json:"principalDisplayName,omitempty"`
-	PrincipalID           string     `json:"principalId,omitempty"`
+	PrincipalID           string     `json:"principalId"`
 	PrincipalType         string     `json:"principalType,omitempty"`
 	ResourceDisplayName   string     `json:"resourceDisplayName,omitempty"`
-	ResourceID            string     `json:"resourceId,omitempty"`
+	ResourceID            string     `json:"resourceId"`
 }
 
 // PasswordCredential represents a password credential for an application or service principal
@@ -62,9 +62,9 @@ type KeyCredential struct {
 
 // ExtensionProperty represents a directory extension property
 type ExtensionProperty struct {
-	ID            string   `json:"id,omitempty"`
-	Name          string   `json:"name,omitempty"`
-	DataType      string   `json:"dataType,omitempty"`
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	DataType      string   `json:"dataType"`
 	TargetObjects []string `json:"targetObjects,omitempty"`
 	AppDisplayName string  `json:"appDisplayName,omitempty"`
 }
@@ -81,7 +81,7 @@ var ValidExtensionDataTypes = map[string]bool{
 
 // PermissionScope represents an OAuth2 permission scope defined by a service principal
 type PermissionScope struct {
-	ID                       string `json:"id,omitempty"`
+	ID                       string `json:"id"`
 	IsEnabled                *bool  `json:"isEnabled,omitempty"`
 	Type                     string `json:"type,omitempty"`
 	UserConsentDescription   string `json:"userConsentDescription,omitempty"`

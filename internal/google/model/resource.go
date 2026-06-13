@@ -14,13 +14,13 @@ type SchemaFieldSpec struct {
 	FieldName          string              `json:"fieldName"`
 	FieldType          string              `json:"fieldType"`
 	FieldReadAccessType string             `json:"fieldReadAccessType,omitempty"`
-	MultiValued        bool                `json:"multiValued,omitempty"`
+	MultiValued        bool                `json:"multiValued"`
 	Kind               string              `json:"kind,omitempty"`
 	Etag               string              `json:"etag,omitempty"`
 	NumericIndexingSpec *NumericIndexingSpec `json:"numericIndexingSpec,omitempty"`
 	DisplayName        string              `json:"displayName,omitempty"`
-	Indexed            bool                `json:"indexed,omitempty"`
-	Required           bool                `json:"required,omitempty"`
+	Indexed            bool                `json:"indexed"`
+	Required           bool                `json:"required"`
 }
 
 type NumericIndexingSpec struct {
@@ -111,28 +111,28 @@ type GroupSettings struct {
 	WhoCanModerateContent                 string `json:"whoCanModerateContent,omitempty"`
 	WhoCanAssistContent                   string `json:"whoCanAssistContent,omitempty"`
 	CustomReplyTo                         string `json:"customReplyTo,omitempty"`
-	SendReplyToOwner                      bool   `json:"sendReplyToOwner,omitempty"`
-	IncludeCustomFooter                   bool   `json:"includeCustomFooter,omitempty"`
+	SendReplyToOwner                      bool   `json:"sendReplyToOwner"`
+	IncludeCustomFooter                   bool   `json:"includeCustomFooter"`
 	CustomFooterText                      string `json:"customFooterText,omitempty"`
-	AllowExternalMembers                  bool   `json:"allowExternalMembers,omitempty"`
+	AllowExternalMembers                  bool   `json:"allowExternalMembers"`
 	MaxMessageBytes                       int64  `json:"maxMessageBytes,omitempty"`
-	IsArchived                            bool   `json:"isArchived,omitempty"`
-	ArchiveOnly                           bool   `json:"archiveOnly,omitempty"`
+	IsArchived                            bool   `json:"isArchived"`
+	ArchiveOnly                           bool   `json:"archiveOnly"`
 	MessageModerationLevel                string `json:"messageModerationLevel,omitempty"`
 	SpamModerationLevel                   string `json:"spamModerationLevel,omitempty"`
 	PrimaryLanguage                       string `json:"primaryLanguage,omitempty"`
 	DefaultMessageDenyNotificationText    string `json:"defaultMessageDenyNotificationText,omitempty"`
-	ShowInGroupDirectory                  bool   `json:"showInGroupDirectory,omitempty"`
-	AllowGoogleCommunication              bool   `json:"allowGoogleCommunication,omitempty"`
-	AutoAddNewUsersWithContact            bool   `json:"autoAddNewUsersWithContact,omitempty"`
-	SendMessageDenyNotification           bool   `json:"sendMessageDenyNotification,omitempty"`
+	ShowInGroupDirectory                  bool   `json:"showInGroupDirectory"`
+	AllowGoogleCommunication              bool   `json:"allowGoogleCommunication"`
+	AutoAddNewUsersWithContact            bool   `json:"autoAddNewUsersWithContact"`
+	SendMessageDenyNotification           bool   `json:"sendMessageDenyNotification"`
 	DefaultSender                         string `json:"defaultSender,omitempty"`
 	WhoCanContactOwner                    string `json:"whoCanContactOwner,omitempty"`
 	WhoCanApproveMembers                  string `json:"whoCanApproveMembers,omitempty"`
 	WhoCanBanUsers                        string `json:"whoCanBanUsers,omitempty"`
 	WhoCanLeaveGroup                      string `json:"whoCanLeaveGroup,omitempty"`
-	EnableCollaborativeInbox              bool   `json:"enableCollaborativeInbox,omitempty"`
-	FavoriteRepliesOnTop                  bool   `json:"favoriteRepliesOnTop,omitempty"`
+	EnableCollaborativeInbox              bool   `json:"enableCollaborativeInbox"`
+	FavoriteRepliesOnTop                  bool   `json:"favoriteRepliesOnTop"`
 	WhoCanMarkFavoriteReplyOnAnyTopic     string `json:"whoCanMarkFavoriteReplyOnAnyTopic,omitempty"`
 	WhoCanMarkNoResponseNeeded            string `json:"whoCanMarkNoResponseNeeded,omitempty"`
 	WhoCanMarkDuplicate                   string `json:"whoCanMarkDuplicate,omitempty"`
@@ -188,14 +188,14 @@ type Subscription struct {
 	UpdateTime              string                 `json:"updateTime,omitempty"`
 	Authority               string                 `json:"authority,omitempty"`
 	Etag                    string                 `json:"etag,omitempty"`
-	Reconciling             bool                   `json:"reconciling,omitempty"`
+	Reconciling             bool                   `json:"reconciling"`
 	SuspensionReason        string                 `json:"suspensionReason,omitempty"`
 	ExpireTime              string                 `json:"expireTime,omitempty"`
 	Ttl                     string                 `json:"ttl,omitempty"`
 }
 
 type PayloadOptions struct {
-	IncludeResource bool   `json:"includeResource,omitempty"`
+	IncludeResource bool   `json:"includeResource"`
 	FieldMask       string `json:"fieldMask,omitempty"`
 }
 

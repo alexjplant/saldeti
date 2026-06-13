@@ -7,10 +7,10 @@ import (
 // SubscribedSku represents a license SKU available in the tenant (from GET /subscribedSkus)
 type SubscribedSku struct {
 	ODataType       string           `json:"@odata.type,omitempty"`
-	SkuID           string           `json:"skuId,omitempty"`
-	SkuPartNumber   string           `json:"skuPartNumber,omitempty"`
+	SkuID           string           `json:"skuId"`
+	SkuPartNumber   string           `json:"skuPartNumber"`
 	CapabilityStatus string          `json:"capabilityStatus,omitempty"`
-	ConsumedUnits   int              `json:"consumedUnits,omitempty"`
+	ConsumedUnits   int              `json:"consumedUnits"`
 	PrepaidUnits    *LicenseUnits    `json:"prepaidUnits,omitempty"`
 	ServicePlans    []ServicePlanInfo `json:"servicePlans,omitempty"`
 	AppliesTo       string           `json:"appliesTo,omitempty"`
@@ -23,8 +23,8 @@ type LicenseUnits struct {
 }
 
 type ServicePlanInfo struct {
-	ServicePlanID      string `json:"servicePlanId,omitempty"`
-	ServicePlanName    string `json:"servicePlanName,omitempty"`
+	ServicePlanID      string `json:"servicePlanId"`
+	ServicePlanName    string `json:"servicePlanName"`
 	ProvisioningStatus string `json:"provisioningStatus,omitempty"`
 	AppliesTo          string `json:"appliesTo,omitempty"`
 }
@@ -36,12 +36,12 @@ type LicenseAssignmentRequest struct {
 }
 
 type LicenseAssignment struct {
-	SkuID         string   `json:"skuId,omitempty"`
+	SkuID         string   `json:"skuId"`
 	DisabledPlans []string `json:"disabledPlans,omitempty"`
 }
 
 type LicenseRemoval struct {
-	SkuID string `json:"skuId,omitempty"`
+	SkuID string `json:"skuId"`
 }
 
 // SeedLicense is used in seed JSON for user license assignment

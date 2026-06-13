@@ -4,14 +4,14 @@ import "time"
 
 type AssignedLicense struct {
 	DisabledPlans []string `json:"disabledPlans,omitempty"`
-	SkuID         string   `json:"skuId,omitempty"`
+	SkuID         string   `json:"skuId"`
 	SkuPartNumber string   `json:"skuPartNumber,omitempty"`
 }
 
 type Group struct {
     ODataType                   string            `json:"@odata.type,omitempty"`
-    ID                          string            `json:"id,omitempty"`
-    DisplayName                 string            `json:"displayName,omitempty"`
+    ID                          string            `json:"id"`
+    DisplayName                 string            `json:"displayName"`
     Description                 string            `json:"description,omitempty"`
     MailNickname                string            `json:"mailNickname,omitempty"`
     Mail                        string            `json:"mail,omitempty"`
@@ -37,5 +37,5 @@ type Group struct {
 }
 
 type DirectoryObjectRef struct {
-    ODataID string `json:"@odata.id,omitempty"`
+    ODataID string `json:"@odata.id"`
 }

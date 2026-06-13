@@ -9,9 +9,9 @@ type User struct {
 	GivenName                 string                 `json:"givenName,omitempty"`
 	FamilyName                string                 `json:"familyName,omitempty"`
 	DisplayName               string                 `json:"displayName,omitempty"`
-	IsAdmin                   bool                   `json:"isAdmin,omitempty"`
-	IsDelegatedAdmin          bool                   `json:"isDelegatedAdmin,omitempty"`
-	IsMailboxSetup            bool                   `json:"isMailboxSetup,omitempty"`
+	IsAdmin                   bool                   `json:"isAdmin"`
+	IsDelegatedAdmin          bool                   `json:"isDelegatedAdmin"`
+	IsMailboxSetup            bool                   `json:"isMailboxSetup"`
 	Emails                    []UserEmail            `json:"emails,omitempty"`
 	Aliases                   []string               `json:"aliases,omitempty"`
 	NonEditableAliases        []string               `json:"nonEditableAliases,omitempty"`
@@ -26,20 +26,20 @@ type User struct {
 	ExternalIds               []interface{}          `json:"externalIds,omitempty"`
 	Organizations             []interface{}          `json:"organizations,omitempty"`
 	Telephones                []interface{}          `json:"telephones,omitempty"`
-	Suspended                 bool                   `json:"suspended,omitempty"`
+	Suspended                 bool                   `json:"suspended"`
 	SuspensionReason          string                 `json:"suspensionReason,omitempty"`
-	Archived                  bool                   `json:"archived,omitempty"`
-	ChangePasswordAtNextLogin bool                   `json:"changePasswordAtNextLogin,omitempty"`
-	IPWhitelisted             bool                   `json:"ipWhitelisted,omitempty"`
-	IncludeInGlobalAddressList bool                  `json:"includeInGlobalAddressList,omitempty"`
+	Archived                  bool                   `json:"archived"`
+	ChangePasswordAtNextLogin bool                   `json:"changePasswordAtNextLogin"`
+	IPWhitelisted             bool                   `json:"ipWhitelisted"`
+	IncludeInGlobalAddressList bool                  `json:"includeInGlobalAddressList"`
 	RecoveryEmail             string                 `json:"recoveryEmail,omitempty"`
 	RecoveryPhone             string                 `json:"recoveryPhone,omitempty"`
 	LastLoginTime             string                 `json:"lastLoginTime,omitempty"`
 	CreationTime              string                 `json:"creationTime,omitempty"`
 	DeletionTime              string                 `json:"deletionTime,omitempty"`
-	IsEnforcedIn2Sv           bool                   `json:"isEnforcedIn2Sv,omitempty"`
-	IsEnrolledIn2Sv           bool                   `json:"isEnrolledIn2Sv,omitempty"`
-	Is2svEnrolled             bool                   `json:"is2svEnrolled,omitempty"`
+	IsEnforcedIn2Sv           bool                   `json:"isEnforcedIn2Sv"`
+	IsEnrolledIn2Sv           bool                   `json:"isEnrolledIn2Sv"`
+	Is2svEnrolled             bool                   `json:"is2svEnrolled"`
 	CustomSchemas             map[string]interface{} `json:"customSchemas,omitempty"`
 	Languages                 []interface{}          `json:"languages,omitempty"`
 	SSHPublicKeys             []interface{}          `json:"sshPublicKeys,omitempty"`
@@ -57,7 +57,7 @@ type UserName struct {
 type UserEmail struct {
 	Address   string `json:"address,omitempty"`
 	CustomType string `json:"customType,omitempty"`
-	Primary   bool   `json:"primary,omitempty"`
+	Primary   bool   `json:"primary"`
 	Type      string `json:"type,omitempty"`
 }
 

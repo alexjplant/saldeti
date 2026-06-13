@@ -5,9 +5,9 @@ import "time"
 // Application represents an Azure AD application registration
 type Application struct {
 	ODataType                  string                `json:"@odata.type,omitempty"`
-	ID                         string                `json:"id,omitempty"`
-	AppID                      string                `json:"appId,omitempty"`
-	DisplayName                string                `json:"displayName,omitempty"`
+	ID                         string                `json:"id"`
+	AppID                      string                `json:"appId"`
+	DisplayName                string                `json:"displayName"`
 	Description                string                `json:"description,omitempty"`
 	SignInAudience             string                `json:"signInAudience,omitempty"`
 	IdentifierUris             []string              `json:"identifierUris,omitempty"`
@@ -68,13 +68,13 @@ type ApplicationPublicClient struct {
 // RequiredResourceAccess represents a resource access requirement
 type RequiredResourceAccess struct {
 	ResourceAccess []ResourceAccess `json:"resourceAccess,omitempty"`
-	ResourceAppID  string           `json:"resourceAppId,omitempty"`
+	ResourceAppID  string           `json:"resourceAppId"`
 }
 
 // ResourceAccess represents a specific resource access permission
 type ResourceAccess struct {
-	ID   string `json:"id,omitempty"`
-	Type string `json:"type,omitempty"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }
 
 // OptionalClaims represents optional claims configuration
@@ -88,14 +88,14 @@ type OptionalClaims struct {
 type OptionalClaim struct {
 	AdditionalProperties []string `json:"additionalProperties,omitempty"`
 	Essential            *bool    `json:"essential,omitempty"`
-	Name                 string   `json:"name,omitempty"`
+	Name                 string   `json:"name"`
 	Source               string   `json:"source,omitempty"`
 }
 
 // VerifiedPublisher represents verified publisher information
 type VerifiedPublisher struct {
 	AddedDateTime       *time.Time `json:"addedDateTime,omitempty"`
-	DisplayName         string     `json:"displayName,omitempty"`
+	DisplayName         string     `json:"displayName"`
 	VerifiedPublisherID  string     `json:"verifiedPublisherId,omitempty"`
 }
 
@@ -120,7 +120,7 @@ type InformationalURL struct {
 
 // PreAuthorizedApplication represents a pre-authorized application
 type PreAuthorizedApplication struct {
-	AppID           string   `json:"appId,omitempty"`
+	AppID           string   `json:"appId"`
 	PermissionIDs   []string `json:"permissionIds,omitempty"`
 	DelegatedPermissionIDs []string `json:"delegatedPermissionIds,omitempty"`
 }

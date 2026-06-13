@@ -4,11 +4,11 @@ import "time"
 
 type User struct {
 	ODataType                  string          `json:"@odata.type,omitempty"`
-	ID                         string          `json:"id,omitempty"`
-	DisplayName                string          `json:"displayName,omitempty"`
+	ID                         string          `json:"id"`
+	DisplayName                string          `json:"displayName"`
 	GivenName                  string          `json:"givenName,omitempty"`
 	Surname                    string          `json:"surname,omitempty"`
-	UserPrincipalName          string          `json:"userPrincipalName,omitempty"`
+	UserPrincipalName          string          `json:"userPrincipalName"`
 	Mail                       string          `json:"mail,omitempty"`
 	MailNickname               string          `json:"mailNickname,omitempty"`
 	JobTitle                   string          `json:"jobTitle,omitempty"`
