@@ -46,5 +46,7 @@ jobs:
       - uses: jdx/mise-action@v2
       # ui-e2e-install runs: npm install && npx playwright install --with-deps chromium
       - run: mise run ui-e2e-install
-      # ui-e2e runs: npx playwright test --project=chromium
+      # ui-e2e runs Entra Playwright tests: npx playwright test --project=chromium
       - run: mise run ui-e2e
+      # ui-e2e-google runs Google Playwright tests: npx playwright test --project=google-chromium
+      - run: mise run ui-e2e-google
