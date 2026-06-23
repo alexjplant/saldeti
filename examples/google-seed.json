@@ -110,6 +110,25 @@
       ]
     }
   ],
+  "group_settings": [
+    {
+      "group_email": "all-staff@saldeti.com",
+      "who_can_post_message": "ALL_MANAGERS_CAN_POST",
+      "who_can_join": "INVITED_CAN_JOIN",
+      "who_can_view_group": "ALL_IN_DOMAIN_CAN_VIEW",
+      "allow_external_members": false,
+      "is_archived": true,
+      "message_moderation_level": "MODERATE_NEW_MESSAGES",
+      "primary_language": "en"
+    },
+    {
+      "group_email": "engineering@saldeti.com",
+      "who_can_post_message": "ALL_MEMBERS_CAN_POST",
+      "who_can_moderate_content": "OWNERS_AND_MANAGERS",
+      "include_custom_footer": true,
+      "custom_footer_text": "Engineering Team - saldeti.com"
+    }
+  ],
   "org_units": [
     {
       "name": "Engineering",

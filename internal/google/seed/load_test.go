@@ -375,6 +375,34 @@ func TestGoogleLoadFromFileValidation(t *testing.T) {
 			errMsg:  "assigned_to_email",
 		},
 		{
+			name: "missing group_email in group_settings",
+			json: `{
+				"clients": [{"client_id": "t", "client_secret": "s"}],
+				"groups": [
+					{"email": "team@example.com"}
+				],
+				"group_settings": [
+					{"who_can_post_message": "ALL_MEMBERS_CAN_POST"}
+				]
+			}`,
+			wantErr: true,
+			errMsg:  "group_email is required",
+		},
+		{
+			name: "group_settings references non-existent group",
+			json: `{
+				"clients": [{"client_id": "t", "client_secret": "s"}],
+				"groups": [
+					{"email": "team@example.com"}
+				],
+				"group_settings": [
+					{"group_email": "nonexistent@example.com", "who_can_post_message": "ALL_MEMBERS_CAN_POST"}
+				]
+			}`,
+			wantErr: true,
+			errMsg:  "does not reference any group",
+		},
+		{
 			name: "valid minimal config",
 			json: `{
 				"clients": [{"client_id": "t", "client_secret": "s"}]
@@ -492,6 +520,15 @@ func TestGoogleSeedFromConfig(t *testing.T) {
 				Model:        "Pixel 8",
 				OS:           "Android 14",
 				Status:       "ACTIVE",
+			},
+		},
+		GroupSettings: []GoogleSeedGroupSettings{
+			{
+				GroupEmail:            "team@example.com",
+				WhoCanPostMessage:     "ALL_MEMBERS_CAN_POST",
+				AllowExternalMembers:  boolPtr(true),
+				IsArchived:            boolPtr(true),
+				PrimaryLanguage:       "en",
 			},
 		},
 	}
@@ -618,6 +655,24 @@ func TestGoogleSeedFromConfig(t *testing.T) {
 	if mobileDevices[0].SerialNumber != "MOB-001" {
 		t.Errorf("Expected serial number 'MOB-001', got '%s'", mobileDevices[0].SerialNumber)
 	}
+
+	// Verify group settings were applied
+	gs, err := s.GetGroupSettings(ctx, "team@example.com")
+	if err != nil {
+		t.Errorf("Failed to get group settings: %v", err)
+	}
+	if gs.WhoCanPostMessage != "ALL_MEMBERS_CAN_POST" {
+		t.Errorf("Expected whoCanPostMessage 'ALL_MEMBERS_CAN_POST', got '%s'", gs.WhoCanPostMessage)
+	}
+	if !gs.AllowExternalMembers {
+		t.Errorf("Expected allowExternalMembers true, got %v", gs.AllowExternalMembers)
+	}
+	if !gs.IsArchived {
+		t.Errorf("Expected isArchived true, got %v", gs.IsArchived)
+	}
+	if gs.PrimaryLanguage != "en" {
+		t.Errorf("Expected primaryLanguage 'en', got '%s'", gs.PrimaryLanguage)
+	}
 }
 
 func TestGoogleSeedFromConfigWithAliases(t *testing.T) {
@@ -697,4 +752,8 @@ func TestBuildOrgUnitPath(t *testing.T) {
 			t.Errorf("buildOrgUnitPath(%q, %q) = %q, want %q", tt.parentPath, tt.name, got, tt.want)
 		}
 	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

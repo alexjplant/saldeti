@@ -35,6 +35,7 @@ func LoadFromFile(path string) (*GoogleSeedConfig, error) {
 func validateConfig(cfg *GoogleSeedConfig) error {
 	// Collect user emails for cross-reference validation
 	userEmails := make(map[string]bool)
+	groupEmails := make(map[string]bool)
 
 	for i, client := range cfg.Clients {
 		if client.ClientID == "" {
@@ -56,6 +57,7 @@ func validateConfig(cfg *GoogleSeedConfig) error {
 		if group.Email == "" {
 			return fmt.Errorf("groups[%d]: email is required", i)
 		}
+		groupEmails[group.Email] = true
 	}
 
 	for i, ou := range cfg.OrgUnits {
@@ -94,6 +96,15 @@ func validateConfig(cfg *GoogleSeedConfig) error {
 	for i, device := range cfg.MobileDevices {
 		if device.SerialNumber == "" {
 			return fmt.Errorf("mobile_devices[%d]: serial_number is required", i)
+		}
+	}
+
+	for i, gs := range cfg.GroupSettings {
+		if gs.GroupEmail == "" {
+			return fmt.Errorf("group_settings[%d]: group_email is required", i)
+		}
+		if !groupEmails[gs.GroupEmail] {
+			return fmt.Errorf("group_settings[%d]: group_email %s does not reference any group", i, gs.GroupEmail)
 		}
 	}
 
@@ -355,6 +366,65 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 		}
 		if _, err := s.CreateMobileDevice(ctx, customerID, device); err != nil {
 			return fmt.Errorf("failed to create mobile device %s: %w", seedDevice.SerialNumber, err)
+		}
+	}
+
+	// 13. Apply group settings (must be after groups are created)
+	for _, gs := range cfg.GroupSettings {
+		patch := map[string]interface{}{}
+		if gs.WhoCanPostMessage != "" {
+			patch["whoCanPostMessage"] = gs.WhoCanPostMessage
+		}
+		if gs.IsArchived != nil {
+			patch["isArchived"] = *gs.IsArchived
+		}
+		if gs.AllowExternalMembers != nil {
+			patch["allowExternalMembers"] = *gs.AllowExternalMembers
+		}
+		if gs.ArchiveOnly != nil {
+			patch["archiveOnly"] = *gs.ArchiveOnly
+		}
+		if gs.WhoCanJoin != "" {
+			patch["whoCanJoin"] = gs.WhoCanJoin
+		}
+		if gs.WhoCanViewGroup != "" {
+			patch["whoCanViewGroup"] = gs.WhoCanViewGroup
+		}
+		if gs.WhoCanViewMembership != "" {
+			patch["whoCanViewMembership"] = gs.WhoCanViewMembership
+		}
+		if gs.WhoCanInvite != "" {
+			patch["whoCanInvite"] = gs.WhoCanInvite
+		}
+		if gs.WhoCanAdd != "" {
+			patch["whoCanAdd"] = gs.WhoCanAdd
+		}
+		if gs.WhoCanModerateMembers != "" {
+			patch["whoCanModerateMembers"] = gs.WhoCanModerateMembers
+		}
+		if gs.WhoCanModerateContent != "" {
+			patch["whoCanModerateContent"] = gs.WhoCanModerateContent
+		}
+		if gs.MessageModerationLevel != "" {
+			patch["messageModerationLevel"] = gs.MessageModerationLevel
+		}
+		if gs.PrimaryLanguage != "" {
+			patch["primaryLanguage"] = gs.PrimaryLanguage
+		}
+		if gs.IncludeCustomFooter != nil {
+			patch["includeCustomFooter"] = *gs.IncludeCustomFooter
+		}
+		if gs.CustomFooterText != "" {
+			patch["customFooterText"] = gs.CustomFooterText
+		}
+		if gs.MaxMessageBytes != 0 {
+			patch["maxMessageBytes"] = gs.MaxMessageBytes
+		}
+		if len(patch) == 0 {
+			continue
+		}
+		if _, err := s.PatchGroupSettings(ctx, gs.GroupEmail, patch); err != nil {
+			return fmt.Errorf("failed to apply group settings for %s: %w", gs.GroupEmail, err)
 		}
 	}
 

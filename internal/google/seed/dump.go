@@ -94,6 +94,84 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 		})
 	}
 
+	// ========== 3b. Dump group settings (sorted by group Email) ==========
+	for _, g := range groups {
+		gs, err := s.GetGroupSettings(ctx, g.Email)
+		if err != nil {
+			return nil, fmt.Errorf("dumping group settings for %s: %w", g.Email, err)
+		}
+		// Only include groups that have at least one non-default setting.
+		sgs := GoogleSeedGroupSettings{GroupEmail: g.Email}
+		hasSettings := false
+		if gs.WhoCanPostMessage != "" {
+			sgs.WhoCanPostMessage = gs.WhoCanPostMessage
+			hasSettings = true
+		}
+		if gs.IsArchived {
+			sgs.IsArchived = &gs.IsArchived
+			hasSettings = true
+		}
+		if gs.AllowExternalMembers {
+			sgs.AllowExternalMembers = &gs.AllowExternalMembers
+			hasSettings = true
+		}
+		if gs.ArchiveOnly {
+			sgs.ArchiveOnly = &gs.ArchiveOnly
+			hasSettings = true
+		}
+		if gs.WhoCanJoin != "" {
+			sgs.WhoCanJoin = gs.WhoCanJoin
+			hasSettings = true
+		}
+		if gs.WhoCanViewGroup != "" {
+			sgs.WhoCanViewGroup = gs.WhoCanViewGroup
+			hasSettings = true
+		}
+		if gs.WhoCanViewMembership != "" {
+			sgs.WhoCanViewMembership = gs.WhoCanViewMembership
+			hasSettings = true
+		}
+		if gs.WhoCanInvite != "" {
+			sgs.WhoCanInvite = gs.WhoCanInvite
+			hasSettings = true
+		}
+		if gs.WhoCanAdd != "" {
+			sgs.WhoCanAdd = gs.WhoCanAdd
+			hasSettings = true
+		}
+		if gs.WhoCanModerateMembers != "" {
+			sgs.WhoCanModerateMembers = gs.WhoCanModerateMembers
+			hasSettings = true
+		}
+		if gs.WhoCanModerateContent != "" {
+			sgs.WhoCanModerateContent = gs.WhoCanModerateContent
+			hasSettings = true
+		}
+		if gs.MessageModerationLevel != "" {
+			sgs.MessageModerationLevel = gs.MessageModerationLevel
+			hasSettings = true
+		}
+		if gs.PrimaryLanguage != "" {
+			sgs.PrimaryLanguage = gs.PrimaryLanguage
+			hasSettings = true
+		}
+		if gs.IncludeCustomFooter {
+			sgs.IncludeCustomFooter = &gs.IncludeCustomFooter
+			hasSettings = true
+		}
+		if gs.CustomFooterText != "" {
+			sgs.CustomFooterText = gs.CustomFooterText
+			hasSettings = true
+		}
+		if gs.MaxMessageBytes != 0 {
+			sgs.MaxMessageBytes = gs.MaxMessageBytes
+			hasSettings = true
+		}
+		if hasSettings {
+			cfg.GroupSettings = append(cfg.GroupSettings, sgs)
+		}
+	}
+
 	// ========== 4. Dump org units (sorted by OrgUnitPath) ==========
 	orgUnits, err := s.ListOrgUnits(ctx, customerID)
 	if err != nil {

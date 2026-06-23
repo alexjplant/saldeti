@@ -44,6 +44,9 @@ func TestGoogleDumpStoreRoundTrip(t *testing.T) {
 			{SerialNumber: "MOB-002", Model: "Pixel 9", OS: "Android 15", Status: "ACTIVE"},
 			{SerialNumber: "MOB-001", Model: "Pixel 8", OS: "Android 14", Status: "ACTIVE"},
 		},
+		GroupSettings: []GoogleSeedGroupSettings{
+			{GroupEmail: "team@example.com", WhoCanPostMessage: "ALL_MEMBERS_CAN_POST", AllowExternalMembers: boolPtrGS(true), IsArchived: boolPtrGS(true)},
+		},
 	}
 
 	if err := SeedFromConfig(s, cfg); err != nil {
@@ -161,6 +164,24 @@ func TestGoogleDumpStoreRoundTrip(t *testing.T) {
 	if dumped.MobileDevices[0].OS != "Android 14" {
 		t.Errorf("Expected OS 'Android 14', got %q", dumped.MobileDevices[0].OS)
 	}
+
+	// Group settings: round-trip preserves applied settings.
+	if len(dumped.GroupSettings) != 1 {
+		t.Fatalf("Expected 1 group_settings entry, got %d", len(dumped.GroupSettings))
+	}
+	dgs := dumped.GroupSettings[0]
+	if dgs.GroupEmail != "team@example.com" {
+		t.Errorf("Expected group_settings group_email 'team@example.com', got '%s'", dgs.GroupEmail)
+	}
+	if dgs.WhoCanPostMessage != "ALL_MEMBERS_CAN_POST" {
+		t.Errorf("Expected who_can_post_message 'ALL_MEMBERS_CAN_POST', got '%s'", dgs.WhoCanPostMessage)
+	}
+	if dgs.AllowExternalMembers == nil || !*dgs.AllowExternalMembers {
+		t.Errorf("Expected allow_external_members true, got %v", dgs.AllowExternalMembers)
+	}
+	if dgs.IsArchived == nil || !*dgs.IsArchived {
+		t.Errorf("Expected is_archived true, got %v", dgs.IsArchived)
+	}
 }
 
 func TestGoogleDumpStoreEmpty(t *testing.T) {
@@ -175,4 +196,8 @@ func TestGoogleDumpStoreEmpty(t *testing.T) {
 	if len(dumped.Clients) != 0 {
 		t.Errorf("Expected 0 clients on empty store, got %d", len(dumped.Clients))
 	}
+}
+
+func boolPtrGS(b bool) *bool {
+	return &b
 }

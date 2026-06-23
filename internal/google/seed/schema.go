@@ -13,6 +13,7 @@ type GoogleSeedConfig struct {
 	Domains         []GoogleSeedDomain         `json:"domains,omitempty"`
 	ChromeOSDevices []GoogleSeedChromeOSDevice `json:"chromeos_devices,omitempty"`
 	MobileDevices   []GoogleSeedMobileDevice   `json:"mobile_devices,omitempty"`
+	GroupSettings   []GoogleSeedGroupSettings  `json:"group_settings,omitempty"`
 }
 
 type GoogleSeedClient struct {
@@ -74,4 +75,27 @@ type GoogleSeedMobileDevice struct {
 	Model        string `json:"model,omitempty"`
 	OS           string `json:"os,omitempty"`
 	Status       string `json:"status,omitempty"`
+}
+
+// GoogleSeedGroupSettings defines per-group settings (Groups Settings API).
+// Only fields explicitly provided in the seed are applied; all others keep
+// their defaults. The group must already exist in the "groups" array.
+type GoogleSeedGroupSettings struct {
+	GroupEmail             string `json:"group_email"`
+	WhoCanPostMessage      string `json:"who_can_post_message,omitempty"`
+	IsArchived             *bool  `json:"is_archived,omitempty"`
+	AllowExternalMembers   *bool  `json:"allow_external_members,omitempty"`
+	ArchiveOnly            *bool  `json:"archive_only,omitempty"`
+	WhoCanJoin             string `json:"who_can_join,omitempty"`
+	WhoCanViewGroup        string `json:"who_can_view_group,omitempty"`
+	WhoCanViewMembership   string `json:"who_can_view_membership,omitempty"`
+	WhoCanInvite           string `json:"who_can_invite,omitempty"`
+	WhoCanAdd              string `json:"who_can_add,omitempty"`
+	WhoCanModerateMembers  string `json:"who_can_moderate_members,omitempty"`
+	WhoCanModerateContent  string `json:"who_can_moderate_content,omitempty"`
+	MessageModerationLevel string `json:"message_moderation_level,omitempty"`
+	PrimaryLanguage        string `json:"primary_language,omitempty"`
+	IncludeCustomFooter    *bool  `json:"include_custom_footer,omitempty"`
+	CustomFooterText       string `json:"custom_footer_text,omitempty"`
+	MaxMessageBytes        int64  `json:"max_message_bytes,omitempty"`
 }
