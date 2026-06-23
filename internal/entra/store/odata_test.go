@@ -210,22 +210,21 @@ func TestApplyFilter_UserTypeCombinedWithOtherFilters(t *testing.T) {
 
 func TestApplyFilter_AnyNestedPath_SkuId(t *testing.T) {
 	type License struct {
-		SkuID         string `json:"skuId,omitempty"`
-		SkuPartNumber string `json:"skuPartNumber,omitempty"`
+		SkuID string `json:"skuId,omitempty"`
 	}
 
 	items := []map[string]interface{}{
 		{
 			"displayName": "Alice",
 			"assignedLicenses": []License{
-				{SkuID: "sku-1234", SkuPartNumber: "ENTERPRISEPACK"},
-				{SkuID: "sku-5678", SkuPartNumber: "EMS"},
+				{SkuID: "sku-1234"},
+				{SkuID: "sku-5678"},
 			},
 		},
 		{
 			"displayName": "Bob",
 			"assignedLicenses": []License{
-				{SkuID: "sku-9999", SkuPartNumber: "FLOW_FREE"},
+				{SkuID: "sku-9999"},
 			},
 		},
 		{
@@ -240,22 +239,10 @@ func TestApplyFilter_AnyNestedPath_SkuId(t *testing.T) {
 	assert.Len(t, result, 1)
 	assert.Equal(t, "Alice", result[0]["displayName"])
 
-	// Filter by skuPartNumber
-	result, err = applyFilter(items, "assignedLicenses/any(a:a/skuPartNumber eq 'FLOW_FREE')")
-	require.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, "Bob", result[0]["displayName"])
-
 	// Filter that matches none
 	result, err = applyFilter(items, "assignedLicenses/any(a:a/skuId eq 'nonexistent')")
 	require.NoError(t, err)
 	assert.Len(t, result, 0)
-
-	// Empty array — no match
-	result, err = applyFilter(items, "assignedLicenses/any(a:a/skuPartNumber eq 'ENTERPRISEPACK')")
-	require.NoError(t, err)
-	// Alice also has ENTERPRISEPACK, so this should match Alice
-	assert.Len(t, result, 1)
 }
 
 func TestApplyFilter_AnyFlatStringArray(t *testing.T) {
@@ -274,25 +261,24 @@ func TestApplyFilter_AnyFlatStringArray(t *testing.T) {
 
 func TestApplyFilter_AnyNestedWithAnd(t *testing.T) {
 	type License struct {
-		SkuID         string `json:"skuId,omitempty"`
-		SkuPartNumber string `json:"skuPartNumber,omitempty"`
+		SkuID string `json:"skuId,omitempty"`
 	}
 
 	items := []map[string]interface{}{
 		{
 			"displayName":      "Alice",
 			"accountEnabled":   true,
-			"assignedLicenses": []License{{SkuID: "sku-1234", SkuPartNumber: "ENTERPRISEPACK"}},
+			"assignedLicenses": []License{{SkuID: "sku-1234"}},
 		},
 		{
 			"displayName":      "Bob",
 			"accountEnabled":   false,
-			"assignedLicenses": []License{{SkuID: "sku-1234", SkuPartNumber: "ENTERPRISEPACK"}},
+			"assignedLicenses": []License{{SkuID: "sku-1234"}},
 		},
 		{
 			"displayName":      "Charlie",
 			"accountEnabled":   true,
-			"assignedLicenses": []License{{SkuID: "sku-9999", SkuPartNumber: "FLOW_FREE"}},
+			"assignedLicenses": []License{{SkuID: "sku-9999"}},
 		},
 	}
 

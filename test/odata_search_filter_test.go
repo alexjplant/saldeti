@@ -260,8 +260,8 @@ func TestE2E_FilterAssignedLicenses(t *testing.T) {
 		"accountEnabled":    true,
 		"userType":          "Member",
 		"assignedLicenses": []map[string]interface{}{
-			{"skuId": "sku-enterprise-001", "skuPartNumber": "ENTERPRISEPACK"},
-			{"skuId": "sku-ems-002", "skuPartNumber": "EMS"},
+			{"skuId": "sku-enterprise-001"},
+			{"skuId": "sku-ems-002"},
 		},
 	}
 	createUserViaHTTP(t, tss, token, licensedUser)
@@ -293,66 +293,6 @@ func TestE2E_FilterAssignedLicenses(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "Expected to find 'Licensed User' in assignedLicenses filter results")
-}
-
-func TestE2E_FilterAssignedLicensesBySkuPartNumber(t *testing.T) {
-	tss := setupTestServer(t)
-	defer tss.Server.Close()
-
-	token := getToken(t, tss)
-
-	// Create user with EMS license
-	emsUser := map[string]interface{}{
-		"displayName":       "EMS User",
-		"userPrincipalName": "ems@saldeti.local",
-		"mail":              "ems@saldeti.local",
-		"accountEnabled":    true,
-		"userType":          "Member",
-		"assignedLicenses": []map[string]interface{}{
-			{"skuId": "sku-ems-001", "skuPartNumber": "EMS"},
-		},
-	}
-	createUserViaHTTP(t, tss, token, emsUser)
-
-	// Create user with FLOW license
-	flowUser := map[string]interface{}{
-		"displayName":       "Flow User",
-		"userPrincipalName": "flow@saldeti.local",
-		"mail":              "flow@saldeti.local",
-		"accountEnabled":    true,
-		"userType":          "Member",
-		"assignedLicenses": []map[string]interface{}{
-			{"skuId": "sku-flow-001", "skuPartNumber": "FLOW_FREE"},
-		},
-	}
-	createUserViaHTTP(t, tss, token, flowUser)
-
-	// Filter by skuPartNumber eq 'EMS'
-	req, _ := http.NewRequest("GET", tss.BaseURL+`/v1.0/users?$filter=assignedLicenses%2Fany(a%3Aa%2FskuPartNumber+eq+'EMS')`, nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	resp, err := tss.Server.Client().Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
-	require.NoError(t, json.Unmarshal(body, &result))
-
-	values, ok := result["value"].([]interface{})
-	require.True(t, ok)
-
-	found := false
-	for _, v := range values {
-		user := v.(map[string]interface{})
-		if user["displayName"] == "EMS User" {
-			found = true
-		}
-		if user["displayName"] == "Flow User" {
-			t.Error("Flow User should not match EMS filter")
-		}
-	}
-	assert.True(t, found, "Expected to find 'EMS User' in results")
 }
 
 func TestE2E_FilterAssignedLicensesNoMatch(t *testing.T) {

@@ -267,13 +267,13 @@ func TestRoundTrip(t *testing.T) {
 		assert.Len(t, u2.AssignedLicenses, len(u1.AssignedLicenses), "User %s: license count mismatch", upn)
 		lics1 := make(map[string]model.AssignedLicense)
 		for _, l := range u1.AssignedLicenses {
-			lics1[l.SkuPartNumber] = l
+			lics1[l.SkuID] = l
 		}
 		for _, l2 := range u2.AssignedLicenses {
-			l1, ok := lics1[l2.SkuPartNumber]
-			require.True(t, ok, "User %s: unexpected license %s", upn, l2.SkuPartNumber)
+			l1, ok := lics1[l2.SkuID]
+			require.True(t, ok, "User %s: unexpected license %s", upn, l2.SkuID)
 			assert.ElementsMatch(t, l1.DisabledPlans, l2.DisabledPlans,
-				"User %s: disabledPlans mismatch for %s", upn, l2.SkuPartNumber)
+				"User %s: disabledPlans mismatch for %s", upn, l2.SkuID)
 		}
 
 		// Compare managers

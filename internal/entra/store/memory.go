@@ -1723,7 +1723,7 @@ func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicen
 
 	// Add licenses (overwrite if already present)
 	for _, add := range addLicenses {
-		skuPartNumber, found := model.FindSkuBySkuID(add.SkuID)
+		_, found := model.FindSkuBySkuID(add.SkuID)
 		if !found {
 			return nil, fmt.Errorf("unknown skuId: %s", add.SkuID)
 		}
@@ -1737,7 +1737,6 @@ func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicen
 		}
 		currentLicenses[add.SkuID] = model.AssignedLicense{
 			SkuID:         add.SkuID,
-			SkuPartNumber: skuPartNumber,
 			DisabledPlans: disabledPlans,
 		}
 	}

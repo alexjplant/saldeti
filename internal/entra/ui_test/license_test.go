@@ -284,9 +284,10 @@ func TestLicenseAddViaUI(t *testing.T) {
 		t.Fatalf("Failed to get updated user: %v", err)
 	}
 
+	intuneSkuID, _ := model.FindSkuByPartNumber("INTUNE_A")
 	found := false
 	for _, lic := range updatedUser.AssignedLicenses {
-		if lic.SkuPartNumber == "INTUNE_A" {
+		if lic.SkuID == intuneSkuID {
 			found = true
 			break
 		}
@@ -358,9 +359,10 @@ func TestLicenseRemoveViaUI(t *testing.T) {
 		t.Fatalf("Failed to get updated user: %v", err)
 	}
 
+	speE3SkuID, _ := model.FindSkuByPartNumber("SPE_E3")
 	found := false
 	for _, lic := range updatedUser.AssignedLicenses {
-		if lic.SkuPartNumber == "SPE_E3" {
+		if lic.SkuID == speE3SkuID {
 			found = true
 			break
 		}
@@ -402,7 +404,7 @@ func TestLicenseAddAvailableSkusExcludesAssigned(t *testing.T) {
 	assignedLicenses := admin.AssignedLicenses
 	hasSpeE5 := false
 	for _, lic := range assignedLicenses {
-		if lic.SkuPartNumber == "SPE_E5" {
+		if lic.SkuID == speE5GUID {
 			hasSpeE5 = true
 			t.Logf("Admin has SPE_E5 assigned (SKU ID: %s)", lic.SkuID)
 			break
@@ -524,16 +526,16 @@ func TestAssignLicense(t *testing.T) {
 		t.Fatalf("Failed to get Grace: %v", err)
 	}
 
-	// Verify Grace has no INTUNE_A license initially
-	for _, lic := range grace.AssignedLicenses {
-		if lic.SkuPartNumber == "INTUNE_A" {
-			t.Fatal("Grace should not have INTUNE_A license initially")
-		}
-	}
-
 	skuID, found := model.FindSkuByPartNumber("INTUNE_A")
 	if !found {
 		t.Fatal("INTUNE_A SKU not found in catalog")
+	}
+
+	// Verify Grace has no INTUNE_A license initially
+	for _, lic := range grace.AssignedLicenses {
+		if lic.SkuID == skuID {
+			t.Fatal("Grace should not have INTUNE_A license initially")
+		}
 	}
 
 	// Call the assignLicense API endpoint
@@ -550,7 +552,7 @@ func TestAssignLicense(t *testing.T) {
 
 	found = false
 	for _, lic := range updatedUser.AssignedLicenses {
-		if lic.SkuPartNumber == "INTUNE_A" {
+		if lic.SkuID == skuID {
 			found = true
 			break
 		}

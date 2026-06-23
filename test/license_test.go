@@ -136,9 +136,6 @@ func TestAssignLicense(t *testing.T) {
 		licMap := lic.(map[string]interface{})
 		if skuId, ok := licMap["skuId"].(string); ok && skuId == enterpriseSkuId {
 			foundLicense = true
-			if skuPartNumber, ok := licMap["skuPartNumber"].(string); ok {
-				assert.Equal(t, "ENTERPRISEPACK", skuPartNumber, "Expected skuPartNumber to be ENTERPRISEPACK")
-			}
 		}
 	}
 	assert.True(t, foundLicense, "Expected to find ENTERPRISEPACK license in assignedLicenses")
@@ -164,9 +161,6 @@ func TestAssignLicense(t *testing.T) {
 		licMap := lic.(map[string]interface{})
 		if skuId, ok := licMap["skuId"].(string); ok && skuId == enterpriseSkuId {
 			foundPersistedLicense = true
-			if skuPartNumber, ok := licMap["skuPartNumber"].(string); ok {
-				assert.Equal(t, "ENTERPRISEPACK", skuPartNumber, "Expected persisted skuPartNumber to be ENTERPRISEPACK")
-			}
 		}
 	}
 	assert.True(t, foundPersistedLicense, "Expected to find ENTERPRISEPACK license in persisted user")
@@ -254,7 +248,7 @@ func TestRemoveLicense(t *testing.T) {
 		"accountEnabled":    true,
 		"userType":          "Member",
 		"assignedLicenses": []map[string]interface{}{
-			{"skuId": enterpriseSkuId, "skuPartNumber": "ENTERPRISEPACK"},
+			{"skuId": enterpriseSkuId},
 		},
 	}
 	createdUser := createUserViaHTTP(t, tss, token, userWithLicense)
@@ -555,7 +549,7 @@ func TestFilterByLicenseAfterAssign(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK from assignLicense")
 
 	// Filter users by assignedLicenses using $filter
-	filterQuery := url.QueryEscape(`assignedLicenses/any(a:a/skuPartNumber eq 'ENTERPRISEPACK')`)
+	filterQuery := url.QueryEscape(fmt.Sprintf(`assignedLicenses/any(a:a/skuId eq '%s')`, enterpriseSkuId))
 	filterReq, _ := http.NewRequest("GET", fmt.Sprintf("%s/v1.0/users?$filter=%s", tss.BaseURL, filterQuery), nil)
 	filterReq.Header.Set("Authorization", "Bearer "+token)
 	filterResp, err := tss.Server.Client().Do(filterReq)

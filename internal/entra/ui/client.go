@@ -122,10 +122,6 @@ func sdkUserToModel(u models.Userable) model.User {
 			al := model.AssignedLicense{}
 			if skuId := lic.GetSkuId(); skuId != nil {
 				al.SkuID = skuId.String()
-				// Look up skuPartNumber from the static catalog
-				if skuPN, found := model.FindSkuBySkuID(al.SkuID); found {
-					al.SkuPartNumber = skuPN
-				}
 			}
 			if disabledPlans := lic.GetDisabledPlans(); disabledPlans != nil {
 				for _, plan := range disabledPlans {

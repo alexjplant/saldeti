@@ -5,7 +5,6 @@ import "time"
 type AssignedLicense struct {
 	DisabledPlans []string `json:"disabledPlans,omitempty"`
 	SkuID         string   `json:"skuId"`
-	SkuPartNumber string   `json:"skuPartNumber,omitempty"`
 }
 
 type Group struct {
