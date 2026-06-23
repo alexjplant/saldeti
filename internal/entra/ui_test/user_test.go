@@ -364,9 +364,7 @@ func TestHtmxUserSetManager(t *testing.T) {
 	formData.Set("managerId", bob.ID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/manager/set", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+alice.ID+"/manager/set", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -399,8 +397,7 @@ func TestHtmxUserRemoveManager(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/manager/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+alice.ID+"/manager/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

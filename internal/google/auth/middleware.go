@@ -42,7 +42,14 @@ func writeAuthError(c *gin.Context, code int, message string, status string) {
 		"error": gin.H{
 			"code":    code,
 			"message": message,
-			"status":  status,
+			"errors": []gin.H{
+				{
+					"domain":  "global",
+					"reason":  "unauthorized",
+					"message": message,
+				},
+			},
+			"status": status,
 		},
 	})
 }

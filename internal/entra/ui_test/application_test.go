@@ -271,9 +271,7 @@ func TestHtmxApplicationAddPassword(t *testing.T) {
 	formData.Set("displayName", "Test Password")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+appID+"/credentials/password/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+appID+"/credentials/password/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -292,9 +290,7 @@ func TestHtmxApplicationAddOwner(t *testing.T) {
 	formData.Set("userId", userID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+appID+"/owners/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+appID+"/owners/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -317,8 +313,7 @@ func TestHtmxApplicationRemoveOwner(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+appID+"/owners/"+userID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+appID+"/owners/"+userID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -352,8 +347,7 @@ func TestHtmxApplicationRemovePassword(t *testing.T) {
 
 	// Now remove it via UI
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+created.ID+"/credentials/password/"+cred.KeyID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+created.ID+"/credentials/password/"+cred.KeyID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -373,9 +367,7 @@ func TestHtmxApplicationAddKey(t *testing.T) {
 	formData.Set("keyUsage", "Verify")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+appID+"/credentials/key/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+appID+"/credentials/key/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -411,8 +403,7 @@ func TestHtmxApplicationRemoveKey(t *testing.T) {
 
 	// Now remove it via UI
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+created.ID+"/credentials/key/"+cred.KeyID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+created.ID+"/credentials/key/"+cred.KeyID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -432,9 +423,7 @@ func TestHtmxApplicationCreateExtension(t *testing.T) {
 	formData.Set("targetObjects", "User")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+appID+"/extensions/create", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+appID+"/extensions/create", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -464,8 +453,7 @@ func TestHtmxApplicationDeleteExtension(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/applications/"+appID+"/extensions/"+created.ID+"/delete", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/applications/"+appID+"/extensions/"+created.ID+"/delete", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

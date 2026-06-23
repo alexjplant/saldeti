@@ -97,6 +97,16 @@ func csrfPost(t *testing.T, ts *httptest.Server, path string, data url.Values) *
 	return req
 }
 
+// csrfHtmxPost creates a POST request with a valid CSRF token and cookie,
+// simulating a real htmx request (HX-Request: true). Use this for htmx tests
+// so they exercise the same CSRF validation path as browser htmx submissions.
+func csrfHtmxPost(t *testing.T, ts *httptest.Server, path string, data url.Values) *http.Request {
+	t.Helper()
+	req := csrfPost(t, ts, path, data)
+	req.Header.Set("HX-Request", "true")
+	return req
+}
+
 func TestFlashHelpers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -204,5 +214,23 @@ func TestSetFlashInfo(t *testing.T) {
 
 	if flash.Level != ui.FlashInfo {
 		t.Errorf("Expected flash level %s, got %s", ui.FlashInfo, flash.Level)
+	}
+}
+
+// TestCSRFBlocksHtmxWithoutToken verifies the N13 fix: an htmx-style request
+// (HX-Request: true) that lacks a valid CSRF token/cookie must be rejected.
+func TestCSRFBlocksHtmxWithoutToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, _ := setupTestServer(t)
+
+	// Simulate a cross-site attacker: HX-Request: true but NO CSRF cookie and NO token.
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/groups/anything/members/add", strings.NewReader("userId=fake"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Expected CSRF to block htmx request without token (status %d), got %d", http.StatusForbidden, w.Code)
 	}
 }

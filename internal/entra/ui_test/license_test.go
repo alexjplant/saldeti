@@ -452,9 +452,7 @@ func TestHtmxLicenseAdd(t *testing.T) {
 	formData.Set("skuId", skuID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+grace.ID+"/licenses/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+grace.ID+"/licenses/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// htmx request should return 200 with partial HTML, not 302 redirect
@@ -497,9 +495,7 @@ func TestHtmxLicenseRemove(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+bob.ID+"/licenses/"+skuID+"/remove", nil)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+bob.ID+"/licenses/"+skuID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

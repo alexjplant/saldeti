@@ -91,4 +91,4 @@ Saldeti simulates these APIs for local development and testing purposes only. It
 
 ## License
 
-[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). Use it, improve it, don't make money on it.
+[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). Use it, modify it, ship it — just keep the source open.

@@ -703,9 +703,7 @@ func TestHtmxGroupAddMember(t *testing.T) {
 	formData.Set("userId", ivanID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+allStaffID+"/members/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+allStaffID+"/members/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -754,8 +752,7 @@ func TestHtmxGroupRemoveMember(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+engineeringTeamID+"/members/"+graceID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+engineeringTeamID+"/members/"+graceID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -804,9 +801,7 @@ func TestHtmxGroupAddOwner(t *testing.T) {
 	formData.Set("userId", aliceID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+marketingTeamID+"/owners/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+marketingTeamID+"/owners/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -868,8 +863,7 @@ func TestHtmxGroupRemoveOwner(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+createdGroup.ID+"/owners/"+aliceID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+createdGroup.ID+"/owners/"+aliceID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

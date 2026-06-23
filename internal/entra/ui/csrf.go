@@ -25,9 +25,12 @@ func csrfMiddleware() gin.HandlerFunc {
 		isUnsafe := c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut ||
 			c.Request.Method == http.MethodPatch || c.Request.Method == http.MethodDelete
 
-		// For unsafe methods: validate against the EXISTING cookie before generating a new token.
-		// htmx requests automatically include the cookie, so they can skip CSRF validation.
-		if isUnsafe && c.GetHeader("HX-Request") != "true" && c.GetHeader("Authorization") == "" {
+		// For unsafe methods: validate CSRF token — the form field must match the cookie.
+		// API requests authenticating via Authorization header are exempt.
+		// htmx requests are NOT exempt: every htmx form submission includes the CSRF
+		// hidden input, and SameSite=Lax prevents a cross-site attacker from reading
+		// the victim's CSRF cookie to forge a matching token.
+		if isUnsafe && c.GetHeader("Authorization") == "" {
 			formToken := c.PostForm(csrfFormField)
 			cookieToken, err := c.Cookie(csrfCookieName)
 			if err != nil || formToken == "" || formToken != cookieToken {
