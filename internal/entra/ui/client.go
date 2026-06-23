@@ -10,7 +10,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/gin-gonic/gin"
 	absser "github.com/microsoft/kiota-abstractions-go/serialization"
 	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
@@ -129,41 +128,6 @@ func sdkUserToModel(u models.Userable) model.User {
 	return m
 }
 
-// Convert SDK directory object to model.DirectoryObject
-func sdkDirObjToModel(d models.DirectoryObjectable) model.DirectoryObject {
-	m := model.DirectoryObject{}
-	if v := d.GetId(); v != nil {
-		m.ID = *v
-	}
-	if v := d.GetOdataType(); v != nil {
-		m.ODataType = *v
-	}
-
-	// Try to extract display name via type assertion (SDK creates concrete types via discriminator)
-	if u, ok := d.(models.Userable); ok {
-		if v := u.GetDisplayName(); v != nil {
-			m.DisplayName = *v
-		}
-	} else if g, ok := d.(models.Groupable); ok {
-		if v := g.GetDisplayName(); v != nil {
-			m.DisplayName = *v
-		}
-	}
-
-	// Fallback: try additional data
-	if m.DisplayName == "" {
-		if additionalData := d.GetAdditionalData(); additionalData != nil {
-			if dn, ok := additionalData["displayName"]; ok && dn != nil {
-				if s, ok := dn.(string); ok {
-					m.DisplayName = s
-				}
-			}
-		}
-	}
-
-	return m
-}
-
 // Convert SDK group to model.Group
 func sdkGroupToModel(g models.Groupable) model.Group {
 	m := model.Group{}
@@ -219,23 +183,6 @@ func strVal(s *string) string {
 	return *s
 }
 
-// Helper to build form map from gin context
-func buildFormMap(c *gin.Context) map[string]string {
-	return map[string]string{
-		"displayName":       c.PostForm("displayName"),
-		"givenName":         c.PostForm("givenName"),
-		"surname":           c.PostForm("surname"),
-		"userPrincipalName": c.PostForm("userPrincipalName"),
-		"mail":              c.PostForm("mail"),
-		"mailNickname":      c.PostForm("mailNickname"),
-		"jobTitle":          c.PostForm("jobTitle"),
-		"department":        c.PostForm("department"),
-		"officeLocation":    c.PostForm("officeLocation"),
-		"mobilePhone":       c.PostForm("mobilePhone"),
-		"accountEnabled":    c.PostForm("accountEnabled"),
-	}
-}
-
 // fetchDirectoryObjects performs a manual HTTP GET to fetch a list of directory objects
 func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]model.DirectoryObject, error) {
 	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
@@ -256,7 +203,7 @@ func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]mo
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil // No data is OK for some endpoints
@@ -296,7 +243,7 @@ func (h *UIHandler) fetchDirectoryObject(ctx context.Context, url string) (*mode
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -334,7 +281,7 @@ func (h *UIHandler) fetchSubscribedSkus(ctx context.Context) ([]model.Subscribed
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -371,7 +318,7 @@ func (h *UIHandler) fetchAppRoleAssignments(ctx context.Context, url string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -411,7 +358,7 @@ func (h *UIHandler) fetchOAuth2PermissionGrants(ctx context.Context, url string)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -623,7 +570,7 @@ func (h *UIHandler) fetchExtensionProperties(ctx context.Context, url string) ([
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil

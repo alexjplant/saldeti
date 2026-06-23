@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -688,7 +689,7 @@ func TestSeedFromConfig(t *testing.T) {
 	}
 
 	// Verify client was registered
-	clientID, clientSecret, tenantID, err := s.GetClient(nil, "test-client-id")
+	clientID, clientSecret, tenantID, err := s.GetClient(context.TODO(), "test-client-id")
 	if err != nil {
 		t.Errorf("Failed to get client: %v", err)
 	}
@@ -703,7 +704,7 @@ func TestSeedFromConfig(t *testing.T) {
 	}
 
 	// Verify user was created
-	user, err := s.GetUserByUPN(nil, "test@example.com")
+	user, err := s.GetUserByUPN(context.TODO(), "test@example.com")
 	if err != nil {
 		t.Errorf("Failed to get user by UPN: %v", err)
 	}
@@ -715,7 +716,7 @@ func TestSeedFromConfig(t *testing.T) {
 	}
 
 	// Verify group was created
-	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	groups, _, err := s.ListGroups(context.TODO(), model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list groups: %v", err)
 	}
@@ -727,7 +728,7 @@ func TestSeedFromConfig(t *testing.T) {
 	}
 
 	// Verify membership was created
-	members, _, err := s.ListMembers(nil, groups[0].ID, model.ListOptions{})
+	members, _, err := s.ListMembers(context.TODO(), groups[0].ID, model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list members: %v", err)
 	}
@@ -739,7 +740,7 @@ func TestSeedFromConfig(t *testing.T) {
 	}
 
 	// Verify manager was set
-	manager, err := s.GetManager(nil, user.ID)
+	manager, err := s.GetManager(context.TODO(), user.ID)
 	if err != nil {
 		t.Errorf("Failed to get manager: %v", err)
 	}
@@ -798,15 +799,15 @@ func TestSeedFromConfig_NewSchema(t *testing.T) {
 	}
 
 	// Verify manager relationship using manager_upn
-	managerUser, err := s.GetUserByUPN(nil, "manager@example.com")
+	managerUser, err := s.GetUserByUPN(context.TODO(), "manager@example.com")
 	if err != nil {
 		t.Errorf("Failed to get manager user: %v", err)
 	}
-	employeeUser, err := s.GetUserByUPN(nil, "employee@example.com")
+	employeeUser, err := s.GetUserByUPN(context.TODO(), "employee@example.com")
 	if err != nil {
 		t.Errorf("Failed to get employee user: %v", err)
 	}
-	manager, err := s.GetManager(nil, employeeUser.ID)
+	manager, err := s.GetManager(context.TODO(), employeeUser.ID)
 	if err != nil {
 		t.Errorf("Failed to get manager: %v", err)
 	}
@@ -815,14 +816,14 @@ func TestSeedFromConfig_NewSchema(t *testing.T) {
 	}
 
 	// Verify membership using member_upns
-	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	groups, _, err := s.ListGroups(context.TODO(), model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list groups: %v", err)
 	}
 	if len(groups) != 1 {
 		t.Errorf("Expected 1 group, got %d", len(groups))
 	}
-	members, _, err := s.ListMembers(nil, groups[0].ID, model.ListOptions{})
+	members, _, err := s.ListMembers(context.TODO(), groups[0].ID, model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list members: %v", err)
 	}
@@ -834,7 +835,7 @@ func TestSeedFromConfig_NewSchema(t *testing.T) {
 	}
 
 	// Verify ownership using owner_upns
-	owners, _, err := s.ListOwners(nil, groups[0].ID, model.ListOptions{})
+	owners, _, err := s.ListOwners(context.TODO(), groups[0].ID, model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list owners: %v", err)
 	}
@@ -887,7 +888,7 @@ func TestSeedFromConfig_NestedGroups(t *testing.T) {
 	}
 
 	// Verify nested group membership
-	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	groups, _, err := s.ListGroups(context.TODO(), model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list groups: %v", err)
 	}
@@ -898,15 +899,16 @@ func TestSeedFromConfig_NestedGroups(t *testing.T) {
 	// Find parent and sub groups
 	var parentGroup, subGroup model.Group
 	for _, g := range groups {
-		if g.DisplayName == "Parent Group" {
+		switch g.DisplayName {
+		case "Parent Group":
 			parentGroup = g
-		} else if g.DisplayName == "Sub Group" {
+		case "Sub Group":
 			subGroup = g
 		}
 	}
 
 	// Verify parent group has sub group as member
-	parentMembers, _, err := s.ListMembers(nil, parentGroup.ID, model.ListOptions{})
+	parentMembers, _, err := s.ListMembers(context.TODO(), parentGroup.ID, model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list parent group members: %v", err)
 	}
@@ -947,7 +949,7 @@ func TestSeedFromConfig_GuestUser(t *testing.T) {
 	}
 
 	// Verify user was created with UserType = "Guest"
-	user, err := s.GetUserByUPN(nil, "guest@external.com")
+	user, err := s.GetUserByUPN(context.TODO(), "guest@external.com")
 	if err != nil {
 		t.Errorf("Failed to get user by UPN: %v", err)
 	}
@@ -985,7 +987,7 @@ func TestSeedFromConfig_WithDisabledUser(t *testing.T) {
 	}
 
 	// Verify user was created with AccountEnabled = false
-	user, err := s.GetUserByUPN(nil, "disabled@example.com")
+	user, err := s.GetUserByUPN(context.TODO(), "disabled@example.com")
 	if err != nil {
 		t.Errorf("Failed to get user by UPN: %v", err)
 	}
@@ -1005,7 +1007,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 	}
 
 	// Verify admin user exists
-	admin, err := s.GetUserByUPN(nil, "admin@saldeti.local")
+	admin, err := s.GetUserByUPN(context.TODO(), "admin@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get admin user: %v", err)
 	}
@@ -1021,7 +1023,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 		"ivan.guest@external.com",
 	}
 	for _, email := range expectedUsers {
-		user, err := s.GetUserByUPN(nil, email)
+		user, err := s.GetUserByUPN(context.TODO(), email)
 		if err != nil {
 			t.Errorf("Failed to get user %s: %v", email, err)
 		}
@@ -1031,7 +1033,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 	}
 
 	// Verify guest user has correct type
-	ivan, err := s.GetUserByUPN(nil, "ivan.guest@external.com")
+	ivan, err := s.GetUserByUPN(context.TODO(), "ivan.guest@external.com")
 	if err != nil {
 		t.Errorf("Failed to get guest user: %v", err)
 	}
@@ -1040,7 +1042,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 	}
 
 	// Verify disabled user is disabled
-	grace, err := s.GetUserByUPN(nil, "grace.lee@saldeti.local")
+	grace, err := s.GetUserByUPN(context.TODO(), "grace.lee@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Grace user: %v", err)
 	}
@@ -1049,7 +1051,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 	}
 
 	// Verify expected groups exist
-	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	groups, _, err := s.ListGroups(context.TODO(), model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list groups: %v", err)
 	}
@@ -1071,7 +1073,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 	}
 
 	// Verify client was registered
-	_, _, _, err = s.GetClient(nil, "sim-client-id")
+	_, _, _, err = s.GetClient(context.TODO(), "sim-client-id")
 	if err != nil {
 		t.Errorf("Failed to get client: %v", err)
 	}
@@ -1081,7 +1083,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to find Engineering Team group: %v", err)
 	}
-	members, _, err := s.ListMembers(nil, engineeringGroup.ID, model.ListOptions{})
+	members, _, err := s.ListMembers(context.TODO(), engineeringGroup.ID, model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list Engineering Team members: %v", err)
 	}
@@ -1091,15 +1093,15 @@ func TestSeedBackwardCompat(t *testing.T) {
 	}
 
 	// Verify managers exist
-	eve, err := s.GetUserByUPN(nil, "eve.wilson@saldeti.local")
+	eve, err := s.GetUserByUPN(context.TODO(), "eve.wilson@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Eve user: %v", err)
 	}
-	alice, err := s.GetUserByUPN(nil, "alice.smith@saldeti.local")
+	alice, err := s.GetUserByUPN(context.TODO(), "alice.smith@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Alice user: %v", err)
 	}
-	manager, err := s.GetManager(nil, alice.ID)
+	manager, err := s.GetManager(context.TODO(), alice.ID)
 	if err != nil {
 		t.Errorf("Failed to get Alice's manager: %v", err)
 	}
@@ -1167,7 +1169,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 
 	// Verify all 11 users exist
-	users, _, err := s.ListUsers(nil, model.ListOptions{})
+	users, _, err := s.ListUsers(context.TODO(), model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list users: %v", err)
 	}
@@ -1176,7 +1178,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 
 	// Verify all 5 groups exist
-	groups, _, err := s.ListGroups(nil, model.ListOptions{})
+	groups, _, err := s.ListGroups(context.TODO(), model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list groups: %v", err)
 	}
@@ -1185,33 +1187,33 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 
 	// Verify manager chain is correct (Alice->Eve, Bob->Eve, Eve->Frank, Frank->Admin, Diana->Admin)
-	alice, err := s.GetUserByUPN(nil, "alice.smith@saldeti.local")
+	alice, err := s.GetUserByUPN(context.TODO(), "alice.smith@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Alice: %v", err)
 	}
-	bob, err := s.GetUserByUPN(nil, "bob.jones@saldeti.local")
+	bob, err := s.GetUserByUPN(context.TODO(), "bob.jones@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Bob: %v", err)
 	}
-	eve, err := s.GetUserByUPN(nil, "eve.wilson@saldeti.local")
+	eve, err := s.GetUserByUPN(context.TODO(), "eve.wilson@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Eve: %v", err)
 	}
-	frank, err := s.GetUserByUPN(nil, "frank.miller@saldeti.local")
+	frank, err := s.GetUserByUPN(context.TODO(), "frank.miller@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Frank: %v", err)
 	}
-	admin, err := s.GetUserByUPN(nil, "admin@saldeti.local")
+	admin, err := s.GetUserByUPN(context.TODO(), "admin@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Admin: %v", err)
 	}
-	diana, err := s.GetUserByUPN(nil, "diana.palmer@saldeti.local")
+	diana, err := s.GetUserByUPN(context.TODO(), "diana.palmer@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Diana: %v", err)
 	}
 
 	// Alice's manager is Eve
-	aliceManager, err := s.GetManager(nil, alice.ID)
+	aliceManager, err := s.GetManager(context.TODO(), alice.ID)
 	if err != nil {
 		t.Errorf("Failed to get Alice's manager: %v", err)
 	}
@@ -1220,7 +1222,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 
 	// Bob's manager is Eve
-	bobManager, err := s.GetManager(nil, bob.ID)
+	bobManager, err := s.GetManager(context.TODO(), bob.ID)
 	if err != nil {
 		t.Errorf("Failed to get Bob's manager: %v", err)
 	}
@@ -1229,7 +1231,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 
 	// Eve's manager is Frank
-	eveManager, err := s.GetManager(nil, eve.ID)
+	eveManager, err := s.GetManager(context.TODO(), eve.ID)
 	if err != nil {
 		t.Errorf("Failed to get Eve's manager: %v", err)
 	}
@@ -1238,7 +1240,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 
 	// Frank's manager is Admin
-	frankManager, err := s.GetManager(nil, frank.ID)
+	frankManager, err := s.GetManager(context.TODO(), frank.ID)
 	if err != nil {
 		t.Errorf("Failed to get Frank's manager: %v", err)
 	}
@@ -1247,7 +1249,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 
 	// Diana's manager is Admin
-	dianaManager, err := s.GetManager(nil, diana.ID)
+	dianaManager, err := s.GetManager(context.TODO(), diana.ID)
 	if err != nil {
 		t.Errorf("Failed to get Diana's manager: %v", err)
 	}
@@ -1260,7 +1262,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to find Engineering Team: %v", err)
 	}
-	engMembers, _, err := s.ListMembers(nil, engGroup.ID, model.ListOptions{})
+	engMembers, _, err := s.ListMembers(context.TODO(), engGroup.ID, model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list Engineering Team members: %v", err)
 	}
@@ -1272,7 +1274,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 		"grace.lee@saldeti.local":   false,
 	}
 	for _, member := range engMembers {
-		user, err := s.GetUser(nil, member.ID)
+		user, err := s.GetUser(context.TODO(), member.ID)
 		if err != nil {
 			t.Errorf("Failed to get member by ID: %v", err)
 			continue
@@ -1294,7 +1296,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to find All Staff: %v", err)
 	}
-	allStaffMembers, _, err := s.ListMembers(nil, allStaffGroup.ID, model.ListOptions{})
+	allStaffMembers, _, err := s.ListMembers(context.TODO(), allStaffGroup.ID, model.ListOptions{})
 	if err != nil {
 		t.Errorf("Failed to list All Staff members: %v", err)
 	}

@@ -57,7 +57,7 @@ func UserSetManagerHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleManagerResponse(c, id, FlashDanger, "Failed to set manager. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusNoContent {
 			respBody, _ := io.ReadAll(resp.Body)
@@ -100,7 +100,7 @@ func UserRemoveManagerHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleManagerResponse(c, id, FlashDanger, "Failed to remove manager. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusNoContent {
 			respBody, _ := io.ReadAll(resp.Body)

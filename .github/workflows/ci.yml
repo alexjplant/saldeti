@@ -7,13 +7,33 @@ on:
     branches: [main]
 
 jobs:
-  lint:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
-      # lint runs: go vet ./...
-      - run: mise run lint
+      - run: go build ./...
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "The following files need gofmt:"
+            gofmt -l .
+            exit 1
+          fi
+
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
 
   test:
     runs-on: ubuntu-latest

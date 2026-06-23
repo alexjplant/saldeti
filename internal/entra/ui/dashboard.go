@@ -62,7 +62,7 @@ func DashboardHandler(h *UIHandler) gin.HandlerFunc {
 				securityGroups++
 			}
 			gt := group.GetGroupTypes()
-			if gt != nil && len(gt) > 0 {
+			if len(gt) > 0 {
 				unifiedGroups++
 			}
 		}

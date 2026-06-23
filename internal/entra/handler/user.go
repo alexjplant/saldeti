@@ -81,7 +81,9 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 								// Fallback: use DirectoryObject with nested select
 								mgrJSON, _ := json.Marshal(mgr)
 								var mgrMap map[string]interface{}
-								json.Unmarshal(mgrJSON, &mgrMap)
+								if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
+									mgrMap = map[string]interface{}{}
+								}
 								mgrMap = applySelect(mgrMap, expand.Select)
 								mgrMap["@odata.type"] = "#microsoft.graph.user"
 								userMap["manager"] = mgrMap
@@ -212,7 +214,9 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 					} else if len(expand.Select) > 0 {
 						mgrJSON, _ := json.Marshal(mgr)
 						var mgrMap map[string]interface{}
-						json.Unmarshal(mgrJSON, &mgrMap)
+						if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
+							mgrMap = map[string]interface{}{}
+						}
 						mgrMap = applySelect(mgrMap, expand.Select)
 						mgrMap["@odata.type"] = "#microsoft.graph.user"
 						response["manager"] = mgrMap
@@ -406,9 +410,7 @@ func parseExpandOptions(expandStr string) []model.ExpandOption {
 		if parenIdx >= 0 {
 			opt.Property = seg[:parenIdx]
 			inner := seg[parenIdx+9:] // len("($select=") is 9
-			if strings.HasSuffix(inner, ")") {
-				inner = inner[:len(inner)-1]
-			}
+			inner = strings.TrimSuffix(inner, ")")
 			fields := strings.Split(inner, ",")
 			for _, s := range fields {
 				s = strings.TrimSpace(s)

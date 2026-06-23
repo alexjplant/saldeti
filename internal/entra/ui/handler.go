@@ -113,5 +113,5 @@ func (h *UIHandler) renderPartial(c *gin.Context, templateName string, data gin.
 
 	c.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	c.Writer.WriteHeader(http.StatusOK)
-	buf.WriteTo(c.Writer)
+	_, _ = buf.WriteTo(c.Writer)
 }

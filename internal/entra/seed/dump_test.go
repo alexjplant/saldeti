@@ -320,11 +320,12 @@ func TestRoundTrip(t *testing.T) {
 		memberUPNs1 := make(map[string]bool)
 		memberGroupNames1 := make(map[string]bool)
 		for _, m := range members1 {
-			if m.ODataType == "#microsoft.graph.user" {
+			switch m.ODataType {
+			case "#microsoft.graph.user":
 				if u, err := s1.GetUser(ctx, m.ID); err == nil {
 					memberUPNs1[u.UserPrincipalName] = true
 				}
-			} else if m.ODataType == "#microsoft.graph.group" {
+			case "#microsoft.graph.group":
 				if grp, err := s1.GetGroup(ctx, m.ID); err == nil {
 					memberGroupNames1[grp.DisplayName] = true
 				}
@@ -333,11 +334,12 @@ func TestRoundTrip(t *testing.T) {
 		memberUPNs2 := make(map[string]bool)
 		memberGroupNames2 := make(map[string]bool)
 		for _, m := range members2 {
-			if m.ODataType == "#microsoft.graph.user" {
+			switch m.ODataType {
+			case "#microsoft.graph.user":
 				if u, err := s2.GetUser(ctx, m.ID); err == nil {
 					memberUPNs2[u.UserPrincipalName] = true
 				}
-			} else if m.ODataType == "#microsoft.graph.group" {
+			case "#microsoft.graph.group":
 				if grp, err := s2.GetGroup(ctx, m.ID); err == nil {
 					memberGroupNames2[grp.DisplayName] = true
 				}

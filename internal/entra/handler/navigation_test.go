@@ -34,7 +34,6 @@ func TestListUserMemberOf(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create 2 groups
-	var groupIDs []string
 	for i := 1; i <= 2; i++ {
 		securityEnabled := true
 		group := model.Group{
@@ -44,7 +43,6 @@ func TestListUserMemberOf(t *testing.T) {
 		}
 		createdGroup, err := store.CreateGroup(ctx, group)
 		require.NoError(t, err)
-		groupIDs = append(groupIDs, createdGroup.ID)
 
 		// Add user to group
 		err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
@@ -406,7 +404,6 @@ func TestDirectReports(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create 3 direct reports
-	var reportIDs []string
 	for i := 1; i <= 3; i++ {
 		user := model.User{
 			DisplayName:       fmt.Sprintf("Report %d", i),
@@ -416,7 +413,6 @@ func TestDirectReports(t *testing.T) {
 		}
 		createdUser, err := store.CreateUser(ctx, user)
 		require.NoError(t, err)
-		reportIDs = append(reportIDs, createdUser.ID)
 
 		// Set manager
 		err = store.SetManager(ctx, createdUser.ID, createdManager.ID)
@@ -527,9 +523,10 @@ func TestGetByIds(t *testing.T) {
 	for _, item := range value {
 		obj, ok := item.(map[string]interface{})
 		require.True(t, ok)
-		if obj["@odata.type"] == "#microsoft.graph.user" {
+		switch obj["@odata.type"] {
+		case "#microsoft.graph.user":
 			userCount++
-		} else if obj["@odata.type"] == "#microsoft.graph.group" {
+		case "#microsoft.graph.group":
 			groupCount++
 			assert.Equal(t, "Test Group", obj["displayName"])
 		}

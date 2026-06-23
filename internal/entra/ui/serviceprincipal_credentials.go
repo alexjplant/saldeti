@@ -57,7 +57,7 @@ func SPAddPasswordHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleSPCredentialResponse(c, id, FlashDanger, "Failed to add password. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
@@ -111,7 +111,7 @@ func SPRemovePasswordHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleSPCredentialResponse(c, id, FlashDanger, "Failed to remove password. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
@@ -189,7 +189,7 @@ func SPAddKeyHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleSPCredentialResponse(c, id, FlashDanger, "Failed to add key. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			body, _ := io.ReadAll(resp.Body)
@@ -243,7 +243,7 @@ func SPRemoveKeyHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleSPCredentialResponse(c, id, FlashDanger, "Failed to remove key. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)

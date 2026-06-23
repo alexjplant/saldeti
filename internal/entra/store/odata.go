@@ -90,7 +90,7 @@ func structToMap(item interface{}) (map[string]interface{}, error) {
 	t := reflect.TypeOf(item)
 
 	// Handle pointers
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 		t = t.Elem()
 	}
@@ -109,7 +109,7 @@ func structToMap(item interface{}) (map[string]interface{}, error) {
 		jsonName := strings.Split(jsonTag, ",")[0]
 
 		// Handle zero values for pointers
-		if value.Kind() == reflect.Ptr {
+		if value.Kind() == reflect.Pointer {
 			if value.IsNil() {
 				result[jsonName] = nil
 			} else {
@@ -140,7 +140,7 @@ func mapToStruct[T any](m map[string]interface{}) (T, error) {
 		if val, ok := m[jsonName]; ok {
 			fieldValue := v.Field(i)
 
-			if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.Kind() == reflect.Pointer {
 				if val == nil {
 					fieldValue.Set(reflect.Zero(fieldValue.Type()))
 				} else {
@@ -245,7 +245,6 @@ type filterNode struct {
 	value      interface{}
 	property   string
 	function   string
-	args       []*filterNode
 	nestedPath string // for any() with nested property access, e.g., "skuId" from "a/skuId"
 }
 
@@ -271,9 +270,10 @@ func parseOr(expr string) *filterNode {
 			depth := 1
 			j := i + 1
 			for ; j < len(expr) && depth > 0; j++ {
-				if expr[j] == '(' {
+				switch expr[j] {
+				case '(':
 					depth++
-				} else if expr[j] == ')' {
+				case ')':
 					depth--
 				}
 			}
@@ -322,9 +322,10 @@ func parseAnd(expr string) *filterNode {
 			depth := 1
 			j := i + 1
 			for ; j < len(expr) && depth > 0; j++ {
-				if expr[j] == '(' {
+				switch expr[j] {
+				case '(':
 					depth++
-				} else if expr[j] == ')' {
+				case ')':
 					depth--
 				}
 			}
@@ -651,7 +652,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 				for i := 0; i < rv.Len(); i++ {
 					elem := rv.Index(i)
 					// Dereference pointer if needed
-					if elem.Kind() == reflect.Ptr {
+					if elem.Kind() == reflect.Pointer {
 						elem = elem.Elem()
 					}
 					if elem.Kind() != reflect.Struct {
@@ -723,7 +724,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 // getNestedFieldValue gets a field value from a struct by JSON tag name.
 // Supports dot-separated nested paths (e.g., "skuId" or "nested.prop").
 func getNestedFieldValue(v reflect.Value, jsonPath string) interface{} {
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	if v.Kind() != reflect.Struct {
@@ -748,7 +749,7 @@ func getNestedFieldValue(v reflect.Value, jsonPath string) interface{} {
 		jsonName := strings.Split(jsonTag, ",")[0]
 		if jsonName == targetField {
 			fieldValue := v.Field(i)
-			if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.Kind() == reflect.Pointer {
 				if fieldValue.IsNil() {
 					return nil
 				}

@@ -48,11 +48,11 @@ go test ./test/... -v -count=1 -tags=e2e,entra,google "$@"
 """
 
 [tasks.lint]
-description = "Runs go vet"
+description = "Runs golangci-lint"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go vet ./...
+golangci-lint run ./...
 """
 
 [tasks.run]

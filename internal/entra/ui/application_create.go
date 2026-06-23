@@ -95,7 +95,7 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 						if httpErr != nil {
 							err = fmt.Errorf("HTTP request failed: %w", httpErr)
 						} else {
-							defer resp.Body.Close()
+							defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 							if resp.StatusCode != http.StatusCreated {
 								body, _ := io.ReadAll(resp.Body)

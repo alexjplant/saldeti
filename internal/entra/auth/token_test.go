@@ -34,7 +34,7 @@ func TestMintToken(t *testing.T) {
 	assert.Equal(t, subject, claims.Subject)
 	assert.Equal(t, scopes, claims.Scopes)
 	assert.Equal(t, roles, claims.Roles)
-	assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
+	assert.True(t, claims.ExpiresAt.After(time.Now()))
 }
 
 func TestValidateToken_Invalid(t *testing.T) {

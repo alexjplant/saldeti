@@ -68,7 +68,7 @@ func SetSigningKey(key []byte) {
 	// Generate a short hash of the key for logging
 	hash := sha256.Sum256(k)
 	shortHash := hex.EncodeToString(hash[:])[:16]
-	if k == nil || len(k) == 0 {
+	if len(k) == 0 {
 		log.Warn().Msg("JWT signing key is empty")
 	} else if len(k) < 32 {
 		log.Warn().Int("key_len", len(k)).Msg("JWT signing key is less than 32 bytes (insecure)")

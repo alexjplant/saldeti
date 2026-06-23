@@ -346,7 +346,7 @@ func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
 				fieldValue := v.Field(i)
 
 				// Handle pointer fields
-				if fieldValue.Kind() == reflect.Ptr {
+				if fieldValue.Kind() == reflect.Pointer {
 					if patchValue == nil {
 						// Set pointer to nil
 						fieldValue.Set(reflect.Zero(fieldValue.Type()))
@@ -409,7 +409,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 	// Handle map[string]interface{} → struct conversion via JSON round-trip
 	if mapVal, ok := value.(map[string]interface{}); ok {
 		resolvedTarget := targetType
-		if resolvedTarget.Kind() == reflect.Ptr {
+		if resolvedTarget.Kind() == reflect.Pointer {
 			resolvedTarget = resolvedTarget.Elem()
 		}
 		if resolvedTarget.Kind() == reflect.Struct {
@@ -421,7 +421,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 			if err := json.Unmarshal(jsonBytes, result); err != nil {
 				return reflect.Value{}, fmt.Errorf("cannot convert map to %s: %w", resolvedTarget.Name(), err)
 			}
-			if targetType.Kind() != reflect.Ptr {
+			if targetType.Kind() != reflect.Pointer {
 				return reflect.ValueOf(result).Elem(), nil
 			}
 			return reflect.ValueOf(result), nil
@@ -431,7 +431,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 	// Handle []interface{} → slice conversion via JSON round-trip
 	if sliceVal, ok := value.([]interface{}); ok {
 		resolvedTarget := targetType
-		if resolvedTarget.Kind() == reflect.Ptr {
+		if resolvedTarget.Kind() == reflect.Pointer {
 			resolvedTarget = resolvedTarget.Elem()
 		}
 		if resolvedTarget.Kind() == reflect.Slice {
@@ -759,19 +759,20 @@ func (s *memoryStore) AddMember(ctx context.Context, groupID, objectID, objectTy
 	}
 
 	// Check if object exists
-	if objectType == "user" {
+	switch objectType {
+	case "user":
 		if _, exists := s.users[objectID]; !exists {
 			return ErrUserNotFound
 		}
-	} else if objectType == "group" {
+	case "group":
 		if _, exists := s.groups[objectID]; !exists {
 			return ErrGroupNotFound
 		}
-	} else if objectType == "servicePrincipal" {
+	case "servicePrincipal":
 		if _, exists := s.servicePrincipals[objectID]; !exists {
 			return ErrObjectNotFound
 		}
-	} else {
+	default:
 		return ErrInvalidObjType
 	}
 
@@ -963,19 +964,20 @@ func (s *memoryStore) AddOwner(ctx context.Context, groupID, objectID, objectTyp
 	}
 
 	// Check if object exists
-	if objectType == "user" {
+	switch objectType {
+	case "user":
 		if _, exists := s.users[objectID]; !exists {
 			return ErrUserNotFound
 		}
-	} else if objectType == "group" {
+	case "group":
 		if _, exists := s.groups[objectID]; !exists {
 			return ErrGroupNotFound
 		}
-	} else if objectType == "servicePrincipal" {
+	case "servicePrincipal":
 		if _, exists := s.servicePrincipals[objectID]; !exists {
 			return ErrObjectNotFound
 		}
-	} else {
+	default:
 		return ErrInvalidObjType
 	}
 

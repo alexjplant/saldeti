@@ -59,7 +59,7 @@ func UserAddLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleLicenseResponse(c, id, FlashDanger, "Failed to assign license. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)
@@ -117,7 +117,7 @@ func UserRemoveLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleLicenseResponse(c, id, FlashDanger, "Failed to remove license. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)

@@ -168,7 +168,7 @@ func main() {
 		for i := 0; i < 100; i++ {
 			if err := proc.Signal(syscall.Signal(0)); err != nil {
 				// Process has exited
-				os.Remove(*pidfile)
+				_ = os.Remove(*pidfile)
 				fmt.Fprintf(os.Stderr, "Server stopped\n")
 				os.Exit(0)
 			}
@@ -177,8 +177,8 @@ func main() {
 
 		// Force kill if still running
 		fmt.Fprintf(os.Stderr, "Server did not stop gracefully, killing...\n")
-		proc.Kill()
-		os.Remove(*pidfile)
+		_ = proc.Kill()
+		_ = os.Remove(*pidfile)
 		os.Exit(0)
 	}
 
@@ -214,14 +214,14 @@ func main() {
 				}
 			}
 			// PID file exists but process is not running — stale pidfile, remove it
-			os.Remove(*pidfile)
+			_ = os.Remove(*pidfile)
 		}
 		lf, err := os.OpenFile(*logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to open log file: %v\n", err)
 			os.Exit(1)
 		}
-		defer lf.Close()
+		defer func() { _ = lf.Close() }()
 
 		cmd := exec.Command(os.Args[0], os.Args[1:]...)
 		cmd.Env = append(os.Environ(), "SALDETI_CHILD=1")
@@ -236,13 +236,13 @@ func main() {
 
 		if err := os.WriteFile(*pidfile, []byte(fmt.Sprintf("%d\n", cmd.Process.Pid)), 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write PID file: %v\n", err)
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 			os.Exit(1)
 		}
 
 		fmt.Fprintf(os.Stderr, "Daemon started with PID %d\n  Log: %s\n  PID: %s\n  Stop: %s -stop -pidfile %s\n",
 			cmd.Process.Pid, *logfile, *pidfile, os.Args[0], *pidfile)
-		lf.Close()
+		_ = lf.Close()
 		os.Exit(0)
 	}
 

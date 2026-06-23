@@ -1181,7 +1181,6 @@ func TestListMembersByTypeWithCount(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create 2 users and add as members
-	var userIDs []string
 	for i := 1; i <= 2; i++ {
 		accountEnabled := true
 		user := model.User{
@@ -1192,7 +1191,6 @@ func TestListMembersByTypeWithCount(t *testing.T) {
 		}
 		createdUser, err := store.CreateUser(ctx, user)
 		require.NoError(t, err)
-		userIDs = append(userIDs, createdUser.ID)
 		err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
 		require.NoError(t, err)
 	}

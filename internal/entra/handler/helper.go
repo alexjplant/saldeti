@@ -128,11 +128,11 @@ func buildEntityResponse(odataCtx string, entity any) (map[string]interface{}, e
 	}
 	entityJSON, err := json.Marshal(entity)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal entity: %w", err)
+		return nil, fmt.Errorf("failed to marshal entity: %w", err)
 	}
 	var entityMap map[string]interface{}
 	if err := json.Unmarshal(entityJSON, &entityMap); err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal entity: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal entity: %w", err)
 	}
 	for k, v := range entityMap {
 		response[k] = v
@@ -149,11 +149,11 @@ func buildEntityResponseWithType(odataCtx string, odataType string, entity any) 
 	}
 	entityJSON, err := json.Marshal(entity)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal entity: %w", err)
+		return nil, fmt.Errorf("failed to marshal entity: %w", err)
 	}
 	var entityMap map[string]interface{}
 	if err := json.Unmarshal(entityJSON, &entityMap); err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal entity: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal entity: %w", err)
 	}
 	for k, v := range entityMap {
 		response[k] = v
@@ -176,7 +176,10 @@ func applyNestedSelectToDirectoryObjects(objects []model.DirectoryObject, select
 			continue
 		}
 		var m map[string]interface{}
-		json.Unmarshal(objJSON, &m)
+		if err := json.Unmarshal(objJSON, &m); err != nil {
+			maps = append(maps, map[string]interface{}{})
+			continue
+		}
 		m = applySelect(m, selectFields)
 		maps = append(maps, m)
 	}
@@ -189,7 +192,9 @@ func applyNestedSelectToDirectoryObjects(objects []model.DirectoryObject, select
 func applyNestedSelectToUser(user *model.User, selectFields []string) map[string]interface{} {
 	userJSON, _ := json.Marshal(user)
 	var m map[string]interface{}
-	json.Unmarshal(userJSON, &m)
+	if err := json.Unmarshal(userJSON, &m); err != nil {
+		return map[string]interface{}{"@odata.type": "#microsoft.graph.user"}
+	}
 	if len(selectFields) > 0 {
 		m = applySelect(m, selectFields)
 	}
