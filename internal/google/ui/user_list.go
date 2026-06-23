@@ -35,7 +35,11 @@ func UserListHandler(h *UIHandler) gin.HandlerFunc {
 		if search != "" {
 			var filtered []model.User
 			for _, u := range users {
-				if containsIgnoreCase(u.PrimaryEmail, search) || containsIgnoreCase(u.DisplayName, search) || containsIgnoreCase(u.GivenName, search) || containsIgnoreCase(u.FamilyName, search) {
+				matches := containsIgnoreCase(u.PrimaryEmail, search)
+				if !matches && u.Name != nil {
+					matches = containsIgnoreCase(u.Name.GivenName, search) || containsIgnoreCase(u.Name.FamilyName, search) || containsIgnoreCase(u.Name.FullName, search)
+				}
+				if matches {
 					filtered = append(filtered, u)
 				}
 			}

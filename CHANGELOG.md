@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed the JWT signing key from startup logs.
 - Fixed OIDC trust headers and documented the authorization code flow.
+- Migrated verification code generation from `math/rand` to `crypto/rand` for cryptographically secure codes.
+- Replaced plaintext client secret comparison with constant-time comparison (`crypto/subtle`) to prevent timing attacks.
+- Set CSRF cookie `Secure` flag to `true` for HTTPS-only operation.
 
 ### Removed
 

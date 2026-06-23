@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -157,6 +158,11 @@ func decodePageToken(token string) int {
 
 // Generic patch helper using JSON round-trip
 func applyPatchMap(data interface{}, patch map[string]interface{}) error {
+	// Snapshot json:"-" fields before round-trip. Fields tagged json:"-"
+	// are omitted during marshal and cannot be repopulated during unmarshal,
+	// so they would be silently zeroed by the round-trip below.
+	savedFields := extractJsonIgnoreFields(data)
+
 	original, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -172,7 +178,50 @@ func applyPatchMap(data interface{}, patch map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(merged, data)
+	if err := json.Unmarshal(merged, data); err != nil {
+		return err
+	}
+
+	// Restore json:"-" field values that did not survive the round-trip.
+	restoreJsonIgnoreFields(data, savedFields)
+	return nil
+}
+
+// extractJsonIgnoreFields returns detached copies of the values of every
+// top-level struct field on data tagged `json:"-"`. data must be a pointer to
+// a struct. Iteration order matches field declaration order, which is stable
+// across calls, so the returned slice can be passed back to
+// restoreJsonIgnoreFields to set fields in the same order.
+func extractJsonIgnoreFields(data interface{}) []reflect.Value {
+	v := reflect.ValueOf(data).Elem()
+	t := v.Type()
+	var saved []reflect.Value
+	for i := 0; i < v.NumField(); i++ {
+		if t.Field(i).Tag.Get("json") == "-" {
+			fieldVal := v.Field(i)
+			copyVal := reflect.New(fieldVal.Type()).Elem()
+			copyVal.Set(fieldVal)
+			saved = append(saved, copyVal)
+		}
+	}
+	return saved
+}
+
+// restoreJsonIgnoreFields sets every top-level struct field on data tagged
+// `json:"-"` back to the corresponding value in saved (matched by position).
+// It is a no-op when saved is empty (e.g. the struct has no json:"-" fields).
+func restoreJsonIgnoreFields(data interface{}, saved []reflect.Value) {
+	v := reflect.ValueOf(data).Elem()
+	t := v.Type()
+	idx := 0
+	for i := 0; i < v.NumField(); i++ {
+		if t.Field(i).Tag.Get("json") == "-" {
+			if idx < len(saved) {
+				v.Field(i).Set(saved[idx])
+				idx++
+			}
+		}
+	}
 }
 
 // User key resolver

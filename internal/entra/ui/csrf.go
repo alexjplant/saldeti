@@ -12,10 +12,12 @@ const csrfCookieName = "saldeti_csrf"
 const csrfFormField = "csrf_token"
 const csrfContextKey = "csrf_token"
 
-func generateCSRFToken() string {
+func generateCSRFToken() (string, error) {
 	b := make([]byte, 32)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func csrfMiddleware() gin.HandlerFunc {
@@ -39,7 +41,12 @@ func csrfMiddleware() gin.HandlerFunc {
 		// overwriting the cookie between page render and form submit.
 		token, _ := c.Cookie(csrfCookieName)
 		if token == "" {
-			token = generateCSRFToken()
+			t, err := generateCSRFToken()
+			if err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+			token = t
 		}
 		c.SetSameSite(http.SameSiteLaxMode)
 		c.SetCookie(csrfCookieName, token, 3600, "/ui", "", true, false)

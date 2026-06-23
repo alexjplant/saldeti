@@ -30,7 +30,7 @@
                 <dt>Primary Email</dt><dd>{{.User.PrimaryEmail}}</dd>
                 <dt>Given Name</dt><dd>{{if .User.Name}}{{.User.Name.GivenName}}{{else}}{{.User.GivenName}}{{end}}</dd>
                 <dt>Family Name</dt><dd>{{if .User.Name}}{{.User.Name.FamilyName}}{{else}}{{.User.FamilyName}}{{end}}</dd>
-                <dt>Display Name</dt><dd>{{.User.DisplayName}}</dd>
+                <dt>Display Name</dt><dd>{{if .User.Name}}{{.User.Name.FullName}}{{else}}{{.User.DisplayName}}{{end}}</dd>
                 <dt>Org Unit Path</dt><dd>{{.User.OrgUnitPath}}</dd>
                 <dt>Customer ID</dt><dd>{{.User.CustomerID}}</dd>
             </dl>

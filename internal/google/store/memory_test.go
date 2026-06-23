@@ -644,3 +644,26 @@ func TestMemoryStore_Pagination(t *testing.T) {
 	total := len(page1) + len(page2) + len(page3)
 	assert.Equal(t, 25, total)
 }
+
+func TestMemoryStore_PatchUserPreservesJsonIgnoreFields(t *testing.T) {
+	ctx := context.Background()
+	s := NewMemoryStore()
+
+	created, err := s.CreateUser(ctx, model.User{
+		PrimaryEmail: "bob@example.com",
+		GivenName:    "Bob",
+		FamilyName:   "Jones",
+		DisplayName:  "Bob Jones",
+	})
+	require.NoError(t, err)
+
+	// Patch an unrelated field; the json:"-" name fields must survive the round-trip.
+	patched, err := s.PatchUser(ctx, created.ID, map[string]interface{}{
+		"orgUnitPath": "/Engineering",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "Bob", patched.GivenName, `GivenName (json:"-") must survive patch`)
+	assert.Equal(t, "Jones", patched.FamilyName, `FamilyName (json:"-") must survive patch`)
+	assert.Equal(t, "Bob Jones", patched.DisplayName, `DisplayName (json:"-") must survive patch`)
+	assert.Equal(t, "/Engineering", patched.OrgUnitPath)
+}
