@@ -265,6 +265,11 @@ func createServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
+		// Set OData type if not provided
+		if sp.ODataType == "" {
+			sp.ODataType = "#microsoft.graph.servicePrincipal"
+		}
+
 		createdSP, err := st.CreateServicePrincipal(c.Request.Context(), sp)
 		if err != nil {
 			if errors.Is(err, store.ErrApplicationNotFound) {

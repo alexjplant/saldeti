@@ -104,7 +104,20 @@ func processBatchSubRequests(c *gin.Context, engine *gin.Engine, requests []Batc
 
 		var responseBody map[string]interface{}
 		if w.Body.Len() > 0 {
-			_ = json.Unmarshal(w.Body.Bytes(), &responseBody)
+			if err := json.Unmarshal(w.Body.Bytes(), &responseBody); err != nil {
+				log.Error().
+					Err(err).
+					Str("sub_id", sub.ID).
+					Str("sub_url", sub.URL).
+					Int("status", w.Code).
+					Msg("Failed to unmarshal batch sub-response body")
+				responseBody = map[string]interface{}{
+					"error": gin.H{
+						"code":    "InternalError",
+						"message": "Failed to parse sub-response body",
+					},
+				}
+			}
 		}
 
 		responses = append(responses, BatchSubResponse{

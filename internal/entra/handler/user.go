@@ -79,14 +79,19 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 								userMap["manager"] = applyNestedSelectToUser(mgrUser, expand.Select)
 							} else if len(expand.Select) > 0 {
 								// Fallback: use DirectoryObject with nested select
-								mgrJSON, _ := json.Marshal(mgr)
-								var mgrMap map[string]interface{}
-								if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
-									mgrMap = map[string]interface{}{}
+								mgrJSON, marshalErr := json.Marshal(mgr)
+								if marshalErr != nil {
+									// Can't serialize as map; fall back to raw object
+									userMap["manager"] = mgr
+								} else {
+									var mgrMap map[string]interface{}
+									if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
+										mgrMap = map[string]interface{}{}
+									}
+									mgrMap = applySelect(mgrMap, expand.Select)
+									mgrMap["@odata.type"] = "#microsoft.graph.user"
+									userMap["manager"] = mgrMap
 								}
-								mgrMap = applySelect(mgrMap, expand.Select)
-								mgrMap["@odata.type"] = "#microsoft.graph.user"
-								userMap["manager"] = mgrMap
 							} else {
 								userMap["manager"] = mgr
 							}
@@ -212,14 +217,19 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 					if mgrErr == nil && mgrUser != nil {
 						response["manager"] = applyNestedSelectToUser(mgrUser, expand.Select)
 					} else if len(expand.Select) > 0 {
-						mgrJSON, _ := json.Marshal(mgr)
-						var mgrMap map[string]interface{}
-						if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
-							mgrMap = map[string]interface{}{}
+						mgrJSON, marshalErr := json.Marshal(mgr)
+						if marshalErr != nil {
+							// Can't serialize as map; fall back to raw object
+							response["manager"] = mgr
+						} else {
+							var mgrMap map[string]interface{}
+							if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
+								mgrMap = map[string]interface{}{}
+							}
+							mgrMap = applySelect(mgrMap, expand.Select)
+							mgrMap["@odata.type"] = "#microsoft.graph.user"
+							response["manager"] = mgrMap
 						}
-						mgrMap = applySelect(mgrMap, expand.Select)
-						mgrMap["@odata.type"] = "#microsoft.graph.user"
-						response["manager"] = mgrMap
 					} else {
 						response["manager"] = mgr
 					}
