@@ -20,8 +20,8 @@ mise run build
 # Run with Entra ID simulator (default)
 ./bin/saldeti -port 9443
 
-# Run with both Entra ID and Google Workspace simulators
-./bin/saldeti -port 9443 --google
+# Run with the Google Workspace simulator (use -mode google; entra is the default and the two modes are mutually exclusive)
+./bin/saldeti -port 9443 -mode google
 
 # Run with seed data and persist changes on shutdown
 ./bin/saldeti -port 9443 -seed examples/seed.json -dump snapshot.json
@@ -34,7 +34,7 @@ curl -X POST http://localhost:9443/<tenant-id>/oauth2/v2.0/token \
   -d "scope=User.Read.All Group.Read.All"
 ```
 
-Management UI available at `/ui` (Entra) or `/google-ui/` (Google) after starting the server.
+Management UI available at `/ui` (entra mode, default) or `/google-ui/` (google mode) after starting the server.
 
 ## Development
 

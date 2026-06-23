@@ -13,4 +13,4 @@ docs-site/.vitepress/dist/
 docs-site/.vitepress/cache/
 
 # Compiled binary
-saldeti
+/saldeti

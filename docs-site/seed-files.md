@@ -9,16 +9,15 @@ Seed files let you pre-populate the Saldeti simulator with realistic data on sta
 
 ## Overview
 
-Pass a seed file with the `-seed` flag for Entra ID or the `-google-seed` flag for Google Workspace:
+Pass a seed file with the `-seed` flag (the file loaded depends on the active `-mode`):
 
 ```sh
-saldeti -seed examples/seed.json                       # Entra ID mode
-saldeti -google -google-seed examples/google-seed.json  # Google Workspace mode
-saldeti -google -google-seed examples/google-seed.json -seed examples/seed.json  # Both modes simultaneously
+saldeti -seed examples/seed.json                       # Entra ID mode (default)
+saldeti -mode google -seed examples/google-seed.json   # Google Workspace mode
 ```
 
 ::: tip
-Both Entra ID and Google Workspace seed loading are supported. Use `-seed` for Entra ID seed files and `-google-seed` for Google Workspace seed files.
+The `-seed` flag loads whichever mode is active. Use `-mode entra -seed examples/seed.json` for Entra ID or `-mode google -seed examples/google-seed.json` for Google Workspace.
 :::
 
 The simulator parses the file at startup and creates all the declared resources in memory. There is no database — everything lives in process memory, so restarting with a different seed file gives you a completely fresh environment.
@@ -100,7 +99,7 @@ Index-based references are order-dependent. If you reorder the `users` array, al
 The Google Workspace seed file follows the schema defined in [`google-seed.schema.json`](https://raw.githubusercontent.com/saldeti/saldeti/main/schema/google-seed.schema.json).
 
 ::: tip
-Google Workspace seed loading is supported via the `-google-seed` flag. Use `-google -google-seed examples/google-seed.json` to load Google Workspace data on startup.
+Google Workspace seed loading uses the `-seed` flag in google mode. Use `-mode google -seed examples/google-seed.json` to load Google Workspace data on startup.
 :::
 
 ### Top-level properties
@@ -116,6 +115,7 @@ Google Workspace seed loading is supported via the `-google-seed` flag. Use `-go
 | `domains` | array | No | Domains associated with the Google Workspace account. |
 | `chromeos_devices` | array | No | Chrome OS devices to register. |
 | `mobile_devices` | array | No | Mobile devices to register. |
+| `group_settings` | array | No | Per-group settings (Groups Settings API). Each requires `group_email`. |
 
 ### Minimal Google Workspace example
 

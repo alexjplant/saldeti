@@ -95,6 +95,14 @@ func newEngine() *gin.Engine {
 	return r
 }
 
+// validateMode returns an error if mode is not "entra" or "google".
+func validateMode(mode string) error {
+	if mode != "entra" && mode != "google" {
+		return fmt.Errorf("invalid mode %q; must be 'entra' or 'google'", mode)
+	}
+	return nil
+}
+
 func main() {
 	port := flag.Int("port", 9443, "Port to listen on")
 	uiEnabled := flag.Bool("ui", true, "Enable admin UI")
@@ -123,8 +131,8 @@ func main() {
 	flag.Parse()
 
 	// Validate mode
-	if *mode != "entra" && *mode != "google" {
-		log.Fatal().Str("mode", *mode).Msg("Invalid mode; must be 'entra' or 'google'")
+	if err := validateMode(*mode); err != nil {
+		log.Fatal().Str("mode", *mode).Err(err).Msg("Invalid mode")
 	}
 
 	// Stop daemon mode: read PID file and send SIGTERM
