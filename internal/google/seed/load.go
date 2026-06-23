@@ -342,13 +342,17 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 
 	// 11. Create ChromeOS devices
 	for _, seedDevice := range cfg.ChromeOSDevices {
+		status := seedDevice.Status
+		if status == "" {
+			status = "ACTIVE"
+		}
 		device := model.ChromeOSDevice{
 			Kind:          "admin#directory#chromeosdevice",
 			SerialNumber:  seedDevice.SerialNumber,
 			AnnotatedUser: seedDevice.AnnotatedUser,
 			OrgUnitPath:   seedDevice.OrgUnitPath,
 			Notes:         seedDevice.Notes,
-			Status:        "ACTIVE",
+			Status:        status,
 		}
 		if _, err := s.CreateChromeOSDevice(ctx, customerID, device); err != nil {
 			return fmt.Errorf("failed to create ChromeOS device %s: %w", seedDevice.SerialNumber, err)

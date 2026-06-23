@@ -16,6 +16,9 @@
         },
         "notes": {
           "type": "string"
+        },
+        "status": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

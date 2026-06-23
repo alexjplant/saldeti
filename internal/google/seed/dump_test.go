@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/saldeti/saldeti/internal/google/store"
@@ -195,6 +196,46 @@ func TestGoogleDumpStoreEmpty(t *testing.T) {
 	}
 	if len(dumped.Clients) != 0 {
 		t.Errorf("Expected 0 clients on empty store, got %d", len(dumped.Clients))
+	}
+}
+
+func TestGoogleDumpStorePagination(t *testing.T) {
+	s := store.NewMemoryStore()
+
+	cfg := &GoogleSeedConfig{
+		Clients: []GoogleSeedClient{
+			{ClientID: "test-client", ClientSecret: "test-secret"},
+		},
+	}
+	// 101 users — exceeds the default page size of 100
+	for i := 1; i <= 101; i++ {
+		cfg.Users = append(cfg.Users, GoogleSeedUser{
+			PrimaryEmail: fmt.Sprintf("user%03d@example.com", i),
+			GivenName:    fmt.Sprintf("User%d", i),
+			FamilyName:   "Test",
+			OrgUnitPath:  "/",
+		})
+	}
+
+	if err := SeedFromConfig(s, cfg); err != nil {
+		t.Fatalf("SeedFromConfig failed: %v", err)
+	}
+
+	dumped, err := DumpStore(s)
+	if err != nil {
+		t.Fatalf("DumpStore failed: %v", err)
+	}
+
+	if len(dumped.Users) != 101 {
+		t.Fatalf("Expected 101 users (pagination must fetch all pages), got %d", len(dumped.Users))
+	}
+
+	// Verify sorted and complete
+	if dumped.Users[0].PrimaryEmail != "user001@example.com" {
+		t.Errorf("Expected first user user001@example.com, got %s", dumped.Users[0].PrimaryEmail)
+	}
+	if dumped.Users[100].PrimaryEmail != "user101@example.com" {
+		t.Errorf("Expected last user user101@example.com, got %s", dumped.Users[100].PrimaryEmail)
 	}
 }
 

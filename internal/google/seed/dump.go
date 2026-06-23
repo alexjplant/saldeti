@@ -9,6 +9,91 @@ import (
 	"github.com/saldeti/saldeti/internal/google/store"
 )
 
+func listAllUsers(ctx context.Context, s store.Store) ([]model.User, error) {
+	var all []model.User
+	pageToken := ""
+	for {
+		users, next, err := s.ListUsers(ctx, model.ListOptions{PageToken: pageToken})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, users...)
+		if next == "" {
+			break
+		}
+		pageToken = next
+	}
+	return all, nil
+}
+
+func listAllGroups(ctx context.Context, s store.Store) ([]model.Group, error) {
+	var all []model.Group
+	pageToken := ""
+	for {
+		groups, next, err := s.ListGroups(ctx, model.ListOptions{PageToken: pageToken})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, groups...)
+		if next == "" {
+			break
+		}
+		pageToken = next
+	}
+	return all, nil
+}
+
+func listAllMembers(ctx context.Context, s store.Store, groupKey string) ([]model.Member, error) {
+	var all []model.Member
+	pageToken := ""
+	for {
+		members, next, err := s.ListMembers(ctx, groupKey, model.ListOptions{PageToken: pageToken})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, members...)
+		if next == "" {
+			break
+		}
+		pageToken = next
+	}
+	return all, nil
+}
+
+func listAllChromeOSDevices(ctx context.Context, s store.Store, customerID string) ([]model.ChromeOSDevice, error) {
+	var all []model.ChromeOSDevice
+	pageToken := ""
+	for {
+		devices, next, err := s.ListChromeOSDevices(ctx, customerID, model.ListOptions{PageToken: pageToken})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, devices...)
+		if next == "" {
+			break
+		}
+		pageToken = next
+	}
+	return all, nil
+}
+
+func listAllMobileDevices(ctx context.Context, s store.Store, customerID string) ([]model.MobileDevice, error) {
+	var all []model.MobileDevice
+	pageToken := ""
+	for {
+		devices, next, err := s.ListMobileDevices(ctx, customerID, model.ListOptions{PageToken: pageToken})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, devices...)
+		if next == "" {
+			break
+		}
+		pageToken = next
+	}
+	return all, nil
+}
+
 // DumpStore serializes the Google Workspace runtime store back into a
 // GoogleSeedConfig suitable for marshalling to a seed JSON file. All entity
 // lists are sorted for deterministic output.
@@ -30,7 +115,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 	}
 
 	// ========== 2. Dump users (sorted by PrimaryEmail) ==========
-	users, _, err := s.ListUsers(ctx, model.ListOptions{})
+	users, err := listAllUsers(ctx, s)
 	if err != nil {
 		return nil, fmt.Errorf("dumping users: %w", err)
 	}
@@ -58,7 +143,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 	}
 
 	// ========== 3. Dump groups (sorted by Email) ==========
-	groups, _, err := s.ListGroups(ctx, model.ListOptions{})
+	groups, err := listAllGroups(ctx, s)
 	if err != nil {
 		return nil, fmt.Errorf("dumping groups: %w", err)
 	}
@@ -68,7 +153,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 
 	for _, g := range groups {
 		var memberEmails []string
-		members, _, err := s.ListMembers(ctx, g.Email, model.ListOptions{})
+		members, err := listAllMembers(ctx, s, g.Email)
 		if err != nil {
 			return nil, fmt.Errorf("dumping members of group %s: %w", g.Email, err)
 		}
@@ -94,7 +179,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 		})
 	}
 
-	// ========== 3b. Dump group settings (sorted by group Email) ==========
+	// ========== 4. Dump group settings (sorted by group Email) ==========
 	for _, g := range groups {
 		gs, err := s.GetGroupSettings(ctx, g.Email)
 		if err != nil {
@@ -172,7 +257,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 		}
 	}
 
-	// ========== 4. Dump org units (sorted by OrgUnitPath) ==========
+	// ========== 5. Dump org units (sorted by OrgUnitPath) ==========
 	orgUnits, err := s.ListOrgUnits(ctx, customerID)
 	if err != nil {
 		return nil, fmt.Errorf("dumping org units: %w", err)
@@ -189,7 +274,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 		})
 	}
 
-	// ========== 5. Dump roles (sorted by RoleName) ==========
+	// ========== 6. Dump roles (sorted by RoleName) ==========
 	roles, err := s.ListRoles(ctx, customerID)
 	if err != nil {
 		return nil, fmt.Errorf("dumping roles: %w", err)
@@ -212,7 +297,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 		roleIDToName[r.RoleId] = r.RoleName
 	}
 
-	// ========== 6. Dump role assignments ==========
+	// ========== 7. Dump role assignments ==========
 	// Resolve AssignedTo (user ID) back to email and RoleId back to role name.
 	roleAssignments, err := s.ListRoleAssignments(ctx, customerID)
 	if err != nil {
@@ -240,7 +325,7 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 		return cfg.RoleAssignments[i].RoleIDOrName < cfg.RoleAssignments[j].RoleIDOrName
 	})
 
-	// ========== 7. Dump domains (sorted by DomainName) ==========
+	// ========== 8. Dump domains (sorted by DomainName) ==========
 	domains, err := s.ListDomains(ctx, customerID)
 	if err != nil {
 		return nil, fmt.Errorf("dumping domains: %w", err)
@@ -255,8 +340,8 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 		})
 	}
 
-	// ========== 8. Dump ChromeOS devices (sorted by SerialNumber) ==========
-	chromeDevices, _, err := s.ListChromeOSDevices(ctx, customerID, model.ListOptions{})
+	// ========== 9. Dump ChromeOS devices (sorted by SerialNumber) ==========
+	chromeDevices, err := listAllChromeOSDevices(ctx, s, customerID)
 	if err != nil {
 		return nil, fmt.Errorf("dumping ChromeOS devices: %w", err)
 	}
@@ -269,11 +354,12 @@ func DumpStore(s store.Store) (*GoogleSeedConfig, error) {
 			AnnotatedUser: d.AnnotatedUser,
 			OrgUnitPath:   d.OrgUnitPath,
 			Notes:         d.Notes,
+			Status:        d.Status,
 		})
 	}
 
-	// ========== 9. Dump mobile devices (sorted by SerialNumber) ==========
-	mobileDevices, _, err := s.ListMobileDevices(ctx, customerID, model.ListOptions{})
+	// ========== 10. Dump mobile devices (sorted by SerialNumber) ==========
+	mobileDevices, err := listAllMobileDevices(ctx, s, customerID)
 	if err != nil {
 		return nil, fmt.Errorf("dumping mobile devices: %w", err)
 	}

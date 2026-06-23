@@ -193,7 +193,8 @@
       "serial_number": "CHROME-001-ABC",
       "annotated_user": "alice.smith@saldeti.com",
       "org_unit_path": "/Engineering",
-      "notes": "Engineering Chromebook - Alice"
+      "notes": "Engineering Chromebook - Alice",
+      "status": "ACTIVE"
     },
     {
       "serial_number": "CHROME-002-DEF",

@@ -55,7 +55,7 @@ type GoogleSeedRole struct {
 
 type GoogleSeedRoleAssignment struct {
 	AssignedToEmail string `json:"assigned_to_email"`
-	RoleIDOrName   string `json:"role_id_or_name"`
+	RoleIDOrName    string `json:"role_id_or_name"`
 }
 
 type GoogleSeedDomain struct {
@@ -68,6 +68,7 @@ type GoogleSeedChromeOSDevice struct {
 	AnnotatedUser string `json:"annotated_user,omitempty"`
 	OrgUnitPath   string `json:"org_unit_path,omitempty"`
 	Notes         string `json:"notes,omitempty"`
+	Status        string `json:"status,omitempty"`
 }
 
 type GoogleSeedMobileDevice struct {
