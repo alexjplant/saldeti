@@ -2,6 +2,21 @@
 
 A local API simulator for Microsoft Entra ID (Azure AD) and Google Workspace. saldeti mimics the Microsoft Graph API v1.0 and Google Workspace Admin SDK endpoints so you can develop and test directory-integrated applications without a real cloud tenant.
 
+## Features
+
+saldeti is a local simulator for **Microsoft Entra ID (Azure AD)** and **Google Workspace**. It stands up an HTTPS server that mimics the relevant directory APIs so you can develop and test against it entirely on your own machine.
+
+Key capabilities:
+
+- **Realistic API simulation** of Microsoft Graph v1.0 and Google Admin SDK directory endpoints.
+- **JSON seed files** for defining the initial state of users, groups, and other directory objects.
+- **Admin web UI** for browsing and managing simulated directory objects (`/ui` in Entra mode, `/google-ui/` in Google mode).
+- **Mutually exclusive Entra/Google modes** selected with a single `-mode entra|google` flag.
+- **Store dump on shutdown** (`-dump`) so changes made during a run can be persisted and reloaded.
+- **Self-signed TLS with no external dependencies** — no cloud account, SDK, or network access required.
+
+Use saldeti to develop and test directory-integrated applications without provisioning a real cloud tenant, and to run integration tests in CI without standing up infrastructure.
+
 ## Documentation
 
 Full documentation is available at [alexjplant.github.io](https://alexjplant.github.io/saldeti/).
@@ -12,6 +27,8 @@ Full documentation is available at [alexjplant.github.io](https://alexjplant.git
 - [Google Workspace Endpoints](https://alexjplant.github.io/saldeti/google-endpoints) -- Google Admin SDK coverage
 
 ## Quick Start
+
+**Prerequisite:** Install [mise](https://mise.jdx.dev/getting-started.html) first, which manages the Go toolchain and provides task automation.
 
 ```bash
 # Build
