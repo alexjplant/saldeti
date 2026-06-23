@@ -53,8 +53,8 @@ func getCustomerUsageReportHandler(st store.Store) gin.HandlerFunc {
 			reports = []model.UsageReport{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#reports#usageReports",
-			"etag":  "\"placeholder\"",
+			"kind":         "admin#reports#usageReports",
+			"etag":         "\"placeholder\"",
 			"usageReports": reports,
 		})
 	}
@@ -74,8 +74,8 @@ func getUserUsageReportHandler(st store.Store) gin.HandlerFunc {
 			reports = []model.UsageReport{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#reports#usageReports",
-			"etag":  "\"placeholder\"",
+			"kind":         "admin#reports#usageReports",
+			"etag":         "\"placeholder\"",
 			"usageReports": reports,
 		})
 	}
@@ -96,8 +96,8 @@ func getEntityUsageReportHandler(st store.Store) gin.HandlerFunc {
 			reports = []model.UsageReport{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#reports#usageReports",
-			"etag":  "\"placeholder\"",
+			"kind":         "admin#reports#usageReports",
+			"etag":         "\"placeholder\"",
 			"usageReports": reports,
 		})
 	}

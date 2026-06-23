@@ -70,8 +70,8 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 				err = fmt.Errorf("failed to get token for manual request: %w", tokenErr)
 			} else {
 				appPayload := map[string]interface{}{
-					"displayName":    displayName,
-					"@odata.type":    "#microsoft.graph.application",
+					"displayName": displayName,
+					"@odata.type": "#microsoft.graph.application",
 				}
 				if description := c.PostForm("description"); description != "" {
 					appPayload["description"] = description

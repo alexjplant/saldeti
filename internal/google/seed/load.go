@@ -146,13 +146,13 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 	for _, user := range cfg.Users {
 		displayName := strings.TrimSpace(user.GivenName + " " + user.FamilyName)
 		u := model.User{
-			Kind:          "admin#directory#user",
-			PrimaryEmail:  user.PrimaryEmail,
-			GivenName:     user.GivenName,
-			FamilyName:    user.FamilyName,
-			DisplayName:   displayName,
-			Suspended:     user.Suspended,
-			OrgUnitPath:   user.OrgUnitPath,
+			Kind:         "admin#directory#user",
+			PrimaryEmail: user.PrimaryEmail,
+			GivenName:    user.GivenName,
+			FamilyName:   user.FamilyName,
+			DisplayName:  displayName,
+			Suspended:    user.Suspended,
+			OrgUnitPath:  user.OrgUnitPath,
 		}
 		if displayName != "" {
 			u.Name = &model.UserName{
@@ -331,9 +331,9 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 	// 10. Create domains
 	for _, seedDomain := range cfg.Domains {
 		domain := model.Domain{
-			Kind:        "admin#directory#domain",
-			DomainName:  seedDomain.DomainName,
-			IsPrimary:   seedDomain.IsPrimary,
+			Kind:       "admin#directory#domain",
+			DomainName: seedDomain.DomainName,
+			IsPrimary:  seedDomain.IsPrimary,
 		}
 		if _, err := s.AddDomain(ctx, customerID, domain); err != nil {
 			return fmt.Errorf("failed to add domain %s: %w", seedDomain.DomainName, err)
@@ -363,10 +363,10 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 	for _, seedDevice := range cfg.MobileDevices {
 		device := model.MobileDevice{
 			Kind:         "admin#directory#mobiledevice",
-			SerialNumber:  seedDevice.SerialNumber,
+			SerialNumber: seedDevice.SerialNumber,
 			Model:        seedDevice.Model,
 			Os:           seedDevice.OS,
-			Status:        seedDevice.Status,
+			Status:       seedDevice.Status,
 		}
 		if _, err := s.CreateMobileDevice(ctx, customerID, device); err != nil {
 			return fmt.Errorf("failed to create mobile device %s: %w", seedDevice.SerialNumber, err)

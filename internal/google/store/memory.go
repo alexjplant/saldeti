@@ -49,8 +49,8 @@ type memoryStore struct {
 	roles           map[string]map[string]*model.Role
 	roleAssignments map[string]map[string]*model.RoleAssignment
 
-	customers    map[string]*model.Customer
-	domains      map[string]map[string]*model.Domain
+	customers     map[string]*model.Customer
+	domains       map[string]map[string]*model.Domain
 	domainAliases map[string]map[string]*model.DomainAlias
 
 	chromeDevices  map[string]map[string]*model.ChromeOSDevice
@@ -1788,10 +1788,10 @@ func (s *MemoryStore) GetCIGroupSecuritySettings(ctx context.Context, name strin
 		return nil, ErrNotFound
 	}
 	return &model.SecuritySettings{
-		Name:                name + "/securitySettings",
-		WhoCanJoin:          "ANYONE_CAN_JOIN",
+		Name:                 name + "/securitySettings",
+		WhoCanJoin:           "ANYONE_CAN_JOIN",
 		WhoCanViewMembership: "ALL_MEMBERS_CAN_VIEW",
-		WhoCanDiscoverGroup: "ALL_IN_DOMAIN_CAN_DISCOVER",
+		WhoCanDiscoverGroup:  "ALL_IN_DOMAIN_CAN_DISCOVER",
 	}, nil
 }
 

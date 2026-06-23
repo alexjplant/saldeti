@@ -464,14 +464,14 @@ func TestLoadFromFileValidation(t *testing.T) {
 			errMsg:  "manager_index 5 is out of range",
 		},
 		{
-			name: "invalid JSON",
-			json: `{ invalid json }`,
+			name:    "invalid JSON",
+			json:    `{ invalid json }`,
 			wantErr: true,
 			errMsg:  "failed to parse",
 		},
 		{
-			name: "file not found",
-			json: "",
+			name:    "file not found",
+			json:    "",
 			wantErr: true,
 			errMsg:  "failed to read seed file",
 		},
@@ -873,9 +873,9 @@ func TestSeedFromConfig_NestedGroups(t *testing.T) {
 				MemberUPNs:  []string{"user@example.com"},
 			},
 			{
-				DisplayName:        "Parent Group",
-				Description:         "A parent group",
-				MemberGroupNames:    []string{"Sub Group"},
+				DisplayName:      "Parent Group",
+				Description:      "A parent group",
+				MemberGroupNames: []string{"Sub Group"},
 			},
 		},
 	}
@@ -1266,10 +1266,10 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	}
 	// Should have Alice, Bob, Eve, Grace
 	expectedMembers := map[string]bool{
-		"alice.smith@saldeti.local":  false,
-		"bob.jones@saldeti.local":    false,
-		"eve.wilson@saldeti.local":   false,
-		"grace.lee@saldeti.local":    false,
+		"alice.smith@saldeti.local": false,
+		"bob.jones@saldeti.local":   false,
+		"eve.wilson@saldeti.local":  false,
+		"grace.lee@saldeti.local":   false,
 	}
 	for _, member := range engMembers {
 		user, err := s.GetUser(nil, member.ID)

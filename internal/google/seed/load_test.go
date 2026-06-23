@@ -524,11 +524,11 @@ func TestGoogleSeedFromConfig(t *testing.T) {
 		},
 		GroupSettings: []GoogleSeedGroupSettings{
 			{
-				GroupEmail:            "team@example.com",
-				WhoCanPostMessage:     "ALL_MEMBERS_CAN_POST",
-				AllowExternalMembers:  boolPtr(true),
-				IsArchived:            boolPtr(true),
-				PrimaryLanguage:       "en",
+				GroupEmail:           "team@example.com",
+				WhoCanPostMessage:    "ALL_MEMBERS_CAN_POST",
+				AllowExternalMembers: boolPtr(true),
+				IsArchived:           boolPtr(true),
+				PrimaryLanguage:      "en",
 			},
 		},
 	}

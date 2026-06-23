@@ -19,7 +19,6 @@ import (
 // E2E Tests: License Management
 // ============================================================================
 
-
 // TestListSubscribedSkus tests GET /v1.0/subscribedSkus endpoint
 func TestListSubscribedSkus(t *testing.T) {
 	tss := setupTestServer(t)

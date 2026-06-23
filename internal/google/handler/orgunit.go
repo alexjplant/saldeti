@@ -25,9 +25,9 @@ func listOrgUnitsHandler(st store.Store) gin.HandlerFunc {
 			orgUnits = []model.OrgUnit{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":               "admin#directory#orgUnits",
-			"etag":               "\"placeholder\"",
-			"organizationUnits":  orgUnits,
+			"kind":              "admin#directory#orgUnits",
+			"etag":              "\"placeholder\"",
+			"organizationUnits": orgUnits,
 		})
 	}
 }

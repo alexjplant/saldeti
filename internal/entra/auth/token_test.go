@@ -45,7 +45,7 @@ func TestValidateToken_Invalid(t *testing.T) {
 	// Test with expired token
 	token, err := MintToken("tenant", "client", "subject", []string{"scope"}, []string{"role"}, -time.Hour, "", "")
 	require.NoError(t, err)
-	
+
 	_, err = ValidateToken(token)
 	assert.Error(t, err)
 }

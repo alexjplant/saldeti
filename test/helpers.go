@@ -8,11 +8,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	absser "github.com/microsoft/kiota-abstractions-go/serialization"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	absser "github.com/microsoft/kiota-abstractions-go/serialization"
+	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/saldeti/saldeti/internal/entra/handler"
 	"github.com/saldeti/saldeti/internal/entra/store"

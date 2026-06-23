@@ -155,7 +155,7 @@ func TestListUsersWithSelect(t *testing.T) {
 
 	users := listResp["value"].([]interface{})
 	require.Len(t, users, 1)
-	
+
 	userMap := users[0].(map[string]interface{})
 	assert.Contains(t, userMap, "displayName")
 	assert.Contains(t, userMap, "id")
@@ -207,7 +207,7 @@ func TestListUsersWithTop(t *testing.T) {
 
 	users := listResp["value"].([]interface{})
 	assert.Len(t, users, 5)
-	
+
 	// Check for nextLink
 	assert.Contains(t, listResp, "@odata.nextLink")
 	nextLink := listResp["@odata.nextLink"].(string)
@@ -623,14 +623,14 @@ func TestODataFilterStartsWith(t *testing.T) {
 
 	users := listResp["value"].([]interface{})
 	assert.Len(t, users, 2) // Alice and Alex
-	
+
 	// Verify correct users
 	userNames := make([]string, len(users))
 	for i, u := range users {
 		userMap := u.(map[string]interface{})
 		userNames[i] = userMap["displayName"].(string)
 	}
-	
+
 	assert.Contains(t, userNames, "Alice")
 	assert.Contains(t, userNames, "Alex")
 	assert.NotContains(t, userNames, "Bob")
@@ -645,8 +645,8 @@ func TestODataFilterBoolean(t *testing.T) {
 
 	// Create users with different accountEnabled status
 	users := []struct {
-		name            string
-		accountEnabled  bool
+		name           string
+		accountEnabled bool
 	}{
 		{"Enabled User 1", true},
 		{"Enabled User 2", true},
@@ -654,7 +654,7 @@ func TestODataFilterBoolean(t *testing.T) {
 		{"Disabled User 2", false},
 		{"Enabled User 3", true},
 	}
-	
+
 	for i, u := range users {
 		accountEnabled := u.accountEnabled
 		user := model.User{
@@ -740,7 +740,7 @@ func TestODataOrderBy(t *testing.T) {
 
 	users := listResp["value"].([]interface{})
 	require.Len(t, users, 3)
-	
+
 	// Verify alphabetical order: Alice, Bob, Charlie
 	assert.Equal(t, "Alice", users[0].(map[string]interface{})["displayName"])
 	assert.Equal(t, "Bob", users[1].(map[string]interface{})["displayName"])
@@ -792,14 +792,14 @@ func TestODataSearch(t *testing.T) {
 	users := listResp["value"].([]interface{})
 	// Should match: Alice Smith, Alice Cooper, David Aliceson (contains "Alice")
 	assert.Len(t, users, 3)
-	
+
 	// Verify correct users
 	userNames := make([]string, len(users))
 	for i, u := range users {
 		userMap := u.(map[string]interface{})
 		userNames[i] = userMap["displayName"].(string)
 	}
-	
+
 	assert.Contains(t, userNames, "Alice Smith")
 	assert.Contains(t, userNames, "Alice Cooper")
 	assert.Contains(t, userNames, "David Aliceson")
@@ -827,14 +827,14 @@ func TestODataInvalidFilter(t *testing.T) {
 
 	// Should return 400 Bad Request, not 500 Internal Server Error
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	
+
 	// Verify error response
 	var errorResp map[string]interface{}
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &errorResp)
 	require.NoError(t, err)
-	
+
 	assert.Contains(t, errorResp, "error")
 	errorObj := errorResp["error"].(map[string]interface{})
 	assert.Contains(t, errorObj, "code")

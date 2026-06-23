@@ -12,23 +12,23 @@ type Token struct {
 }
 
 type ASP struct {
-	Kind               string `json:"kind"`
-	Etag               string `json:"etag,omitempty"`
-	CodeId             int64  `json:"codeId"`
-	CreationTime       string `json:"creationTime,omitempty"`
-	Name               string `json:"name,omitempty"`
-	UserKey            string `json:"userKey,omitempty"`
-	LastTimeUsed       string `json:"lastTimeUsed,omitempty"`
-	LastIp             string `json:"lastIp,omitempty"`
+	Kind         string `json:"kind"`
+	Etag         string `json:"etag,omitempty"`
+	CodeId       int64  `json:"codeId"`
+	CreationTime string `json:"creationTime,omitempty"`
+	Name         string `json:"name,omitempty"`
+	UserKey      string `json:"userKey,omitempty"`
+	LastTimeUsed string `json:"lastTimeUsed,omitempty"`
+	LastIp       string `json:"lastIp,omitempty"`
 }
 
 type VerificationCode struct {
-	Kind                    string `json:"kind"`
-	Etag                    string `json:"etag,omitempty"`
-	UserId                  string `json:"userId,omitempty"`
-	VerificationCode        string `json:"verificationCode,omitempty"`
-	VerificationMethod      string `json:"verificationMethod,omitempty"`
-	VerificationTimestamp   string `json:"verificationTimestamp,omitempty"`
+	Kind                  string `json:"kind"`
+	Etag                  string `json:"etag,omitempty"`
+	UserId                string `json:"userId,omitempty"`
+	VerificationCode      string `json:"verificationCode,omitempty"`
+	VerificationMethod    string `json:"verificationMethod,omitempty"`
+	VerificationTimestamp string `json:"verificationTimestamp,omitempty"`
 }
 
 type UserInvitation struct {

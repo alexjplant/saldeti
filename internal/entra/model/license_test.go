@@ -29,22 +29,22 @@ func TestDefaultSubscribedSkus(t *testing.T) {
 
 func TestFindSkuByPartNumber(t *testing.T) {
 	tests := []struct {
-		name         string
-		skuPartNum   string
-		expectFound  bool
-		expectSkuID  string
+		name        string
+		skuPartNum  string
+		expectFound bool
+		expectSkuID string
 	}{
 		{
 			name:        "ENTERPRISEPACK",
 			skuPartNum:  "ENTERPRISEPACK",
 			expectFound: true,
-			expectSkuID:  "6fd2c87f-b296-42f0-b197-1e91e994b900",
+			expectSkuID: "6fd2c87f-b296-42f0-b197-1e91e994b900",
 		},
 		{
 			name:        "SPE_E5",
 			skuPartNum:  "SPE_E5",
 			expectFound: true,
-			expectSkuID:  "06ebc4ee-1bb5-47dd-8120-11324bc54e06",
+			expectSkuID: "06ebc4ee-1bb5-47dd-8120-11324bc54e06",
 		},
 		{
 			name:        "NONEXISTENT",

@@ -26,15 +26,15 @@ type OAuth2PermissionGrant struct {
 
 // AppRoleAssignment represents an assignment of an app role to a principal
 type AppRoleAssignment struct {
-	ODataType             string     `json:"@odata.type,omitempty"`
-	ID                    string     `json:"id"`
-	AppRoleID             string     `json:"appRoleId"`
-	CreatedDateTime       *time.Time `json:"createdDateTime,omitempty"`
-	PrincipalDisplayName  string     `json:"principalDisplayName,omitempty"`
-	PrincipalID           string     `json:"principalId"`
-	PrincipalType         string     `json:"principalType,omitempty"`
-	ResourceDisplayName   string     `json:"resourceDisplayName,omitempty"`
-	ResourceID            string     `json:"resourceId"`
+	ODataType            string     `json:"@odata.type,omitempty"`
+	ID                   string     `json:"id"`
+	AppRoleID            string     `json:"appRoleId"`
+	CreatedDateTime      *time.Time `json:"createdDateTime,omitempty"`
+	PrincipalDisplayName string     `json:"principalDisplayName,omitempty"`
+	PrincipalID          string     `json:"principalId"`
+	PrincipalType        string     `json:"principalType,omitempty"`
+	ResourceDisplayName  string     `json:"resourceDisplayName,omitempty"`
+	ResourceID           string     `json:"resourceId"`
 }
 
 // PasswordCredential represents a password credential for an application or service principal
@@ -62,11 +62,11 @@ type KeyCredential struct {
 
 // ExtensionProperty represents a directory extension property
 type ExtensionProperty struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	DataType      string   `json:"dataType"`
-	TargetObjects []string `json:"targetObjects,omitempty"`
-	AppDisplayName string  `json:"appDisplayName,omitempty"`
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	DataType       string   `json:"dataType"`
+	TargetObjects  []string `json:"targetObjects,omitempty"`
+	AppDisplayName string   `json:"appDisplayName,omitempty"`
 }
 
 // ValidExtensionDataTypes defines the allowed values for ExtensionProperty.DataType
@@ -81,12 +81,12 @@ var ValidExtensionDataTypes = map[string]bool{
 
 // PermissionScope represents an OAuth2 permission scope defined by a service principal
 type PermissionScope struct {
-	ID                       string `json:"id"`
-	IsEnabled                *bool  `json:"isEnabled,omitempty"`
-	Type                     string `json:"type,omitempty"`
-	UserConsentDescription   string `json:"userConsentDescription,omitempty"`
-	UserConsentDisplayName   string `json:"userConsentDisplayName,omitempty"`
-	AdminConsentDescription  string `json:"adminConsentDescription,omitempty"`
-	AdminConsentDisplayName  string `json:"adminConsentDisplayName,omitempty"`
-	Value                    string `json:"value,omitempty"`
+	ID                      string `json:"id"`
+	IsEnabled               *bool  `json:"isEnabled,omitempty"`
+	Type                    string `json:"type,omitempty"`
+	UserConsentDescription  string `json:"userConsentDescription,omitempty"`
+	UserConsentDisplayName  string `json:"userConsentDisplayName,omitempty"`
+	AdminConsentDescription string `json:"adminConsentDescription,omitempty"`
+	AdminConsentDisplayName string `json:"adminConsentDisplayName,omitempty"`
+	Value                   string `json:"value,omitempty"`
 }

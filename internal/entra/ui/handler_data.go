@@ -39,7 +39,6 @@ func (h *UIHandler) fetchLicensePartialData(ctx context.Context, userID string) 
 	}, nil
 }
 
-
 // fetchAllUsers retrieves all users from Graph and converts them to model.User.
 func (h *UIHandler) fetchAllUsers(ctx context.Context) []model.User {
 	var allUsers []model.User

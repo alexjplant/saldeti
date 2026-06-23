@@ -3,42 +3,52 @@
 package ui_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/saldeti/saldeti/internal/entra/auth"
 	"github.com/saldeti/saldeti/internal/entra/model"
 	"github.com/saldeti/saldeti/internal/entra/store"
 )
 
-// assignLicenseToUser assigns a license to a user via the API
-func assignLicenseToUser(t *testing.T, ts *httptest.Server, st store.Store, userID, skuID string) {
-	ctx := context.Background()
+// assignLicenseToUser assigns a license to a user via the assignLicense API
+// endpoint (POST /v1.0/users/{id}/assignLicense). It returns the response
+// recorder so callers can assert on the HTTP response.
+func assignLicenseToUser(t *testing.T, ts *httptest.Server, userID, skuID string) *httptest.ResponseRecorder {
+	t.Helper()
 
-	// Create assignLicense request
-	assignReq := model.LicenseAssignmentRequest{
-		AddLicenses: []model.LicenseAssignment{
-			{
-				SkuID: skuID,
-			},
-		},
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
+	if err != nil {
+		t.Fatalf("Failed to mint auth token: %v", err)
 	}
 
-	// Make POST request to assign license
+	assignReq := model.LicenseAssignmentRequest{
+		AddLicenses: []model.LicenseAssignment{
+			{SkuID: skuID},
+		},
+	}
+	bodyBytes, err := json.Marshal(assignReq)
+	if err != nil {
+		t.Fatalf("Failed to marshal assignLicense request: %v", err)
+	}
+
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/v1.0/users/"+userID+"/assignLicense", nil)
-	// TODO: Need to properly serialize the request body and set authentication
-	// For now, we'll skip this and rely on manual state updates
-	_ = w
-	_ = req
-	_ = assignReq
-	_ = ctx
-	_ = st
-	_ = ts
+	req, err := http.NewRequest("POST", "/v1.0/users/"+userID+"/assignLicense", bytes.NewReader(bodyBytes))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	ts.Config.Handler.ServeHTTP(w, req)
+	return w
 }
 
 // addUserLicense directly adds a license to a user in the store
@@ -519,5 +529,51 @@ func TestHtmxLicenseRemove(t *testing.T) {
 	}
 	if !strings.Contains(body, "License removed successfully") {
 		t.Error("htmx response should contain flash message")
+	}
+}
+
+func TestAssignLicense(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	grace, err := st.GetUserByUPN(ctx, "grace.lee@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Grace: %v", err)
+	}
+
+	// Verify Grace has no INTUNE_A license initially
+	for _, lic := range grace.AssignedLicenses {
+		if lic.SkuPartNumber == "INTUNE_A" {
+			t.Fatal("Grace should not have INTUNE_A license initially")
+		}
+	}
+
+	skuID, found := model.FindSkuByPartNumber("INTUNE_A")
+	if !found {
+		t.Fatal("INTUNE_A SKU not found in catalog")
+	}
+
+	// Call the assignLicense API endpoint
+	w := assignLicenseToUser(t, ts, grace.ID, skuID)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	// Verify the license was actually assigned in the store
+	updatedUser, err := st.GetUser(ctx, grace.ID)
+	if err != nil {
+		t.Fatalf("Failed to get updated user: %v", err)
+	}
+
+	found = false
+	for _, lic := range updatedUser.AssignedLicenses {
+		if lic.SkuPartNumber == "INTUNE_A" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("INTUNE_A license not found in user's assigned licenses after API call")
 	}
 }

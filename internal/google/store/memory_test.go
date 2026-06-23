@@ -2,8 +2,8 @@ package store
 
 import (
 	"context"
-	"testing"
 	"fmt"
+	"testing"
 
 	"github.com/saldeti/saldeti/internal/google/model"
 	"github.com/stretchr/testify/assert"

@@ -22,17 +22,17 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/users/new",
 				"CancelURL":  "/ui/users",
 				"Form": map[string]interface{}{
-					"DisplayName":        "",
-					"UserPrincipalName":  "",
-					"GivenName":          "",
-					"Surname":            "",
-					"Mail":               "",
-					"MailNickname":       "",
-					"JobTitle":           "",
-					"Department":         "",
-					"OfficeLocation":     "",
-					"MobilePhone":        "",
-					"AccountEnabled":     true,
+					"DisplayName":       "",
+					"UserPrincipalName": "",
+					"GivenName":         "",
+					"Surname":           "",
+					"Mail":              "",
+					"MailNickname":      "",
+					"JobTitle":          "",
+					"Department":        "",
+					"OfficeLocation":    "",
+					"MobilePhone":       "",
+					"AccountEnabled":    true,
 				},
 			})
 			return
@@ -99,7 +99,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 		// Try SDK Post first
 		created, err := h.client.Users().Post(c.Request.Context(), newUser, nil)
-		
+
 		// If SDK returns nil object without error, try manual HTTP request
 		if created == nil && err == nil {
 			// Manually make the HTTP request
@@ -111,8 +111,8 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				userPayload := map[string]interface{}{
 					"displayName":       displayName,
 					"userPrincipalName": upn,
-					"accountEnabled":   accountEnabled,
-					"@odata.type":      "#microsoft.graph.user",
+					"accountEnabled":    accountEnabled,
+					"@odata.type":       "#microsoft.graph.user",
 				}
 				if givenName := c.PostForm("givenName"); givenName != "" {
 					userPayload["givenName"] = givenName
@@ -138,7 +138,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				if mobilePhone := c.PostForm("mobilePhone"); mobilePhone != "" {
 					userPayload["mobilePhone"] = mobilePhone
 				}
-				
+
 				// Serialize to JSON
 				userJSON, marshalErr := json.Marshal(userPayload)
 				if marshalErr != nil {
@@ -151,14 +151,14 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 					} else {
 						req.Header.Set("Authorization", "Bearer "+token.Token)
 						req.Header.Set("Content-Type", "application/json")
-						
+
 						// Make request
 						resp, httpErr := httpClient.Do(req)
 						if httpErr != nil {
 							err = fmt.Errorf("HTTP request failed: %w", httpErr)
 						} else {
 							defer resp.Body.Close()
-							
+
 							if resp.StatusCode != http.StatusCreated {
 								body, _ := io.ReadAll(resp.Body)
 								err = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))

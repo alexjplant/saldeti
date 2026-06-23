@@ -229,7 +229,7 @@ func TestApplyFilter_AnyNestedPath_SkuId(t *testing.T) {
 			},
 		},
 		{
-			"displayName": "Charlie",
+			"displayName":      "Charlie",
 			"assignedLicenses": []License{},
 		},
 	}
@@ -280,18 +280,18 @@ func TestApplyFilter_AnyNestedWithAnd(t *testing.T) {
 
 	items := []map[string]interface{}{
 		{
-			"displayName":     "Alice",
-			"accountEnabled":  true,
+			"displayName":      "Alice",
+			"accountEnabled":   true,
 			"assignedLicenses": []License{{SkuID: "sku-1234", SkuPartNumber: "ENTERPRISEPACK"}},
 		},
 		{
-			"displayName":     "Bob",
-			"accountEnabled":  false,
+			"displayName":      "Bob",
+			"accountEnabled":   false,
 			"assignedLicenses": []License{{SkuID: "sku-1234", SkuPartNumber: "ENTERPRISEPACK"}},
 		},
 		{
-			"displayName":     "Charlie",
-			"accountEnabled":  true,
+			"displayName":      "Charlie",
+			"accountEnabled":   true,
 			"assignedLicenses": []License{{SkuID: "sku-9999", SkuPartNumber: "FLOW_FREE"}},
 		},
 	}
@@ -356,7 +356,7 @@ func TestMapToStruct_NilAndIncompatibleValues(t *testing.T) {
 		"id":    "xyz",
 		"name":  "Another",
 		"count": "not-a-number", // string targeting int — should be skipped
-		"flag":  nil,             // nil for *bool — should be zero
+		"flag":  nil,            // nil for *bool — should be zero
 	}
 
 	result, err := mapToStruct[testItemWithInts](m)
@@ -364,7 +364,7 @@ func TestMapToStruct_NilAndIncompatibleValues(t *testing.T) {
 	assert.Equal(t, "xyz", result.ID)
 	assert.Equal(t, "Another", result.Name)
 	assert.Equal(t, 0, result.Count) // zero value — skipped
-	assert.Nil(t, result.Flag)        // nil — zeroed
+	assert.Nil(t, result.Flag)       // nil — zeroed
 }
 
 func TestApplyOData_SelectThenFilter_NoPanic(t *testing.T) {

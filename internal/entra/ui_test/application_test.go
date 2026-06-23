@@ -538,5 +538,3 @@ func TestApplicationEditForm(t *testing.T) {
 		t.Error("Expected 'Saldeti Simulator App' display name in edit form")
 	}
 }
- 
-

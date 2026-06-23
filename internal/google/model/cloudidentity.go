@@ -25,7 +25,7 @@ type Membership struct {
 }
 
 type MembershipRole struct {
-	Name        string       `json:"name"`
+	Name         string        `json:"name"`
 	ExpiryDetail *ExpiryDetail `json:"expiryDetail,omitempty"`
 }
 
@@ -39,12 +39,12 @@ type ModifyMembershipRolesRequest struct {
 }
 
 type SecuritySettings struct {
-	Name                     string `json:"name,omitempty"`
-	WhoCanJoin               string `json:"whoCanJoin,omitempty"`
-	WhoCanViewMembership     string `json:"whoCanViewMembership,omitempty"`
-	WhoCanDiscoverGroup      string `json:"whoCanDiscoverGroup,omitempty"`
-	WhoCanModerateMembers    string `json:"whoCanModerateMembers,omitempty"`
-	WhoCanManage             string `json:"whoCanManage,omitempty"`
+	Name                  string `json:"name,omitempty"`
+	WhoCanJoin            string `json:"whoCanJoin,omitempty"`
+	WhoCanViewMembership  string `json:"whoCanViewMembership,omitempty"`
+	WhoCanDiscoverGroup   string `json:"whoCanDiscoverGroup,omitempty"`
+	WhoCanModerateMembers string `json:"whoCanModerateMembers,omitempty"`
+	WhoCanManage          string `json:"whoCanManage,omitempty"`
 }
 
 type MembershipGraph struct {

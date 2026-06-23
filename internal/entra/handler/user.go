@@ -50,7 +50,7 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 			users = []model.User{}
 		}
 
-	// Handle $expand - convert users to maps with expanded properties
+		// Handle $expand - convert users to maps with expanded properties
 		var responseValue interface{} = users
 		if len(opts.ExpandOptions) > 0 {
 			expandedUsers := make([]map[string]interface{}, 0, len(users))
@@ -365,9 +365,10 @@ func deleteUserHandler(st store.Store) gin.HandlerFunc {
 // parseExpandOptions parses $expand query parameter value, handling
 // nested $select inside parentheses.
 // Examples:
-//   "manager" → []ExpandOption{{Property:"manager"}}
-//   "manager($select=userPrincipalName)" → []ExpandOption{{Property:"manager", Select:[]string{"userPrincipalName"}}}
-//   "manager($select=userPrincipalName,displayName),directReports" → two ExpandOptions
+//
+//	"manager" → []ExpandOption{{Property:"manager"}}
+//	"manager($select=userPrincipalName)" → []ExpandOption{{Property:"manager", Select:[]string{"userPrincipalName"}}}
+//	"manager($select=userPrincipalName,displayName),directReports" → two ExpandOptions
 func parseExpandOptions(expandStr string) []model.ExpandOption {
 	if expandStr == "" {
 		return nil
@@ -500,9 +501,9 @@ func getUserPhotoHandler(st store.Store) gin.HandlerFunc {
 		id := c.Param("id")
 		writeJSON(c, http.StatusOK, gin.H{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('" + id + "')/photo",
-			"id":     "1X1",
-			"height": 1,
-			"width":  1,
+			"id":             "1X1",
+			"height":         1,
+			"width":          1,
 		})
 	}
 }
@@ -574,4 +575,3 @@ func listLicenseDetailsHandler(st store.Store) gin.HandlerFunc {
 		})
 	}
 }
-

@@ -761,7 +761,7 @@ func TestTransitiveMembership(t *testing.T) {
 	require.NoError(t, err)
 
 	members := transitiveResp["value"].([]interface{})
-	
+
 	// Should include: user, group C, group B
 	// Note: transitiveMembers includes all nested objects
 	foundUser := false

@@ -257,8 +257,8 @@ func TestExtensionProperties(t *testing.T) {
 
 	// Create extension
 	ep, err := s.CreateExtensionProperty(ctx, app.ID, model.ExtensionProperty{
-		Name:         "extension_test_attr",
-		DataType:     "String",
+		Name:          "extension_test_attr",
+		DataType:      "String",
 		TargetObjects: []string{"User"},
 	})
 	require.NoError(t, err)
@@ -699,8 +699,6 @@ func TestSeedCreatesApplication(t *testing.T) {
 	ctx := context.Background()
 	s := NewMemoryStore()
 
-
-
 	// Just verify the application creation and SP auto-creation works
 	app := model.Application{
 		AppID:       "sim-client-id",
@@ -727,8 +725,6 @@ func TestSeedCreatesApplication(t *testing.T) {
 	assert.Equal(t, "Saldeti Simulator App", sp.DisplayName)
 	assert.Len(t, sp.AppRoles, 1)
 }
-
-
 
 func boolPtr(b bool) *bool {
 	return &b

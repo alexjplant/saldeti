@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/saldeti/saldeti/internal/entra/auth"
 	"github.com/saldeti/saldeti/internal/entra/model"
 	"github.com/saldeti/saldeti/internal/entra/store"
@@ -551,4 +552,44 @@ func TestBatchHandler_NonExistentURL(t *testing.T) {
 	subResp := responses[0].(map[string]interface{})
 	assert.Equal(t, "1", subResp["id"])
 	assert.Equal(t, float64(404), subResp["status"])
+}
+
+func TestBatchHandler_MarshalError(t *testing.T) {
+	s := store.NewMemoryStore()
+	router := NewRouter(s)
+
+	// Construct a test context for the batch handler. The marshal-error path
+	// is unreachable via HTTP because ShouldBindJSON decodes sub.Body into a
+	// map[string]interface{} whose values are always JSON-representable Go
+	// types. We therefore invoke the sub-request processing function directly
+	// with a struct whose body contains a value that cannot be marshaled
+	// (a channel).
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/v1.0/$batch", nil)
+
+	requests := []BatchSubRequest{
+		{
+			ID:     "1",
+			Method: "POST",
+			URL:    "/v1.0/users",
+			Body:   map[string]interface{}{"bad": make(chan int)},
+		},
+	}
+
+	responses := processBatchSubRequests(c, router, requests)
+	require.Len(t, responses, 1)
+
+	subResp := responses[0]
+	assert.Equal(t, "1", subResp.ID)
+	assert.Equal(t, http.StatusInternalServerError, subResp.Status)
+
+	errObj, ok := subResp.Body["error"]
+	require.True(t, ok, "error field should be present in body")
+
+	errMap, ok := errObj.(gin.H)
+	require.True(t, ok, "error should be a gin.H map")
+
+	assert.Equal(t, "InternalError", errMap["code"])
+	assert.Equal(t, "Failed to marshal request body", errMap["message"])
 }

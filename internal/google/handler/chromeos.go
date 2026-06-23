@@ -25,8 +25,8 @@ func listChromeOSDevicesHandler(st store.Store) gin.HandlerFunc {
 			devices = []model.ChromeOSDevice{}
 		}
 		resp := gin.H{
-			"kind":  "admin#directory#chromeosdevices",
-			"etag":  "\"placeholder\"",
+			"kind":            "admin#directory#chromeosdevices",
+			"etag":            "\"placeholder\"",
 			"chromeosdevices": devices,
 		}
 		if nextPageToken != "" {
@@ -105,8 +105,8 @@ func moveChromeOSDevicesHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")
 		var req struct {
-			DeviceIDs    []string `json:"deviceIds"`
-			OrgUnitPath  string   `json:"orgUnitPath"`
+			DeviceIDs   []string `json:"deviceIds"`
+			OrgUnitPath string   `json:"orgUnitPath"`
 		}
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")

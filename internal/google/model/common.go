@@ -1,15 +1,15 @@
 package model
 
 type ListOptions struct {
-	MaxResults    int    `json:"maxResults,omitempty"`
-	PageToken     string `json:"pageToken,omitempty"`
-	Query         string `json:"query,omitempty"`
-	OrderBy       string `json:"orderBy,omitempty"`
-	SortOrder     string `json:"sortOrder,omitempty"`
-	Customer      string `json:"customer,omitempty"`
-	Domain        string `json:"domain,omitempty"`
-	Projection    string `json:"projection,omitempty"`
-	ViewType      string `json:"viewType,omitempty"`
+	MaxResults int    `json:"maxResults,omitempty"`
+	PageToken  string `json:"pageToken,omitempty"`
+	Query      string `json:"query,omitempty"`
+	OrderBy    string `json:"orderBy,omitempty"`
+	SortOrder  string `json:"sortOrder,omitempty"`
+	Customer   string `json:"customer,omitempty"`
+	Domain     string `json:"domain,omitempty"`
+	Projection string `json:"projection,omitempty"`
+	ViewType   string `json:"viewType,omitempty"`
 }
 
 type PagedResponse struct {

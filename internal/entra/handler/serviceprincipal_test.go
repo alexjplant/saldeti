@@ -982,10 +982,10 @@ func TestServicePrincipalListMemberOf(t *testing.T) {
 	mailEnabled := false
 	securityEnabled := true
 	group := model.Group{
-		DisplayName:       "Test Group",
-		MailEnabled:       &mailEnabled,
-		SecurityEnabled:   &securityEnabled,
-		MailNickname:      "testgroup",
+		DisplayName:     "Test Group",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "testgroup",
 	}
 	createdGroup, err := st.CreateGroup(ctx, group)
 	require.NoError(t, err)
@@ -1040,19 +1040,19 @@ func TestServicePrincipalListTransitiveMemberOf(t *testing.T) {
 	mailEnabled := false
 	securityEnabled := true
 	parentGroup := model.Group{
-		DisplayName:       "Parent Group",
-		MailEnabled:       &mailEnabled,
-		SecurityEnabled:   &securityEnabled,
-		MailNickname:      "parentgroup",
+		DisplayName:     "Parent Group",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "parentgroup",
 	}
 	createdParent, err := st.CreateGroup(ctx, parentGroup)
 	require.NoError(t, err)
 
 	childGroup := model.Group{
-		DisplayName:       "Child Group",
-		MailEnabled:       &mailEnabled,
-		SecurityEnabled:   &securityEnabled,
-		MailNickname:      "childgroup",
+		DisplayName:     "Child Group",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		MailNickname:    "childgroup",
 	}
 	createdChild, err := st.CreateGroup(ctx, childGroup)
 	require.NoError(t, err)
@@ -1318,10 +1318,10 @@ func TestServicePrincipalListOAuth2Grants(t *testing.T) {
 	sp, err := findSPByAppID(st, createdApp.AppID)
 	require.NoError(t, err)
 
-  	// Create an OAuth2PermissionGrant with clientId = SP's object ID
- 	grant := model.OAuth2PermissionGrant{
- 		ClientID:    sp.ID,
- 		ConsentType: "AllPrincipals",
+	// Create an OAuth2PermissionGrant with clientId = SP's object ID
+	grant := model.OAuth2PermissionGrant{
+		ClientID:    sp.ID,
+		ConsentType: "AllPrincipals",
 		ResourceID:  sp.ID,
 		Scope:       "User.Read",
 	}

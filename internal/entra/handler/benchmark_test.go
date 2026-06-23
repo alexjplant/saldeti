@@ -58,9 +58,9 @@ func BenchmarkBatchHandler(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				req, err := http.NewRequest("POST", server.URL+"/v1.0/$batch", bytes.NewReader(batchBody))
-			if err != nil {
-				b.Fatal(err)
-			}
+				if err != nil {
+					b.Fatal(err)
+				}
 				req.Header.Set("Authorization", "Bearer "+token)
 				req.Header.Set("Content-Type", "application/json")
 				resp, err := http.DefaultClient.Do(req)

@@ -4,55 +4,55 @@ import "time"
 
 // Application represents an Azure AD application registration
 type Application struct {
-	ODataType                  string                `json:"@odata.type,omitempty"`
-	ID                         string                `json:"id"`
-	AppID                      string                `json:"appId"`
-	DisplayName                string                `json:"displayName"`
-	Description                string                `json:"description,omitempty"`
-	SignInAudience             string                `json:"signInAudience,omitempty"`
-	IdentifierUris             []string              `json:"identifierUris,omitempty"`
-	API                        *ApplicationAPI       `json:"api,omitempty"`
-	Web                        *ApplicationWeb       `json:"web,omitempty"`
-	Spa                        *ApplicationSpa       `json:"spa,omitempty"`
-	PublicClient                *ApplicationPublicClient `json:"publicClient,omitempty"`
-	RequiredResourceAccess     []RequiredResourceAccess `json:"requiredResourceAccess,omitempty"`
-	PasswordCredentials        []PasswordCredential  `json:"passwordCredentials,omitempty"`
-	KeyCredentials             []KeyCredential       `json:"keyCredentials,omitempty"`
-	AppRoles                   []AppRole             `json:"appRoles,omitempty"`
-	OptionalClaims             *OptionalClaims       `json:"optionalClaims,omitempty"`
-	Owners                     []DirectoryObjectRef  `json:"-"`
-	Tags                       []string              `json:"tags,omitempty"`
-	IsDeviceOnlyAuthSupported  *bool                 `json:"isDeviceOnlyAuthSupported,omitempty"`
-	IsFallbackPublicClient     *bool                 `json:"isFallbackPublicClient,omitempty"`
-	CreatedDateTime            *time.Time            `json:"createdDateTime,omitempty"`
-	DeletedDateTime            *time.Time            `json:"deletedDateTime,omitempty"`
-	PublisherDomain            string                `json:"publisherDomain,omitempty"`
-	VerifiedPublisher          *VerifiedPublisher    `json:"verifiedPublisher,omitempty"`
-	Certification                       *Certification        `json:"certification,omitempty"`
-	OAuth2RequirePostResponse           *bool                 `json:"oauth2RequirePostResponse,omitempty"`
-	NativeAuthenticationApisEnabled     *string               `json:"nativeAuthenticationApisEnabled,omitempty"`
-	GroupMembershipClaims               *string               `json:"groupMembershipClaims,omitempty"`
-	TokenEncryptionKeyId                *string               `json:"tokenEncryptionKeyId,omitempty"`
-	Notes                               *string               `json:"notes,omitempty"`
-	Info                                *InformationalURL     `json:"info,omitempty"`
-	ModifiedAt                          time.Time             `json:"-"`
+	ODataType                       string                   `json:"@odata.type,omitempty"`
+	ID                              string                   `json:"id"`
+	AppID                           string                   `json:"appId"`
+	DisplayName                     string                   `json:"displayName"`
+	Description                     string                   `json:"description,omitempty"`
+	SignInAudience                  string                   `json:"signInAudience,omitempty"`
+	IdentifierUris                  []string                 `json:"identifierUris,omitempty"`
+	API                             *ApplicationAPI          `json:"api,omitempty"`
+	Web                             *ApplicationWeb          `json:"web,omitempty"`
+	Spa                             *ApplicationSpa          `json:"spa,omitempty"`
+	PublicClient                    *ApplicationPublicClient `json:"publicClient,omitempty"`
+	RequiredResourceAccess          []RequiredResourceAccess `json:"requiredResourceAccess,omitempty"`
+	PasswordCredentials             []PasswordCredential     `json:"passwordCredentials,omitempty"`
+	KeyCredentials                  []KeyCredential          `json:"keyCredentials,omitempty"`
+	AppRoles                        []AppRole                `json:"appRoles,omitempty"`
+	OptionalClaims                  *OptionalClaims          `json:"optionalClaims,omitempty"`
+	Owners                          []DirectoryObjectRef     `json:"-"`
+	Tags                            []string                 `json:"tags,omitempty"`
+	IsDeviceOnlyAuthSupported       *bool                    `json:"isDeviceOnlyAuthSupported,omitempty"`
+	IsFallbackPublicClient          *bool                    `json:"isFallbackPublicClient,omitempty"`
+	CreatedDateTime                 *time.Time               `json:"createdDateTime,omitempty"`
+	DeletedDateTime                 *time.Time               `json:"deletedDateTime,omitempty"`
+	PublisherDomain                 string                   `json:"publisherDomain,omitempty"`
+	VerifiedPublisher               *VerifiedPublisher       `json:"verifiedPublisher,omitempty"`
+	Certification                   *Certification           `json:"certification,omitempty"`
+	OAuth2RequirePostResponse       *bool                    `json:"oauth2RequirePostResponse,omitempty"`
+	NativeAuthenticationApisEnabled *string                  `json:"nativeAuthenticationApisEnabled,omitempty"`
+	GroupMembershipClaims           *string                  `json:"groupMembershipClaims,omitempty"`
+	TokenEncryptionKeyId            *string                  `json:"tokenEncryptionKeyId,omitempty"`
+	Notes                           *string                  `json:"notes,omitempty"`
+	Info                            *InformationalURL        `json:"info,omitempty"`
+	ModifiedAt                      time.Time                `json:"-"`
 }
 
 // ApplicationAPI contains API settings for an application
 type ApplicationAPI struct {
-	AcceptMappedClaims         *bool               `json:"acceptMappedClaims,omitempty"`
-	KnownClientApplications    []string            `json:"knownClientApplications,omitempty"`
-	OAuth2PermissionScopes     []PermissionScope   `json:"oauth2PermissionScopes,omitempty"`
-	PreAuthorizedApplications  []PreAuthorizedApplication `json:"preAuthorizedApplications,omitempty"`
-	RequestedAccessTokenVersion *int               `json:"requestedAccessTokenVersion,omitempty"`
+	AcceptMappedClaims          *bool                      `json:"acceptMappedClaims,omitempty"`
+	KnownClientApplications     []string                   `json:"knownClientApplications,omitempty"`
+	OAuth2PermissionScopes      []PermissionScope          `json:"oauth2PermissionScopes,omitempty"`
+	PreAuthorizedApplications   []PreAuthorizedApplication `json:"preAuthorizedApplications,omitempty"`
+	RequestedAccessTokenVersion *int                       `json:"requestedAccessTokenVersion,omitempty"`
 }
 
 // ApplicationWeb contains web settings for an application
 type ApplicationWeb struct {
-	HomePageURL          string   `json:"homePageUrl,omitempty"`
+	HomePageURL           string                 `json:"homePageUrl,omitempty"`
 	ImplicitGrantSettings *ImplicitGrantSettings `json:"implicitGrantSettings,omitempty"`
-	LogoutURL            string   `json:"logoutUrl,omitempty"`
-	RedirectUris         []string `json:"redirectUris,omitempty"`
+	LogoutURL             string                 `json:"logoutUrl,omitempty"`
+	RedirectUris          []string               `json:"redirectUris,omitempty"`
 }
 
 // ApplicationSpa contains SPA settings for an application
@@ -96,32 +96,32 @@ type OptionalClaim struct {
 type VerifiedPublisher struct {
 	AddedDateTime       *time.Time `json:"addedDateTime,omitempty"`
 	DisplayName         string     `json:"displayName"`
-	VerifiedPublisherID  string     `json:"verifiedPublisherId,omitempty"`
+	VerifiedPublisherID string     `json:"verifiedPublisherId,omitempty"`
 }
 
 // Certification represents certification information
 type Certification struct {
-	CertificationDetails             string     `json:"certificationDetails,omitempty"`
-	CertificationExpirationDateTime  *time.Time `json:"certificationExpirationDateTime,omitempty"`
-	IsCertifiedByMicrosoft           *bool      `json:"isCertifiedByMicrosoft,omitempty"`
-	IsPublisherAttested              *bool      `json:"isPublisherAttested,omitempty"`
-	LastCertificateUpdateDateTime    *time.Time `json:"lastCertificateUpdateDateTime,omitempty"`
-	NextCertificateUpdateDateTime    *time.Time `json:"nextCertificateUpdateDateTime,omitempty"`
+	CertificationDetails            string     `json:"certificationDetails,omitempty"`
+	CertificationExpirationDateTime *time.Time `json:"certificationExpirationDateTime,omitempty"`
+	IsCertifiedByMicrosoft          *bool      `json:"isCertifiedByMicrosoft,omitempty"`
+	IsPublisherAttested             *bool      `json:"isPublisherAttested,omitempty"`
+	LastCertificateUpdateDateTime   *time.Time `json:"lastCertificateUpdateDateTime,omitempty"`
+	NextCertificateUpdateDateTime   *time.Time `json:"nextCertificateUpdateDateTime,omitempty"`
 }
 
 // InformationalURL represents informational URLs for an application
 type InformationalURL struct {
-	LogoURL              string `json:"logoUrl,omitempty"`
-	MarketingURL         string `json:"marketingUrl,omitempty"`
-	PrivacyStatementURL  string `json:"privacyStatementUrl,omitempty"`
-	SupportURL           string `json:"supportUrl,omitempty"`
-	TermsOfServiceURL    string `json:"termsOfServiceUrl,omitempty"`
+	LogoURL             string `json:"logoUrl,omitempty"`
+	MarketingURL        string `json:"marketingUrl,omitempty"`
+	PrivacyStatementURL string `json:"privacyStatementUrl,omitempty"`
+	SupportURL          string `json:"supportUrl,omitempty"`
+	TermsOfServiceURL   string `json:"termsOfServiceUrl,omitempty"`
 }
 
 // PreAuthorizedApplication represents a pre-authorized application
 type PreAuthorizedApplication struct {
-	AppID           string   `json:"appId"`
-	PermissionIDs   []string `json:"permissionIds,omitempty"`
+	AppID                  string   `json:"appId"`
+	PermissionIDs          []string `json:"permissionIds,omitempty"`
 	DelegatedPermissionIDs []string `json:"delegatedPermissionIds,omitempty"`
 }
 

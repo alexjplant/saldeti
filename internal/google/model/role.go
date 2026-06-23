@@ -1,14 +1,14 @@
 package model
 
 type Role struct {
-	Etag            string         `json:"etag,omitempty"`
-	RoleId          string         `json:"roleId,omitempty"`
-	RoleName        string         `json:"roleName"`
-	RoleDescription string         `json:"roleDescription,omitempty"`
-	RolePrivileges  []RolePrivilege `json:"rolePrivileges,omitempty"`
-	IsSystemRole    bool           `json:"isSystemRole"`
-	IsSuperAdminRole bool          `json:"isSuperAdminRole"`
-	Kind            string         `json:"kind,omitempty"`
+	Etag             string          `json:"etag,omitempty"`
+	RoleId           string          `json:"roleId,omitempty"`
+	RoleName         string          `json:"roleName"`
+	RoleDescription  string          `json:"roleDescription,omitempty"`
+	RolePrivileges   []RolePrivilege `json:"rolePrivileges,omitempty"`
+	IsSystemRole     bool            `json:"isSystemRole"`
+	IsSuperAdminRole bool            `json:"isSuperAdminRole"`
+	Kind             string          `json:"kind,omitempty"`
 }
 
 type RolePrivilege struct {
@@ -28,11 +28,11 @@ type RoleAssignment struct {
 }
 
 type Privilege struct {
-	Kind            string       `json:"kind"`
-	Etag            string       `json:"etag,omitempty"`
-	ServiceName     string       `json:"serviceName"`
-	PrivilegeName   string       `json:"privilegeName"`
-	ServiceId       string       `json:"serviceId"`
-	IsOuScopable    bool         `json:"isOuScopable"`
-	ChildPrivileges []Privilege  `json:"childPrivileges,omitempty"`
+	Kind            string      `json:"kind"`
+	Etag            string      `json:"etag,omitempty"`
+	ServiceName     string      `json:"serviceName"`
+	PrivilegeName   string      `json:"privilegeName"`
+	ServiceId       string      `json:"serviceId"`
+	IsOuScopable    bool        `json:"isOuScopable"`
+	ChildPrivileges []Privilege `json:"childPrivileges,omitempty"`
 }

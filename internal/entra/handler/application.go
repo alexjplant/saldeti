@@ -65,11 +65,11 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 
 				for _, expand := range opts.ExpandOptions {
 					switch expand.Property {
-			case "owners":
-					owners, _, err := st.ListApplicationOwners(c.Request.Context(), app.ID, model.ListOptions{Top: 999})
-					if err == nil {
-						appMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
-					}
+					case "owners":
+						owners, _, err := st.ListApplicationOwners(c.Request.Context(), app.ID, model.ListOptions{Top: 999})
+						if err == nil {
+							appMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+						}
 					}
 				}
 				expandedApps = append(expandedApps, appMap)
@@ -810,9 +810,9 @@ func applicationsDeltaHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		response := map[string]interface{}{
-			"@odata.context":    "https://graph.microsoft.com/v1.0/$metadata#applications",
-			"value":             items,
-			"@odata.deltaLink":  getBaseURL(c) + "/v1.0/applications/delta?$deltatoken=" + newDeltaToken,
+			"@odata.context":   "https://graph.microsoft.com/v1.0/$metadata#applications",
+			"value":            items,
+			"@odata.deltaLink": getBaseURL(c) + "/v1.0/applications/delta?$deltatoken=" + newDeltaToken,
 		}
 
 		writeJSON(c, http.StatusOK, response)

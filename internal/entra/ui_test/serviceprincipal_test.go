@@ -520,5 +520,3 @@ func TestHtmxSPAddOwnerValidation(t *testing.T) {
 		t.Error("Expected 'No user selected' error message in response")
 	}
 }
-
-

@@ -22,13 +22,13 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/groups/new",
 				"CancelURL":  "/ui/groups",
 				"Form": map[string]interface{}{
-					"DisplayName":      "",
-					"Description":      "",
-					"MailNickname":     "",
-					"SecurityEnabled":  "true",
-					"MailEnabled":      "false",
-					"Unified":          "false",
-					"Visibility":       "Public",
+					"DisplayName":     "",
+					"Description":     "",
+					"MailNickname":    "",
+					"SecurityEnabled": "true",
+					"MailEnabled":     "false",
+					"Unified":         "false",
+					"Visibility":      "Public",
 				},
 			})
 			return
@@ -91,7 +91,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 		// Try SDK Post first
 		created, err := h.client.Groups().Post(c.Request.Context(), newGroup, nil)
-		
+
 		// If SDK returns nil object without error, try manual HTTP request
 		if created == nil && err == nil {
 			// Manually make the HTTP request
@@ -101,10 +101,10 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 			} else {
 				// Manually construct the JSON payload
 				groupPayload := map[string]interface{}{
-					"displayName":      displayName,
-					"securityEnabled":  securityEnabled,
-					"mailEnabled":      mailEnabled,
-					"@odata.type":      "#microsoft.graph.group",
+					"displayName":     displayName,
+					"securityEnabled": securityEnabled,
+					"mailEnabled":     mailEnabled,
+					"@odata.type":     "#microsoft.graph.group",
 				}
 				if mailNickname := c.PostForm("mailNickname"); mailNickname != "" {
 					groupPayload["mailNickname"] = mailNickname
@@ -118,7 +118,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				if visibility := c.PostForm("visibility"); visibility != "" {
 					groupPayload["visibility"] = visibility
 				}
-				
+
 				// Serialize to JSON
 				groupJSON, marshalErr := json.Marshal(groupPayload)
 				if marshalErr != nil {
@@ -131,14 +131,14 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 					} else {
 						req.Header.Set("Authorization", "Bearer "+token.Token)
 						req.Header.Set("Content-Type", "application/json")
-						
+
 						// Make request
 						resp, httpErr := httpClient.Do(req)
 						if httpErr != nil {
 							err = fmt.Errorf("HTTP request failed: %w", httpErr)
 						} else {
 							defer resp.Body.Close()
-							
+
 							if resp.StatusCode != http.StatusCreated {
 								body, _ := io.ReadAll(resp.Body)
 								err = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))

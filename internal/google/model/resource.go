@@ -1,26 +1,26 @@
 package model
 
 type Schema struct {
-	Kind       string             `json:"kind"`
-	Etag       string             `json:"etag,omitempty"`
-	SchemaId   string             `json:"schemaId,omitempty"`
-	SchemaName string             `json:"schemaName"`
-	Fields     []SchemaFieldSpec  `json:"fields,omitempty"`
+	Kind        string            `json:"kind"`
+	Etag        string            `json:"etag,omitempty"`
+	SchemaId    string            `json:"schemaId,omitempty"`
+	SchemaName  string            `json:"schemaName"`
+	Fields      []SchemaFieldSpec `json:"fields,omitempty"`
 	DisplayName string            `json:"displayName,omitempty"`
 }
 
 type SchemaFieldSpec struct {
-	FieldId            string              `json:"fieldId,omitempty"`
-	FieldName          string              `json:"fieldName"`
-	FieldType          string              `json:"fieldType"`
-	FieldReadAccessType string             `json:"fieldReadAccessType,omitempty"`
-	MultiValued        bool                `json:"multiValued"`
-	Kind               string              `json:"kind,omitempty"`
-	Etag               string              `json:"etag,omitempty"`
+	FieldId             string               `json:"fieldId,omitempty"`
+	FieldName           string               `json:"fieldName"`
+	FieldType           string               `json:"fieldType"`
+	FieldReadAccessType string               `json:"fieldReadAccessType,omitempty"`
+	MultiValued         bool                 `json:"multiValued"`
+	Kind                string               `json:"kind,omitempty"`
+	Etag                string               `json:"etag,omitempty"`
 	NumericIndexingSpec *NumericIndexingSpec `json:"numericIndexingSpec,omitempty"`
-	DisplayName        string              `json:"displayName,omitempty"`
-	Indexed            bool                `json:"indexed"`
-	Required           bool                `json:"required"`
+	DisplayName         string               `json:"displayName,omitempty"`
+	Indexed             bool                 `json:"indexed"`
+	Required            bool                 `json:"required"`
 }
 
 type NumericIndexingSpec struct {
@@ -29,20 +29,20 @@ type NumericIndexingSpec struct {
 }
 
 type CalendarResource struct {
-	Kind                  string           `json:"kind"`
-	Etag                  string           `json:"etag,omitempty"`
-	ResourceId            string           `json:"resourceId"`
-	ResourceName          string           `json:"resourceName,omitempty"`
-	ResourceType          string           `json:"resourceType,omitempty"`
-	ResourceDescription   string           `json:"resourceDescription,omitempty"`
-	ResourceCategory      string           `json:"resourceCategory,omitempty"`
-	UserVisibleDescription string           `json:"userVisibleDescription,omitempty"`
-	GeneratedResourceName string           `json:"generatedResourceName,omitempty"`
-	BuildingId            string           `json:"buildingId,omitempty"`
-	FloorName             string           `json:"floorName,omitempty"`
-	FloorSection          string           `json:"floorSection,omitempty"`
-	Capacity              int64            `json:"capacity,omitempty"`
-	FeatureInstances      []FeatureInstance `json:"featureInstances,omitempty"`
+	Kind                   string            `json:"kind"`
+	Etag                   string            `json:"etag,omitempty"`
+	ResourceId             string            `json:"resourceId"`
+	ResourceName           string            `json:"resourceName,omitempty"`
+	ResourceType           string            `json:"resourceType,omitempty"`
+	ResourceDescription    string            `json:"resourceDescription,omitempty"`
+	ResourceCategory       string            `json:"resourceCategory,omitempty"`
+	UserVisibleDescription string            `json:"userVisibleDescription,omitempty"`
+	GeneratedResourceName  string            `json:"generatedResourceName,omitempty"`
+	BuildingId             string            `json:"buildingId,omitempty"`
+	FloorName              string            `json:"floorName,omitempty"`
+	FloorSection           string            `json:"floorSection,omitempty"`
+	Capacity               int64             `json:"capacity,omitempty"`
+	FeatureInstances       []FeatureInstance `json:"featureInstances,omitempty"`
 }
 
 type FeatureInstance struct {
@@ -54,14 +54,14 @@ type FeatureRef struct {
 }
 
 type Building struct {
-	Kind          string          `json:"kind"`
-	Etag          string          `json:"etag,omitempty"`
-	BuildingId    string          `json:"buildingId"`
-	BuildingName  string          `json:"buildingName,omitempty"`
-	Description   string          `json:"description,omitempty"`
-	Address       *Address        `json:"address,omitempty"`
-	FloorNames    []string        `json:"floorNames,omitempty"`
-	Coordinates   *Coordinates    `json:"coordinates,omitempty"`
+	Kind           string          `json:"kind"`
+	Etag           string          `json:"etag,omitempty"`
+	BuildingId     string          `json:"buildingId"`
+	BuildingName   string          `json:"buildingName,omitempty"`
+	Description    string          `json:"description,omitempty"`
+	Address        *Address        `json:"address,omitempty"`
+	FloorNames     []string        `json:"floorNames,omitempty"`
+	Coordinates    *Coordinates    `json:"coordinates,omitempty"`
 	BuildingFloors []BuildingFloor `json:"buildingFloors,omitempty"`
 }
 
@@ -88,85 +88,85 @@ type BuildingFloor struct {
 }
 
 type Feature struct {
-	Kind       string `json:"kind"`
-	Etag       string `json:"etag,omitempty"`
+	Kind        string `json:"kind"`
+	Etag        string `json:"etag,omitempty"`
 	FeatureName string `json:"featureName"`
 }
 
 type GroupSettings struct {
-	Kind                                  string `json:"kind"`
-	Etag                                  string `json:"etag,omitempty"`
-	Email                                 string `json:"email,omitempty"`
-	Name                                  string `json:"name,omitempty"`
-	Description                           string `json:"description,omitempty"`
-	WhoCanJoin                            string `json:"whoCanJoin,omitempty"`
-	WhoCanViewMembership                  string `json:"whoCanViewMembership,omitempty"`
-	WhoCanViewGroup                       string `json:"whoCanViewGroup,omitempty"`
-	WhoCanInvite                          string `json:"whoCanInvite,omitempty"`
-	WhoCanAdd                             string `json:"whoCanAdd,omitempty"`
-	WhoCanPostMessage                     string `json:"whoCanPostMessage,omitempty"`
-	WhoCanPostAnnouncements               string `json:"whoCanPostAnnouncements,omitempty"`
-	WhoCanReply                           string `json:"whoCanReply,omitempty"`
-	WhoCanModerateMembers                 string `json:"whoCanModerateMembers,omitempty"`
-	WhoCanModerateContent                 string `json:"whoCanModerateContent,omitempty"`
-	WhoCanAssistContent                   string `json:"whoCanAssistContent,omitempty"`
-	CustomReplyTo                         string `json:"customReplyTo,omitempty"`
-	SendReplyToOwner                      bool   `json:"sendReplyToOwner"`
-	IncludeCustomFooter                   bool   `json:"includeCustomFooter"`
-	CustomFooterText                      string `json:"customFooterText,omitempty"`
-	AllowExternalMembers                  bool   `json:"allowExternalMembers"`
-	MaxMessageBytes                       int64  `json:"maxMessageBytes,omitempty"`
-	IsArchived                            bool   `json:"isArchived"`
-	ArchiveOnly                           bool   `json:"archiveOnly"`
-	MessageModerationLevel                string `json:"messageModerationLevel,omitempty"`
-	SpamModerationLevel                   string `json:"spamModerationLevel,omitempty"`
-	PrimaryLanguage                       string `json:"primaryLanguage,omitempty"`
-	DefaultMessageDenyNotificationText    string `json:"defaultMessageDenyNotificationText,omitempty"`
-	ShowInGroupDirectory                  bool   `json:"showInGroupDirectory"`
-	AllowGoogleCommunication              bool   `json:"allowGoogleCommunication"`
-	AutoAddNewUsersWithContact            bool   `json:"autoAddNewUsersWithContact"`
-	SendMessageDenyNotification           bool   `json:"sendMessageDenyNotification"`
-	DefaultSender                         string `json:"defaultSender,omitempty"`
-	WhoCanContactOwner                    string `json:"whoCanContactOwner,omitempty"`
-	WhoCanApproveMembers                  string `json:"whoCanApproveMembers,omitempty"`
-	WhoCanBanUsers                        string `json:"whoCanBanUsers,omitempty"`
-	WhoCanLeaveGroup                      string `json:"whoCanLeaveGroup,omitempty"`
-	EnableCollaborativeInbox              bool   `json:"enableCollaborativeInbox"`
-	FavoriteRepliesOnTop                  bool   `json:"favoriteRepliesOnTop"`
-	WhoCanMarkFavoriteReplyOnAnyTopic     string `json:"whoCanMarkFavoriteReplyOnAnyTopic,omitempty"`
-	WhoCanMarkNoResponseNeeded            string `json:"whoCanMarkNoResponseNeeded,omitempty"`
-	WhoCanMarkDuplicate                   string `json:"whoCanMarkDuplicate,omitempty"`
-	WhoCanTakeTopics                      string `json:"whoCanTakeTopics,omitempty"`
-	WhoCanUnassignTopic                   string `json:"whoCanUnassignTopic,omitempty"`
-	WhoCanUnmarkAnyTopic                  string `json:"whoCanUnmarkAnyTopic,omitempty"`
-	WhoCanEnterFreeFormTags               string `json:"whoCanEnterFreeFormTags,omitempty"`
-	WhoCanModifyTagsAndCategories         string `json:"whoCanModifyTagsAndCategories,omitempty"`
-	WhoCanAssignTopics                    string `json:"whoCanAssignTopics,omitempty"`
+	Kind                               string `json:"kind"`
+	Etag                               string `json:"etag,omitempty"`
+	Email                              string `json:"email,omitempty"`
+	Name                               string `json:"name,omitempty"`
+	Description                        string `json:"description,omitempty"`
+	WhoCanJoin                         string `json:"whoCanJoin,omitempty"`
+	WhoCanViewMembership               string `json:"whoCanViewMembership,omitempty"`
+	WhoCanViewGroup                    string `json:"whoCanViewGroup,omitempty"`
+	WhoCanInvite                       string `json:"whoCanInvite,omitempty"`
+	WhoCanAdd                          string `json:"whoCanAdd,omitempty"`
+	WhoCanPostMessage                  string `json:"whoCanPostMessage,omitempty"`
+	WhoCanPostAnnouncements            string `json:"whoCanPostAnnouncements,omitempty"`
+	WhoCanReply                        string `json:"whoCanReply,omitempty"`
+	WhoCanModerateMembers              string `json:"whoCanModerateMembers,omitempty"`
+	WhoCanModerateContent              string `json:"whoCanModerateContent,omitempty"`
+	WhoCanAssistContent                string `json:"whoCanAssistContent,omitempty"`
+	CustomReplyTo                      string `json:"customReplyTo,omitempty"`
+	SendReplyToOwner                   bool   `json:"sendReplyToOwner"`
+	IncludeCustomFooter                bool   `json:"includeCustomFooter"`
+	CustomFooterText                   string `json:"customFooterText,omitempty"`
+	AllowExternalMembers               bool   `json:"allowExternalMembers"`
+	MaxMessageBytes                    int64  `json:"maxMessageBytes,omitempty"`
+	IsArchived                         bool   `json:"isArchived"`
+	ArchiveOnly                        bool   `json:"archiveOnly"`
+	MessageModerationLevel             string `json:"messageModerationLevel,omitempty"`
+	SpamModerationLevel                string `json:"spamModerationLevel,omitempty"`
+	PrimaryLanguage                    string `json:"primaryLanguage,omitempty"`
+	DefaultMessageDenyNotificationText string `json:"defaultMessageDenyNotificationText,omitempty"`
+	ShowInGroupDirectory               bool   `json:"showInGroupDirectory"`
+	AllowGoogleCommunication           bool   `json:"allowGoogleCommunication"`
+	AutoAddNewUsersWithContact         bool   `json:"autoAddNewUsersWithContact"`
+	SendMessageDenyNotification        bool   `json:"sendMessageDenyNotification"`
+	DefaultSender                      string `json:"defaultSender,omitempty"`
+	WhoCanContactOwner                 string `json:"whoCanContactOwner,omitempty"`
+	WhoCanApproveMembers               string `json:"whoCanApproveMembers,omitempty"`
+	WhoCanBanUsers                     string `json:"whoCanBanUsers,omitempty"`
+	WhoCanLeaveGroup                   string `json:"whoCanLeaveGroup,omitempty"`
+	EnableCollaborativeInbox           bool   `json:"enableCollaborativeInbox"`
+	FavoriteRepliesOnTop               bool   `json:"favoriteRepliesOnTop"`
+	WhoCanMarkFavoriteReplyOnAnyTopic  string `json:"whoCanMarkFavoriteReplyOnAnyTopic,omitempty"`
+	WhoCanMarkNoResponseNeeded         string `json:"whoCanMarkNoResponseNeeded,omitempty"`
+	WhoCanMarkDuplicate                string `json:"whoCanMarkDuplicate,omitempty"`
+	WhoCanTakeTopics                   string `json:"whoCanTakeTopics,omitempty"`
+	WhoCanUnassignTopic                string `json:"whoCanUnassignTopic,omitempty"`
+	WhoCanUnmarkAnyTopic               string `json:"whoCanUnmarkAnyTopic,omitempty"`
+	WhoCanEnterFreeFormTags            string `json:"whoCanEnterFreeFormTags,omitempty"`
+	WhoCanModifyTagsAndCategories      string `json:"whoCanModifyTagsAndCategories,omitempty"`
+	WhoCanAssignTopics                 string `json:"whoCanAssignTopics,omitempty"`
 }
 
 type DataTransfer struct {
-	Kind                      string                     `json:"kind"`
-	Etag                      string                     `json:"etag,omitempty"`
-	Id                        string                     `json:"id,omitempty"`
-	OldOwnerUserId            string                     `json:"oldOwnerUserId,omitempty"`
-	NewOwnerUserId            string                     `json:"newOwnerUserId,omitempty"`
-	ApplicationDataTransfers  []ApplicationDataTransfer  `json:"applicationDataTransfers,omitempty"`
-	RequestTime               string                     `json:"requestTime,omitempty"`
-	OverallTransferStatusCode string                     `json:"overallTransferStatusCode,omitempty"`
+	Kind                      string                    `json:"kind"`
+	Etag                      string                    `json:"etag,omitempty"`
+	Id                        string                    `json:"id,omitempty"`
+	OldOwnerUserId            string                    `json:"oldOwnerUserId,omitempty"`
+	NewOwnerUserId            string                    `json:"newOwnerUserId,omitempty"`
+	ApplicationDataTransfers  []ApplicationDataTransfer `json:"applicationDataTransfers,omitempty"`
+	RequestTime               string                    `json:"requestTime,omitempty"`
+	OverallTransferStatusCode string                    `json:"overallTransferStatusCode,omitempty"`
 }
 
 type ApplicationDataTransfer struct {
-	ApplicationId            string               `json:"applicationId,omitempty"`
-	ApplicationTransferId    string               `json:"applicationTransferId,omitempty"`
-	ApplicationTransferStatus string               `json:"applicationTransferStatus,omitempty"`
+	ApplicationId             string              `json:"applicationId,omitempty"`
+	ApplicationTransferId     string              `json:"applicationTransferId,omitempty"`
+	ApplicationTransferStatus string              `json:"applicationTransferStatus,omitempty"`
 	ApplicationTransferParams map[string][]string `json:"applicationTransferParams,omitempty"`
 }
 
 type TransferApplication struct {
-	Kind          string        `json:"kind"`
-	Etag          string        `json:"etag,omitempty"`
-	Id            string        `json:"id"`
-	Name          string        `json:"name,omitempty"`
+	Kind           string          `json:"kind"`
+	Etag           string          `json:"etag,omitempty"`
+	Id             string          `json:"id"`
+	Name           string          `json:"name,omitempty"`
 	TransferParams []TransferParam `json:"transferParams,omitempty"`
 }
 
@@ -176,22 +176,22 @@ type TransferParam struct {
 }
 
 type Subscription struct {
-	Name                    string                 `json:"name"`
-	Uid                     string                 `json:"uid,omitempty"`
-	TargetResource          string                 `json:"targetResource,omitempty"`
-	EventTypes              []string               `json:"eventTypes,omitempty"`
-	PayloadOptions          *PayloadOptions        `json:"payloadOptions,omitempty"`
-	NotificationEndpoint    *NotificationEndpoint  `json:"notificationEndpoint,omitempty"`
-	State                   string                 `json:"state,omitempty"`
-	ErrorType               string                 `json:"errorType,omitempty"`
-	CreateTime              string                 `json:"createTime,omitempty"`
-	UpdateTime              string                 `json:"updateTime,omitempty"`
-	Authority               string                 `json:"authority,omitempty"`
-	Etag                    string                 `json:"etag,omitempty"`
-	Reconciling             bool                   `json:"reconciling"`
-	SuspensionReason        string                 `json:"suspensionReason,omitempty"`
-	ExpireTime              string                 `json:"expireTime,omitempty"`
-	Ttl                     string                 `json:"ttl,omitempty"`
+	Name                 string                `json:"name"`
+	Uid                  string                `json:"uid,omitempty"`
+	TargetResource       string                `json:"targetResource,omitempty"`
+	EventTypes           []string              `json:"eventTypes,omitempty"`
+	PayloadOptions       *PayloadOptions       `json:"payloadOptions,omitempty"`
+	NotificationEndpoint *NotificationEndpoint `json:"notificationEndpoint,omitempty"`
+	State                string                `json:"state,omitempty"`
+	ErrorType            string                `json:"errorType,omitempty"`
+	CreateTime           string                `json:"createTime,omitempty"`
+	UpdateTime           string                `json:"updateTime,omitempty"`
+	Authority            string                `json:"authority,omitempty"`
+	Etag                 string                `json:"etag,omitempty"`
+	Reconciling          bool                  `json:"reconciling"`
+	SuspensionReason     string                `json:"suspensionReason,omitempty"`
+	ExpireTime           string                `json:"expireTime,omitempty"`
+	Ttl                  string                `json:"ttl,omitempty"`
 }
 
 type PayloadOptions struct {

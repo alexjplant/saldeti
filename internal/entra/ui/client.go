@@ -8,20 +8,20 @@ import (
 	"io"
 	"net/http"
 
-	absser "github.com/microsoft/kiota-abstractions-go/serialization"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/gin-gonic/gin"
+	absser "github.com/microsoft/kiota-abstractions-go/serialization"
+	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/rs/zerolog/log"
 	"github.com/saldeti/saldeti/internal/entra/model"
-	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 )
 
 func ptrString(s string) *string { return &s }
-func ptrBool(b bool) *bool { return &b }
-func ptrInt32(i int32) *int32 { return &i }
+func ptrBool(b bool) *bool       { return &b }
+func ptrInt32(i int32) *int32    { return &i }
 
 func newInsecureHTTPClient() *http.Client {
 	return &http.Client{

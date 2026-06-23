@@ -17,20 +17,20 @@ import (
 )
 
 var (
-	ErrUserNotFound     = errors.New("user not found")
-	ErrClientNotFound   = errors.New("client not found")
-	ErrDuplicateUPN     = errors.New("user with same UPN already exists")
-	ErrDuplicateClient  = errors.New("client already registered")
-	ErrGroupNotFound    = errors.New("group not found")
-	ErrDuplicateGroup   = errors.New("group already exists")
-	ErrAlreadyMember    = errors.New("object is already a member of the group")
-	ErrNotMember        = errors.New("object is not a member of the group")
-	ErrAlreadyOwner     = errors.New("object is already an owner of the group")
-	ErrNotOwner         = errors.New("object is not an owner of the group")
-	ErrObjectNotFound   = errors.New("object not found")
-	ErrInvalidObjType   = errors.New("invalid object type")
-	ErrDisplayNameRequired = errors.New("displayName is required")
-	ErrManagerNotFound   = errors.New("manager not found")
+	ErrUserNotFound             = errors.New("user not found")
+	ErrClientNotFound           = errors.New("client not found")
+	ErrDuplicateUPN             = errors.New("user with same UPN already exists")
+	ErrDuplicateClient          = errors.New("client already registered")
+	ErrGroupNotFound            = errors.New("group not found")
+	ErrDuplicateGroup           = errors.New("group already exists")
+	ErrAlreadyMember            = errors.New("object is already a member of the group")
+	ErrNotMember                = errors.New("object is not a member of the group")
+	ErrAlreadyOwner             = errors.New("object is already an owner of the group")
+	ErrNotOwner                 = errors.New("object is not an owner of the group")
+	ErrObjectNotFound           = errors.New("object not found")
+	ErrInvalidObjType           = errors.New("invalid object type")
+	ErrDisplayNameRequired      = errors.New("displayName is required")
+	ErrManagerNotFound          = errors.New("manager not found")
 	ErrApplicationNotFound      = errors.New("application not found")
 	ErrDuplicateAppID           = errors.New("application with same appId already exists")
 	ErrServicePrincipalNotFound = errors.New("service principal not found")
@@ -44,29 +44,30 @@ var (
 	ErrAlreadySPOwner           = errors.New("object is already an owner of the service principal")
 	ErrNotSPOwner               = errors.New("object is not an owner of the service principal")
 	ErrAppRoleNotFound          = errors.New("app role not found on resource service principal")
-	ErrSelfReference       = errors.New("a group cannot add itself as a member")
+	ErrSelfReference            = errors.New("a group cannot add itself as a member")
 )
+
 type memoryStore struct {
-	mu                 sync.RWMutex
-	users              map[string]model.User
-	clients            map[string]clientEntry
-	groups             map[string]model.Group
-	servicePrincipals  map[string]model.ServicePrincipal
-	members            map[string]map[string]string // groupID → {objectID → objectType}
-	owners             map[string]map[string]string // groupID → {objectID → objectType}
-	managers           map[string]string            // userID → managerID
-	deletedUsers       map[string]time.Time         // ID → deletedAt
-	deletedGroups      map[string]time.Time         // ID → deletedAt
-	applications       map[string]model.Application
-	appOwners          map[string]map[string]string // appObjID → {objectID → objectType}
-	spOwners           map[string]map[string]string // spObjID → {objectID → objectType}
-	appRoleAssignments map[string]model.AppRoleAssignment
+	mu                     sync.RWMutex
+	users                  map[string]model.User
+	clients                map[string]clientEntry
+	groups                 map[string]model.Group
+	servicePrincipals      map[string]model.ServicePrincipal
+	members                map[string]map[string]string // groupID → {objectID → objectType}
+	owners                 map[string]map[string]string // groupID → {objectID → objectType}
+	managers               map[string]string            // userID → managerID
+	deletedUsers           map[string]time.Time         // ID → deletedAt
+	deletedGroups          map[string]time.Time         // ID → deletedAt
+	applications           map[string]model.Application
+	appOwners              map[string]map[string]string // appObjID → {objectID → objectType}
+	spOwners               map[string]map[string]string // spObjID → {objectID → objectType}
+	appRoleAssignments     map[string]model.AppRoleAssignment
 	oauth2PermissionGrants map[string]model.OAuth2PermissionGrant
-	spMemberOf         map[string]map[string]string // spObjID → {groupID → objectType}
-	appExtensions      map[string]map[string]model.ExtensionProperty
-	deletedApplications map[string]time.Time
-	deletedSPs         map[string]time.Time
-	subscribedSkus      []model.SubscribedSku
+	spMemberOf             map[string]map[string]string // spObjID → {groupID → objectType}
+	appExtensions          map[string]map[string]model.ExtensionProperty
+	deletedApplications    map[string]time.Time
+	deletedSPs             map[string]time.Time
+	subscribedSkus         []model.SubscribedSku
 }
 
 type clientEntry struct {
@@ -77,25 +78,25 @@ type clientEntry struct {
 
 func NewMemoryStore() Store {
 	return &memoryStore{
-		users:                 make(map[string]model.User),
-		clients:               make(map[string]clientEntry),
-		groups:                make(map[string]model.Group),
-		servicePrincipals:     make(map[string]model.ServicePrincipal),
-		members:               make(map[string]map[string]string),
-		owners:                make(map[string]map[string]string),
-		managers:              make(map[string]string),
-		deletedUsers:          make(map[string]time.Time),
-		deletedGroups:         make(map[string]time.Time),
-		applications:          make(map[string]model.Application),
-		appOwners:             make(map[string]map[string]string),
-		spOwners:              make(map[string]map[string]string),
-		appRoleAssignments:    make(map[string]model.AppRoleAssignment),
+		users:                  make(map[string]model.User),
+		clients:                make(map[string]clientEntry),
+		groups:                 make(map[string]model.Group),
+		servicePrincipals:      make(map[string]model.ServicePrincipal),
+		members:                make(map[string]map[string]string),
+		owners:                 make(map[string]map[string]string),
+		managers:               make(map[string]string),
+		deletedUsers:           make(map[string]time.Time),
+		deletedGroups:          make(map[string]time.Time),
+		applications:           make(map[string]model.Application),
+		appOwners:              make(map[string]map[string]string),
+		spOwners:               make(map[string]map[string]string),
+		appRoleAssignments:     make(map[string]model.AppRoleAssignment),
 		oauth2PermissionGrants: make(map[string]model.OAuth2PermissionGrant),
-		spMemberOf:            make(map[string]map[string]string),
-		appExtensions:         make(map[string]map[string]model.ExtensionProperty),
-		deletedApplications:   make(map[string]time.Time),
-		deletedSPs:            make(map[string]time.Time),
-		subscribedSkus:        model.DefaultSubscribedSkus(),
+		spMemberOf:             make(map[string]map[string]string),
+		appExtensions:          make(map[string]map[string]model.ExtensionProperty),
+		deletedApplications:    make(map[string]time.Time),
+		deletedSPs:             make(map[string]time.Time),
+		subscribedSkus:         model.DefaultSubscribedSkus(),
 	}
 }
 func (s *memoryStore) GetUser(ctx context.Context, id string) (*model.User, error) {
@@ -189,12 +190,12 @@ func (s *memoryStore) RegisterClient(ctx context.Context, clientID, clientSecret
 	spID := uuid.New().String()
 	accountEnabled := true
 	s.servicePrincipals[spID] = model.ServicePrincipal{
-		ID:                     spID,
-		AppID:                  clientID,
-		DisplayName:            "Service Principal for " + clientID,
-		ODataType:              "#microsoft.graph.servicePrincipal",
-		AccountEnabled:         &accountEnabled,
-		ServicePrincipalNames:  []string{clientID},
+		ID:                    spID,
+		AppID:                 clientID,
+		DisplayName:           "Service Principal for " + clientID,
+		ODataType:             "#microsoft.graph.servicePrincipal",
+		AccountEnabled:        &accountEnabled,
+		ServicePrincipalNames: []string{clientID},
 		AppOwnerOrganizationID: func() string {
 			if _, err := uuid.Parse(tenantID); err == nil {
 				return tenantID
@@ -514,7 +515,7 @@ func isNumericType(t reflect.Type) bool {
 // convertNumericValue converts between numeric types
 func convertNumericValue(value interface{}, targetType reflect.Type) (reflect.Value, error) {
 	floatValue := 0.0
-	
+
 	switch v := value.(type) {
 	case int:
 		floatValue = float64(v)
@@ -1145,7 +1146,7 @@ func (s *memoryStore) ListGroupTransitiveMemberOf(ctx context.Context, groupID s
 				if visited[gid] {
 					continue
 				}
-				
+
 				// This group (gid) contains our current group as a member
 				if group, exists := s.groups[gid]; exists {
 					obj := model.DirectoryObject{
@@ -1187,13 +1188,13 @@ func (s *memoryStore) CheckMemberGroups(ctx context.Context, objectID string, gr
 	}
 
 	result := make([]string, 0)
-	
+
 	// For each group ID in the input list, check if object is a transitive member
 	for _, groupID := range groupIDs {
 		if _, exists := s.groups[groupID]; !exists {
 			continue // Skip non-existent groups
 		}
-		
+
 		// Check if object is a transitive member of this group
 		if s.isTransitiveMember(objectID, objectType, groupID, make(map[string]bool)) {
 			result = append(result, groupID)
@@ -1221,14 +1222,14 @@ func (s *memoryStore) GetMemberGroups(ctx context.Context, objectID string, secu
 
 	// Find all groups that contain this object as a transitive member
 	result := make([]string, 0)
-	
+
 	// Use BFS starting from all groups
 	for groupID, group := range s.groups {
 		// Skip if securityEnabledOnly is true and group is not security enabled
 		if securityEnabledOnly && (group.SecurityEnabled == nil || !*group.SecurityEnabled) {
 			continue
 		}
-		
+
 		// Check if object is a transitive member of this group
 		if s.isTransitiveMember(objectID, objectType, groupID, make(map[string]bool)) {
 			result = append(result, groupID)

@@ -26,20 +26,20 @@ var (
 )
 
 var knownScopes = map[string]bool{
-	"https://www.googleapis.com/auth/admin.directory.user":           true,
-	"https://www.googleapis.com/auth/admin.directory.group":          true,
+	"https://www.googleapis.com/auth/admin.directory.user":            true,
+	"https://www.googleapis.com/auth/admin.directory.group":           true,
 	"https://www.googleapis.com/auth/admin.directory.device.chromeos": true,
-	"https://www.googleapis.com/auth/admin.directory.device.mobile":  true,
+	"https://www.googleapis.com/auth/admin.directory.device.mobile":   true,
 	"https://www.googleapis.com/auth/cloud-identity.devices.readonly": true,
-	"https://www.googleapis.com/auth/cloud-identity.groups":          true,
-	"https://www.googleapis.com/auth/admin.reports.usage.readonly":   true,
-	"https://www.googleapis.com/auth/admin.reports.audit.readonly":   true,
-	"https://www.googleapis.com/auth/admin.datatransfer":             true,
-	"https://www.googleapis.com/auth/apps.groups.settings":           true,
-	"https://www.googleapis.com/auth/cloud-platform":                 true,
-	"openid":   true,
-	"profile":  true,
-	"email":    true,
+	"https://www.googleapis.com/auth/cloud-identity.groups":           true,
+	"https://www.googleapis.com/auth/admin.reports.usage.readonly":    true,
+	"https://www.googleapis.com/auth/admin.reports.audit.readonly":    true,
+	"https://www.googleapis.com/auth/admin.datatransfer":              true,
+	"https://www.googleapis.com/auth/apps.groups.settings":            true,
+	"https://www.googleapis.com/auth/cloud-platform":                  true,
+	"openid":  true,
+	"profile": true,
+	"email":   true,
 }
 
 type GoogleClaims struct {

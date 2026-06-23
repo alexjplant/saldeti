@@ -24,8 +24,8 @@ func listSchemasHandler(st store.Store) gin.HandlerFunc {
 			schemas = []model.Schema{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#directory#schemas",
-			"etag":  "\"placeholder\"",
+			"kind":    "admin#directory#schemas",
+			"etag":    "\"placeholder\"",
 			"schemas": schemas,
 		})
 	}

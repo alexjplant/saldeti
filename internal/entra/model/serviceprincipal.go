@@ -23,9 +23,9 @@ type ServicePrincipal struct {
 	PreferredTokenSigningKeyThumbprint string               `json:"preferredTokenSigningKeyThumbprint,omitempty"`
 	PreferredSingleSignOnMode          string               `json:"preferredSingleSignOnMode,omitempty"`
 	SamlMetadataURL                    string               `json:"samlMetadataUrl,omitempty"`
-	Tags                               []string              `json:"tags,omitempty"`
-	Owners                             []DirectoryObjectRef  `json:"-"`
-	VerifiedPublisher                  *VerifiedPublisher    `json:"verifiedPublisher,omitempty"`
+	Tags                               []string             `json:"tags,omitempty"`
+	Owners                             []DirectoryObjectRef `json:"-"`
+	VerifiedPublisher                  *VerifiedPublisher   `json:"verifiedPublisher,omitempty"`
 	NotificationEmailAddresses         []string             `json:"notificationEmailAddresses,omitempty"`
 	CreatedDateTime                    *time.Time           `json:"createdDateTime,omitempty"`
 	DeletedDateTime                    *time.Time           `json:"deletedDateTime,omitempty"`

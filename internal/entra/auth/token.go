@@ -18,29 +18,29 @@ import (
 )
 
 var (
-	signingKey          []byte
-	refreshTokens       = make(map[string]refreshTokenClaims)
-	refreshTokensMutex  sync.RWMutex
+	signingKey         []byte
+	refreshTokens      = make(map[string]refreshTokenClaims)
+	refreshTokensMutex sync.RWMutex
 )
 
 var knownScopes = map[string]bool{
-	"User.Read.All":        true,
-	"User.ReadWrite.All":   true,
-	"Group.Read.All":       true,
-	"Group.ReadWrite.All":  true,
-	"Directory.Read.All":   true,
-	"Directory.ReadWrite.All": true,
-	"Application.Read.All":                  true,
-	"Application.ReadWrite.All":             true,
-	"AppRoleAssignment.Read.All":            true,
-	"AppRoleAssignment.ReadWrite.All":       true,
-	"DelegatedPermissionGrant.Read.All":     true,
+	"User.Read.All":                          true,
+	"User.ReadWrite.All":                     true,
+	"Group.Read.All":                         true,
+	"Group.ReadWrite.All":                    true,
+	"Directory.Read.All":                     true,
+	"Directory.ReadWrite.All":                true,
+	"Application.Read.All":                   true,
+	"Application.ReadWrite.All":              true,
+	"AppRoleAssignment.Read.All":             true,
+	"AppRoleAssignment.ReadWrite.All":        true,
+	"DelegatedPermissionGrant.Read.All":      true,
 	"DelegatedPermissionGrant.ReadWrite.All": true,
-	"openid":               true,
-	"profile":              true,
-	"offline_access":       true,
-	"User.Read":            true,
-	"User.ReadWrite":       true,
+	"openid":                                 true,
+	"profile":                                true,
+	"offline_access":                         true,
+	"User.Read":                              true,
+	"User.ReadWrite":                         true,
 }
 
 type TokenClaims struct {

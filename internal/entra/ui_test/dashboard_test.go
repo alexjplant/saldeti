@@ -74,5 +74,3 @@ func TestDashboardShowsStatsAfterLogin(t *testing.T) {
 		t.Error("Expected 'Dashboard' title in response")
 	}
 }
-
-

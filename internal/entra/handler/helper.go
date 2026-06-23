@@ -41,8 +41,8 @@ func writeError(c *gin.Context, status int, code string, message string) {
 			"code":    code,
 			"message": message,
 			"innerError": gin.H{
-				"date":             time.Now().Format(time.RFC3339),
-				"request-id":       requestID,
+				"date":              time.Now().Format(time.RFC3339),
+				"request-id":        requestID,
 				"client-request-id": clientRequestID,
 			},
 		},

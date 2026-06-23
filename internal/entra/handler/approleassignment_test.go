@@ -208,11 +208,11 @@ func TestListGroupAppRoleAssignments(t *testing.T) {
 	mailEnabled := false
 	securityEnabled := true
 	group := model.Group{
-		DisplayName:       "Test Group",
-		MailNickname:      "testgroup",
-		MailEnabled:       &mailEnabled,
-		SecurityEnabled:   &securityEnabled,
-		GroupTypes:        []string{"Unified"},
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		GroupTypes:      []string{"Unified"},
 	}
 	createdGroup, err := st.CreateGroup(ctx, group)
 	require.NoError(t, err)
@@ -267,11 +267,11 @@ func TestCreateGroupAppRoleAssignment(t *testing.T) {
 	mailEnabled := false
 	securityEnabled := true
 	group := model.Group{
-		DisplayName:       "Test Group",
-		MailNickname:      "testgroup",
-		MailEnabled:       &mailEnabled,
-		SecurityEnabled:   &securityEnabled,
-		GroupTypes:        []string{"Unified"},
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		GroupTypes:      []string{"Unified"},
 	}
 	createdGroup, err := st.CreateGroup(ctx, group)
 	require.NoError(t, err)
@@ -321,11 +321,11 @@ func TestDeleteGroupAppRoleAssignment(t *testing.T) {
 	mailEnabled := false
 	securityEnabled := true
 	group := model.Group{
-		DisplayName:       "Test Group",
-		MailNickname:      "testgroup",
-		MailEnabled:       &mailEnabled,
-		SecurityEnabled:   &securityEnabled,
-		GroupTypes:        []string{"Unified"},
+		DisplayName:     "Test Group",
+		MailNickname:    "testgroup",
+		MailEnabled:     &mailEnabled,
+		SecurityEnabled: &securityEnabled,
+		GroupTypes:      []string{"Unified"},
 	}
 	createdGroup, err := st.CreateGroup(ctx, group)
 	require.NoError(t, err)

@@ -100,10 +100,10 @@ func TestOAuth2Grant_ListGrantsForSP(t *testing.T) {
 	sp := getAutoCreatedSP(t, tss, appId)
 	spID := *sp.GetId()
 
- 	// Create a grant
- 	grantBody := map[string]interface{}{
- 		"clientId":    spID,
- 		"consentType": "AllPrincipals",
+	// Create a grant
+	grantBody := map[string]interface{}{
+		"clientId":    spID,
+		"consentType": "AllPrincipals",
 		"resourceId":  spID,
 		"scope":       "Directory.Read.All",
 	}
