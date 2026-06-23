@@ -26,6 +26,9 @@ mise run build
 # Run with seed data and persist changes on shutdown
 ./bin/saldeti -port 9443 -seed examples/seed.json -dump snapshot.json
 
+# Run with Google Workspace seed data and persist changes on shutdown
+./bin/saldeti -port 9443 -mode google -seed examples/google-seed.json -dump snapshot.json
+
 # Get a token (credentials are logged at startup)
 curl -X POST http://localhost:9443/<tenant-id>/oauth2/v2.0/token \
   -d "grant_type=client_credentials" \
@@ -33,6 +36,8 @@ curl -X POST http://localhost:9443/<tenant-id>/oauth2/v2.0/token \
   -d "client_secret=<admin-client-secret>" \
   -d "scope=User.Read.All Group.Read.All"
 ```
+
+Each mode uses its own distinct seed schema: Entra ID uses `examples/seed.json` (schema: `schema/seed.schema.json`) and Google Workspace uses `examples/google-seed.json` (schema: `schema/google-seed.schema.json`). See [Seed Files](https://alexjplant.github.io/saldeti/seed-files) for the file format.
 
 Management UI available at `/ui` (entra mode, default) or `/google-ui/` (google mode) after starting the server.
 

@@ -300,6 +300,8 @@ For base URL, authentication, scopes, and common query parameters, refer to the 
 
 ### 8A. Custom Schemas
 
+> **Note:** These are Google Directory custom user-attribute schemas, not the seed-file JSON schema. See [Seed Files](/seed-files) for the seed-data format.
+
 | # | Method | Path | Description |
 |---|--------|------|-------------|
 | 133 | `GET` | `/admin/directory/v1/customer/{customerId}/schemas` | List all custom schemas |
