@@ -222,5 +222,43 @@
         }
       ]
     }
+  ],
+  "service_principals": [
+    {
+      "app_id": "sim-client-id",
+      "owner_upns": ["admin@saldeti.local"]
+    },
+    {
+      "app_id": "00000003-0000-0000-0000-000000000000"
+    }
+  ],
+  "app_role_assignments": [
+    {
+      "principal_type": "service_principal",
+      "principal_name": "00000003-0000-0000-0000-000000000000",
+      "resource_app_id": "sim-client-id",
+      "role_value": "Application.Read.All"
+    },
+    {
+      "principal_type": "user",
+      "principal_name": "admin@saldeti.local",
+      "resource_app_id": "sim-client-id",
+      "role_value": "Application.Read.All"
+    }
+  ],
+  "oauth2_grants": [
+    {
+      "client_app_id": "sim-client-id",
+      "resource_app_id": "00000003-0000-0000-0000-000000000000",
+      "scope": "User.Read.All",
+      "consent_type": "AllPrincipals"
+    },
+    {
+      "client_app_id": "sim-client-id",
+      "resource_app_id": "00000003-0000-0000-0000-000000000000",
+      "scope": "Directory.Read.All",
+      "consent_type": "Principal",
+      "principal_upn": "admin@saldeti.local"
+    }
   ]
 }

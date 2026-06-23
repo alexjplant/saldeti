@@ -190,197 +190,117 @@ func strVal(s *string) string {
 	return *s
 }
 
-// fetchDirectoryObjects performs a manual HTTP GET to fetch a list of directory objects
-func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]model.DirectoryObject, error) {
+// errNotFound is returned by doGet when the API responds with HTTP 404 and the
+// caller requested nilOn404 semantics. Fetch methods translate it back into a
+// nil result so that callers see "no data" rather than an error.
+var errNotFound = fmt.Errorf("not found")
+
+// doGet performs an authenticated GET against the Microsoft Graph endpoint at
+// url and decodes the JSON response body into result. It centralises the token
+// acquisition, request construction, header, status-code handling and decoding
+// logic previously duplicated across the fetch* methods.
+//
+// When nilOn404 is true, an HTTP 404 response is reported via errNotFound (the
+// caller is expected to map this to a nil result). When nilOn404 is false, a
+// 404 is treated like any other non-200 status and surfaced as an error. Any
+// other non-200 status is logged and returned as an error.
+func (h *UIHandler) doGet(ctx context.Context, url string, result interface{}, nilOn404 bool) error {
 	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
 		Scopes: []string{"https://graph.microsoft.com/.default"},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
+		return fmt.Errorf("failed to get token: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token.Token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
+		return fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil // No data is OK for some endpoints
+	if resp.StatusCode == http.StatusNotFound && nilOn404 {
+		return errNotFound
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
+		return fmt.Errorf("request failed with status %d", resp.StatusCode)
 	}
 
+	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	return nil
+}
+
+// fetchDirectoryObjects performs a manual HTTP GET to fetch a list of directory objects
+func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]model.DirectoryObject, error) {
 	var result struct {
 		Value []model.DirectoryObject `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil // No data is OK for some endpoints
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }
 
 // fetchDirectoryObject performs a manual HTTP GET to fetch a single directory object
 func (h *UIHandler) fetchDirectoryObject(ctx context.Context, url string) (*model.DirectoryObject, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var obj model.DirectoryObject
-	if err := json.NewDecoder(resp.Body).Decode(&obj); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &obj, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return &obj, nil
 }
 
 // fetchSubscribedSkus fetches the subscribed SKU catalog from the API
 func (h *UIHandler) fetchSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", h.baseURL+"/v1.0/subscribedSkus", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("body", string(body)).Msg("API request failed for subscribedSkus")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.SubscribedSku `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, h.baseURL+"/v1.0/subscribedSkus", &result, false); err != nil {
+		return nil, err
 	}
 	return result.Value, nil
 }
 
 // fetchAppRoleAssignments performs a manual HTTP GET to fetch a list of app role assignments
 func (h *UIHandler) fetchAppRoleAssignments(ctx context.Context, url string) ([]model.AppRoleAssignment, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.AppRoleAssignment `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }
 
 // fetchOAuth2PermissionGrants performs a manual HTTP GET to fetch a list of OAuth2 permission grants
 func (h *UIHandler) fetchOAuth2PermissionGrants(ctx context.Context, url string) ([]model.OAuth2PermissionGrant, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.OAuth2PermissionGrant `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }
@@ -559,40 +479,14 @@ func sdkServicePrincipalToModel(sp models.ServicePrincipalable) model.ServicePri
 
 // fetchExtensionProperties performs a manual HTTP GET to fetch a list of extension properties
 func (h *UIHandler) fetchExtensionProperties(ctx context.Context, url string) ([]model.ExtensionProperty, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.ExtensionProperty `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }
