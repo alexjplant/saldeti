@@ -21,7 +21,10 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 	uiGroup.Use(csrfMiddleware())
 
 	// Serve embedded static files
-	staticSub, _ := fs.Sub(staticFS, "static")
+	staticSub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		return fmt.Errorf("failed to get static sub-filesystem: %w", err)
+	}
 	uiGroup.StaticFS("/static", http.FS(staticSub))
 
 	// Dashboard routes

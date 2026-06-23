@@ -31,7 +31,7 @@ func setupGoogleServer(t *testing.T) (*httptest.Server, store.Store) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	s := store.NewMemoryStore()
-	s.RegisterClient(context.Background(), "test-client", "test-secret")
+	require.NoError(t, s.RegisterClient(context.Background(), "test-client", "test-secret"))
 	r := gin.New()
 	handler.RegisterRoutes(r, s)
 	ts := httptest.NewTLSServer(r)
