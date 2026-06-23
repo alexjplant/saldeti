@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -209,7 +210,7 @@ func handleClientCredentialsGoogle(c *gin.Context, st store.Store) {
 
 	// Validate client credentials
 	storedSecret, err := st.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}
@@ -258,7 +259,7 @@ func handleAuthCodeGoogle(c *gin.Context, st store.Store) {
 
 	// Validate client credentials
 	storedSecret, err := st.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}

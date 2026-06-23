@@ -2,11 +2,12 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -2173,10 +2174,15 @@ func (s *MemoryStore) ListVerificationCodes(ctx context.Context, userKey string)
 func (s *MemoryStore) GenerateVerificationCodes(ctx context.Context, userKey string) error {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
+	max := big.NewInt(1000000)
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return fmt.Errorf("failed to generate verification code: %w", err)
+	}
 	code := model.VerificationCode{
 		Kind:                  "admin#directory#verificationCode",
 		UserId:                userKey,
-		VerificationCode:      fmt.Sprintf("%06d", rand.Intn(1000000)),
+		VerificationCode:      fmt.Sprintf("%06d", n.Int64()),
 		VerificationMethod:    "sms",
 		VerificationTimestamp: time.Now().Format(time.RFC3339),
 	}

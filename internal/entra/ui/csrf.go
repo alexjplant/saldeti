@@ -42,7 +42,7 @@ func csrfMiddleware() gin.HandlerFunc {
 			token = generateCSRFToken()
 		}
 		c.SetSameSite(http.SameSiteLaxMode)
-		c.SetCookie(csrfCookieName, token, 3600, "/ui", "", false, false)
+		c.SetCookie(csrfCookieName, token, 3600, "/ui", "", true, false)
 		c.Set(csrfContextKey, token)
 
 		c.Next()

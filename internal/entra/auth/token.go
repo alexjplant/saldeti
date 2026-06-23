@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -201,7 +202,7 @@ func handleClientCredentials(c *gin.Context, store store.Store, tenant string) {
 
 	// Validate client credentials
 	_, storedSecret, storedTenantID, err := store.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret || storedTenantID != tenant {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 || storedTenantID != tenant {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}
@@ -252,7 +253,7 @@ func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
 
 	// Validate client exists and secret matches
 	_, storedSecret, clientTenantID, err := store.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret || clientTenantID != tenant {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 || clientTenantID != tenant {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}
