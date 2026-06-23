@@ -1852,10 +1852,9 @@ func (s *MemoryStore) CreateCIMembership(ctx context.Context, parent string, mem
 func (s *MemoryStore) DeleteCIMembership(ctx context.Context, name string) error {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
-	for parent, mMap := range s.store.ciMemberships {
+	for _, mMap := range s.store.ciMemberships {
 		if _, ok := mMap[name]; ok {
 			delete(mMap, name)
-			_ = parent
 			return nil
 		}
 	}

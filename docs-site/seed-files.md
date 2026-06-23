@@ -36,7 +36,7 @@ Seed files are plain JSON. You can generate them programmatically, version-contr
 
 ## Entra ID Mode Seed File
 
-The Entra ID seed file follows the schema defined in [`seed.schema.json`](https://raw.githubusercontent.com/saldeti/saldeti/main/schema/seed.schema.json).
+The Entra ID seed file follows the schema defined in [`seed.schema.json`](https://raw.githubusercontent.com/alexjplant/saldeti/main/schema/seed.schema.json).
 
 ### Top-level properties
 
@@ -96,7 +96,7 @@ Index-based references are order-dependent. If you reorder the `users` array, al
 
 ## Google Workspace Mode Seed File
 
-The Google Workspace seed file follows the schema defined in [`google-seed.schema.json`](https://raw.githubusercontent.com/saldeti/saldeti/main/schema/google-seed.schema.json).
+The Google Workspace seed file follows the schema defined in [`google-seed.schema.json`](https://raw.githubusercontent.com/alexjplant/saldeti/main/schema/google-seed.schema.json).
 
 ::: tip
 Google Workspace seed loading uses the `-seed` flag in google mode. Use `-mode google -seed examples/google-seed.json` to load Google Workspace data on startup.
@@ -175,8 +175,8 @@ Both seed file formats have machine-readable JSON Schema definitions that you ca
 
 | Schema | URL |
 |--------|-----|
-| Entra ID | [`seed.schema.json`](https://raw.githubusercontent.com/saldeti/saldeti/main/schema/seed.schema.json) |
-| Google Workspace | [`google-seed.schema.json`](https://raw.githubusercontent.com/saldeti/saldeti/main/schema/google-seed.schema.json) |
+| Entra ID | [`seed.schema.json`](https://raw.githubusercontent.com/alexjplant/saldeti/main/schema/seed.schema.json) |
+| Google Workspace | [`google-seed.schema.json`](https://raw.githubusercontent.com/alexjplant/saldeti/main/schema/google-seed.schema.json) |
 
 ### Validating with Python
 

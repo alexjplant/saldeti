@@ -30,7 +30,7 @@ mise run build
 ./bin/saldeti -port 9443 -mode google -seed examples/google-seed.json -dump snapshot.json
 
 # Get a token (credentials are logged at startup)
-curl -X POST http://localhost:9443/<tenant-id>/oauth2/v2.0/token \
+curl -X POST https://localhost:9443/<tenant-id>/oauth2/v2.0/token \
   -d "grant_type=client_credentials" \
   -d "client_id=<admin-client-id>" \
   -d "client_secret=<admin-client-secret>" \
