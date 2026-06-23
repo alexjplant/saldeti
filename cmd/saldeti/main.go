@@ -74,6 +74,27 @@ func generateSelfSignedCert() (tls.Certificate, error) {
 	return tls.X509KeyPair(certPEM, keyPEM)
 }
 
+// newEngine creates a gin.Engine with request logging and recovery middleware,
+// mirroring the setup used by entra handler.NewRouter.
+func newEngine() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.RedirectTrailingSlash = false
+	r.Use(func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		log.Info().
+			Str("method", c.Request.Method).
+			Str("path", c.Request.URL.Path).
+			Int("status", c.Writer.Status()).
+			Dur("latency", time.Since(start)).
+			Str("client_ip", c.ClientIP()).
+			Msg("request")
+	})
+	r.Use(gin.Recovery())
+	return r
+}
+
 func main() {
 	port := flag.Int("port", 9443, "Port to listen on")
 	uiEnabled := flag.Bool("ui", true, "Enable admin UI")
@@ -87,8 +108,7 @@ func main() {
 	stop := flag.Bool("stop", false, "Stop a running daemon")
 	baseURLFlag := flag.String("base-url", "", "External base URL (e.g. https://example.com). When set, X-Forwarded-Host/Proto headers are ignored.")
 	trustForwarded := flag.Bool("trust-forwarded-headers", false, "Trust X-Forwarded-Host/Proto headers for base URL detection")
-	google := flag.Bool("google", false, "Enable Google Workspace API simulator")
-	googleSeedPath := flag.String("google-seed", "", "Path to Google Workspace JSON seed file (optional, requires -google)")
+	mode := flag.String("mode", "entra", "Operating mode: entra or google")
 
 	// Admin credential flags
 	adminClientID := flag.String("admin-client-id", "", "Admin app client ID (default: random UUID; if set, -admin-client-secret and -admin-tenant-id must also be set)")
@@ -101,6 +121,11 @@ func main() {
 	logfile := flag.String("logfile", "saldeti.log", "Path to log file (daemon mode)")
 
 	flag.Parse()
+
+	// Validate mode
+	if *mode != "entra" && *mode != "google" {
+		log.Fatal().Str("mode", *mode).Msg("Invalid mode; must be 'entra' or 'google'")
+	}
 
 	// Stop daemon mode: read PID file and send SIGTERM
 	if *stop {
@@ -227,102 +252,116 @@ func main() {
 
 	log.Info().Str("domain", *domain).Msg("Directory domain")
 
-	// Set JWT signing key
+	// Generate JWT signing key bytes (key is applied per-mode below)
 	var signingKeyBytes []byte
 	if *signingKey == "" {
 		signingKeyBytes = make([]byte, 32)
 		if _, err := rand.Read(signingKeyBytes); err != nil {
 			log.Fatal().Err(err).Msg("Failed to generate random signing key")
 		}
-		auth.SetSigningKey(signingKeyBytes)
 	} else {
 		signingKeyBytes = []byte(*signingKey)
-		auth.SetSigningKey(signingKeyBytes)
 	}
 
-	// Create store
-	store := store.NewMemoryStore()
+	// Create store, register admin client, router, and UI based on mode
+	var router *gin.Engine
+	var entraStore store.Store // assigned in entra mode; nil in google mode (dump is guarded by mode check)
 
-	// Seed data from JSON file if provided
-	if *seedPath != "" {
-		cfg, err := seed.LoadFromFile(*seedPath)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to load seed file")
-		}
-		if err := seed.SeedFromConfig(store, cfg); err != nil {
-			log.Fatal().Err(err).Msg("Failed to seed data")
-		}
-		if len(cfg.Clients) > 0 {
-			log.Info().Str("client_id", cfg.Clients[0].ClientID).Msg("Seeded client")
-			log.Info().Str("tenant_id", cfg.Clients[0].TenantID).Msg("Seeded tenant")
-		}
-		log.Info().Int("count", len(cfg.Users)).Msg("Seeded users")
-	}
-
-	// Always create an admin app for UI and API access
 	ctx := context.Background()
-	var finalAdminClientID, finalAdminClientSecret, finalAdminTenantID string
-	if adminFlagsSet == 3 {
-		finalAdminClientID = *adminClientID
-		finalAdminClientSecret = *adminClientSecret
-		finalAdminTenantID = *adminTenantID
-	} else {
-		finalAdminClientID = uuid.New().String()
-		finalAdminClientSecret = uuid.New().String()
-		finalAdminTenantID = uuid.New().String()
-	}
-	if err := store.RegisterClient(ctx, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID); err != nil {
-		log.Fatal().Err(err).Msg("Failed to register admin client")
-	}
-	log.Info().Str("client_id", finalAdminClientID).Str("client_secret", finalAdminClientSecret).Str("tenant_id", finalAdminTenantID).Msg("Admin app credentials")
 
-	// Create router
-	router := handler.NewRouter(store)
+	log.Info().Str("mode", *mode).Msg("Operating mode")
 
-	// Health check endpoint
-	router.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	switch *mode {
+	case "entra":
+		auth.SetSigningKey(signingKeyBytes)
 
-	// Register UI routes if enabled
-	if *uiEnabled {
-		baseURL := fmt.Sprintf("https://localhost:%d", *port)
-		ui.RegisterUIRoutes(router, baseURL, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID)
-	}
+		entraStore = store.NewMemoryStore()
 
-	// Register Google Workspace routes if enabled
-	if *google {
-		// Set Google auth signing key (use same key as Entra)
+		// Seed data from JSON file if provided
+		if *seedPath != "" {
+			cfg, err := seed.LoadFromFile(*seedPath)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Failed to load seed file")
+			}
+			if err := seed.SeedFromConfig(entraStore, cfg); err != nil {
+				log.Fatal().Err(err).Msg("Failed to seed data")
+			}
+			if len(cfg.Clients) > 0 {
+				log.Info().Str("client_id", cfg.Clients[0].ClientID).Msg("Seeded client")
+				log.Info().Str("tenant_id", cfg.Clients[0].TenantID).Msg("Seeded tenant")
+			}
+			log.Info().Int("count", len(cfg.Users)).Msg("Seeded users")
+		}
+
+		// Always create an admin app for UI and API access
+		var finalAdminClientID, finalAdminClientSecret, finalAdminTenantID string
+		if adminFlagsSet == 3 {
+			finalAdminClientID = *adminClientID
+			finalAdminClientSecret = *adminClientSecret
+			finalAdminTenantID = *adminTenantID
+		} else {
+			finalAdminClientID = uuid.New().String()
+			finalAdminClientSecret = uuid.New().String()
+			finalAdminTenantID = uuid.New().String()
+		}
+		if err := entraStore.RegisterClient(ctx, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID); err != nil {
+			log.Fatal().Err(err).Msg("Failed to register admin client")
+		}
+		log.Info().Str("client_id", finalAdminClientID).Str("client_secret", finalAdminClientSecret).Str("tenant_id", finalAdminTenantID).Msg("Admin app credentials")
+
+		// Create router
+		router = handler.NewRouter(entraStore)
+
+		// Health check endpoint
+		router.GET("/healthz", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+
+		// Register UI routes if enabled
+		if *uiEnabled {
+			baseURL := fmt.Sprintf("https://localhost:%d", *port)
+			ui.RegisterUIRoutes(router, baseURL, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID)
+		}
+
+	case "google":
 		gauth.SetSigningKey(signingKeyBytes)
 
 		googleStore := gstore.NewMemoryStore()
-		ghandler.RegisterRoutes(router, googleStore)
 
-		// Register admin client for Google UI
+		// Seed data from JSON file if provided
+		if *seedPath != "" {
+			gcfg, err := gseed.LoadFromFile(*seedPath)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Failed to load seed file")
+			}
+			if err := gseed.SeedFromConfig(googleStore, gcfg); err != nil {
+				log.Fatal().Err(err).Msg("Failed to seed data")
+			}
+			log.Info().Int("count", len(gcfg.Users)).Msg("Seeded users")
+		}
+
+		// Always create an admin app for UI and API access
 		googleClientID := uuid.New().String()
 		googleClientSecret := uuid.New().String()
 		if err := googleStore.RegisterClient(ctx, googleClientID, googleClientSecret); err != nil {
-			log.Fatal().Err(err).Msg("Failed to register Google admin client")
+			log.Fatal().Err(err).Msg("Failed to register admin client")
 		}
-		log.Info().Str("client_id", googleClientID).Str("client_secret", googleClientSecret).Msg("Google admin app credentials")
+		log.Info().Str("client_id", googleClientID).Str("client_secret", googleClientSecret).Msg("Admin app credentials")
 
-		if *googleSeedPath != "" {
-			gcfg, err := gseed.LoadFromFile(*googleSeedPath)
-			if err != nil {
-				log.Fatal().Err(err).Msg("Failed to load Google seed file")
-			}
-			if err := gseed.SeedFromConfig(googleStore, gcfg); err != nil {
-				log.Fatal().Err(err).Msg("Failed to seed Google data")
-			}
-			log.Info().Int("count", len(gcfg.Users)).Msg("Seeded Google users")
-		}
+		// Create router and register Google routes
+		router = newEngine()
+		ghandler.RegisterRoutes(router, googleStore)
 
+		// Health check endpoint
+		router.GET("/healthz", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+
+		// Register UI routes if enabled
 		if *uiEnabled {
 			baseURL := fmt.Sprintf("https://localhost:%d", *port)
 			gui.RegisterUIRoutes(router, baseURL, googleClientID, googleClientSecret)
 		}
-
-		log.Info().Msg("Google Workspace API simulator enabled")
 	}
 
 	// Generate self-signed TLS cert if not provided
@@ -363,10 +402,11 @@ func main() {
 		}
 	}()
 
-	// Start refresh token cleanup
-	auth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
-
-	if *google {
+	// Start refresh token cleanup for the active mode
+	switch *mode {
+	case "entra":
+		auth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
+	case "google":
 		gauth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
 	}
 
@@ -377,19 +417,23 @@ func main() {
 	appCancel()
 	log.Info().Msg("Shutting down server...")
 
-	// Dump store if -dump is set
+	// Dump store if -dump is set (entra only; google dump is not yet supported)
 	if *dumpPath != "" {
-		cfg, err := seed.DumpStore(store)
-		if err != nil {
-			log.Warn().Err(err).Msg("Failed to dump store")
+		if *mode == "google" {
+			log.Warn().Msg("Dump is not yet supported in google mode")
 		} else {
-			data, err := json.MarshalIndent(cfg, "", "  ")
+			cfg, err := seed.DumpStore(entraStore)
 			if err != nil {
-				log.Warn().Err(err).Msg("Failed to marshal dump")
-			} else if err := os.WriteFile(*dumpPath, data, 0600); err != nil {
-				log.Warn().Err(err).Msg("Failed to write dump file")
+				log.Warn().Err(err).Msg("Failed to dump store")
 			} else {
-				log.Info().Str("path", *dumpPath).Msg("Store dumped")
+				data, err := json.MarshalIndent(cfg, "", "  ")
+				if err != nil {
+					log.Warn().Err(err).Msg("Failed to marshal dump")
+				} else if err := os.WriteFile(*dumpPath, data, 0600); err != nil {
+					log.Warn().Err(err).Msg("Failed to write dump file")
+				} else {
+					log.Info().Str("path", *dumpPath).Msg("Store dumped")
+				}
 			}
 		}
 	}

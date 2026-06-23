@@ -23,18 +23,10 @@ saldeti -seed examples/seed.json
 
 ### Google Workspace mode
 
-Enable the Google Workspace API simulator alongside Entra ID:
+Run the Google Workspace API simulator exclusively:
 
 ```sh
-saldeti -google
-```
-
-### Both Entra ID and Google Workspace
-
-Run both simulators together with seed data:
-
-```sh
-saldeti -google -seed examples/seed.json
+saldeti -mode google
 ```
 
 ### Daemon mode
@@ -78,7 +70,7 @@ saldeti -base-url https://example.com -trust-forwarded-headers
 | `-seed` | string | `""` | Path to a JSON seed file. See [Seed Files](/seed-files) for the file format. |
 | `-dump` | string | `""` | Path to write a seed JSON file on graceful shutdown. Useful for capturing runtime state. |
 | `-domain` | string | `saldeti.local` | Default directory domain. Used for admin user UPN and for seeded users whose username does not contain `@`. |
-| `-google` | bool | `false` | Enable the Google Workspace API simulator. When set, Google-specific OAuth2 and API endpoints are registered alongside the Entra ID endpoints. |
+| `-mode` | string | `entra` | Operating mode. Set to `google` to run the Google Workspace API simulator exclusively, or `entra` (default) for Microsoft Entra ID / Graph. The two modes are mutually exclusive. |
 | `-debug` | bool | `false` | Enable debug-level logging. |
 
 ### Authentication & Security Flags
