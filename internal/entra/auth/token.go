@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,7 @@ import (
 )
 
 var (
-	signingKey         []byte
+	signingKey         atomic.Pointer[[]byte]
 	refreshTokens      = make(map[string]refreshTokenClaims)
 	refreshTokensMutex sync.RWMutex
 )
@@ -67,18 +68,20 @@ type refreshTokenClaims struct {
 
 // SetSigningKey sets the JWT signing key
 func SetSigningKey(key []byte) {
-	signingKey = key
-	if key == nil || len(key) == 0 {
+	k := key
+	signingKey.Store(&k)
+	if k == nil || len(k) == 0 {
 		log.Warn().Msg("JWT signing key is empty")
-	} else if len(key) < 32 {
-		log.Warn().Int("key_len", len(key)).Msg("JWT signing key is less than 32 bytes (insecure)")
+	} else if len(k) < 32 {
+		log.Warn().Int("key_len", len(k)).Msg("JWT signing key is less than 32 bytes (insecure)")
 	} else {
 		log.Info().Msg("JWT signing key configured")
 	}
 }
 
 func MintToken(tenantID, clientID, subject string, scopes []string, roles []string, lifetime time.Duration, displayName string, userPrincipalName string) (string, error) {
-	if signingKey == nil {
+	key := signingKey.Load()
+	if key == nil || *key == nil {
 		return "", errors.New("JWT signing key not configured")
 	}
 	now := time.Now()
@@ -102,7 +105,7 @@ func MintToken(tenantID, clientID, subject string, scopes []string, roles []stri
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(signingKey)
+	return token.SignedString(*key)
 }
 
 // FilterKnownScopes filters out unknown scopes (Entra-like behavior: silently filter)
@@ -141,14 +144,15 @@ func GenerateRefreshToken(tenantID, clientID, subject string, scopes []string, r
 }
 
 func ValidateToken(tokenString string) (*TokenClaims, error) {
-	if signingKey == nil {
+	key := signingKey.Load()
+	if key == nil || *key == nil {
 		return nil, errors.New("JWT signing key not configured")
 	}
 	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return signingKey, nil
+		return *key, nil
 	})
 
 	if err != nil {

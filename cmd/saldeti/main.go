@@ -413,9 +413,12 @@ func main() {
 		},
 	}
 
+	// Error channel for server failures
+	serverErr := make(chan error, 1)
+
 	go func() {
 		if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-			log.Fatal().Err(err).Msg("Server failed")
+			serverErr <- err
 		}
 	}()
 
@@ -429,10 +432,15 @@ func main() {
 		log.Fatal().Str("mode", *mode).Msg("unreachable: invalid mode")
 	}
 
-	// Wait for interrupt signal
+	// Wait for interrupt signal or server failure
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	select {
+	case <-quit:
+		log.Info().Msg("Received shutdown signal")
+	case err := <-serverErr:
+		log.Error().Err(err).Msg("Server failed")
+	}
 	appCancel()
 	log.Info().Msg("Shutting down server...")
 

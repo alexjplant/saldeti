@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,7 @@ import (
 )
 
 var (
-	signingKey         []byte
+	signingKey         atomic.Pointer[[]byte]
 	refreshTokens      = make(map[string]refreshTokenClaims)
 	refreshTokensMutex sync.RWMutex
 )
@@ -62,14 +63,15 @@ type refreshTokenClaims struct {
 
 // SetSigningKey sets the JWT signing key for Google token generation.
 func SetSigningKey(key []byte) {
-	signingKey = key
+	k := key
+	signingKey.Store(&k)
 	// Generate a short hash of the key for logging
-	hash := sha256.Sum256(key)
+	hash := sha256.Sum256(k)
 	shortHash := hex.EncodeToString(hash[:])[:16]
-	if key == nil || len(key) == 0 {
+	if k == nil || len(k) == 0 {
 		log.Warn().Msg("JWT signing key is empty")
-	} else if len(key) < 32 {
-		log.Warn().Int("key_len", len(key)).Msg("JWT signing key is less than 32 bytes (insecure)")
+	} else if len(k) < 32 {
+		log.Warn().Int("key_len", len(k)).Msg("JWT signing key is less than 32 bytes (insecure)")
 	} else {
 		log.Info().Str("hash", shortHash).Msg("JWT signing key configured")
 	}
@@ -77,7 +79,8 @@ func SetSigningKey(key []byte) {
 
 // MintToken creates a new JWT token with the given parameters.
 func MintToken(iss, sub, email string, scopes []string, lifetime time.Duration) (string, error) {
-	if signingKey == nil {
+	key := signingKey.Load()
+	if key == nil || *key == nil {
 		return "", errors.New("JWT signing key not configured")
 	}
 	now := time.Now()
@@ -101,19 +104,20 @@ func MintToken(iss, sub, email string, scopes []string, lifetime time.Duration) 
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(signingKey)
+	return token.SignedString(*key)
 }
 
 // ValidateToken validates a JWT token and returns the claims.
 func ValidateToken(tokenString string) (*GoogleClaims, error) {
-	if signingKey == nil {
+	key := signingKey.Load()
+	if key == nil || *key == nil {
 		return nil, errors.New("JWT signing key not configured")
 	}
 	token, err := jwt.ParseWithClaims(tokenString, &GoogleClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return signingKey, nil
+		return *key, nil
 	})
 
 	if err != nil {

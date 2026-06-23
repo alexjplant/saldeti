@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,15 +14,21 @@ import (
 
 const maxBodyBytes int64 = 1 << 20 // 1MB
 
-var configuredBaseURL string
+var (
+	configuredBaseURL     string
+	trustForwardedHeaders bool
+	configMu              sync.RWMutex
+)
 
 func SetBaseURL(url string) {
+	configMu.Lock()
+	defer configMu.Unlock()
 	configuredBaseURL = url
 }
 
-var trustForwardedHeaders bool
-
 func SetTrustForwardedHeaders(trust bool) {
+	configMu.Lock()
+	defer configMu.Unlock()
 	trustForwardedHeaders = trust
 }
 
@@ -50,11 +57,16 @@ func writeError(c *gin.Context, status int, code string, message string) {
 }
 
 func getBaseURL(c *gin.Context) string {
-	if configuredBaseURL != "" {
-		return configuredBaseURL
+	configMu.RLock()
+	baseURL := configuredBaseURL
+	trust := trustForwardedHeaders
+	configMu.RUnlock()
+
+	if baseURL != "" {
+		return baseURL
 	}
 	host := c.Request.Host
-	if trustForwardedHeaders {
+	if trust {
 		if forwarded := c.GetHeader("X-Forwarded-Host"); forwarded != "" {
 			host = forwarded
 		}
@@ -63,7 +75,7 @@ func getBaseURL(c *gin.Context) string {
 	if c.Request.TLS != nil {
 		scheme = "https"
 	}
-	if trustForwardedHeaders {
+	if trust {
 		if c.GetHeader("X-Forwarded-Proto") == "https" {
 			scheme = "https"
 		}
