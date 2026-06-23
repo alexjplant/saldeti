@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
-      # e2e runs: go test ./test/ -v -count=1 -tags=e2e,entra
+      # e2e runs: go test ./test/... -v -count=1 -tags=e2e,entra,google
       - run: mise run e2e
 
   ui-e2e:

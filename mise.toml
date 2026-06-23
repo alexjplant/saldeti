@@ -40,11 +40,11 @@ rm -rf bin/
 """
 
 [tasks.e2e]
-description = "Runs end-to-end tests (requires e2e build tag)"
+description = "Runs end-to-end tests (Entra + Google, requires e2e build tag)"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test ./test/ -v -count=1 -tags=e2e,entra "$@"
+go test ./test/... -v -count=1 -tags=e2e,entra,google "$@"
 """
 
 [tasks.lint]
@@ -72,11 +72,11 @@ go test ./internal/... ./cmd/... -v -count=1 "$@"
 """
 
 [tasks.test-all]
-description = "Runs unit + integration tests"
+description = "Runs unit + integration tests (Entra + Google E2E)"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test -tags e2e,entra ./...
+go test -tags=e2e,entra,google ./...
 """
 
 [tasks.ui-test]

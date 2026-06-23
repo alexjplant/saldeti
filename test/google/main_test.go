@@ -1,4 +1,4 @@
-//go:build google
+//go:build e2e && google
 
 package google_e2e
 
