@@ -31,12 +31,12 @@ import (
 	"github.com/saldeti/saldeti/internal/entra/handler"
 	"github.com/saldeti/saldeti/internal/entra/seed"
 	"github.com/saldeti/saldeti/internal/entra/store"
-	gui "github.com/saldeti/saldeti/internal/google/ui"
-	gauth "github.com/saldeti/saldeti/internal/google/auth"
-	gseed "github.com/saldeti/saldeti/internal/google/seed"
 	ui "github.com/saldeti/saldeti/internal/entra/ui"
+	gauth "github.com/saldeti/saldeti/internal/google/auth"
 	ghandler "github.com/saldeti/saldeti/internal/google/handler"
+	gseed "github.com/saldeti/saldeti/internal/google/seed"
 	gstore "github.com/saldeti/saldeti/internal/google/store"
+	gui "github.com/saldeti/saldeti/internal/google/ui"
 )
 
 func generateSelfSignedCert() (tls.Certificate, error) {
@@ -182,7 +182,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Validate admin credential flags: all-or-nothing
+	// Validate admin credential flags: all-or-nothing (Entra mode only)
 	adminFlagsSet := 0
 	if *adminClientID != "" {
 		adminFlagsSet++
@@ -193,7 +193,9 @@ func main() {
 	if *adminTenantID != "" {
 		adminFlagsSet++
 	}
-	if adminFlagsSet != 0 && adminFlagsSet != 3 {
+	if *mode == "google" && adminFlagsSet > 0 {
+		log.Warn().Msg("Admin credential flags (-admin-client-id, -admin-client-secret, -admin-tenant-id) are Entra-only and ignored in google mode")
+	} else if adminFlagsSet != 0 && adminFlagsSet != 3 {
 		log.Fatal().Msg("If any admin credential flag is set, all three must be set: -admin-client-id, -admin-client-secret, -admin-tenant-id")
 	}
 
@@ -239,7 +241,7 @@ func main() {
 		}
 
 		fmt.Fprintf(os.Stderr, "Daemon started with PID %d\n  Log: %s\n  PID: %s\n  Stop: %s -stop -pidfile %s\n",
-		cmd.Process.Pid, *logfile, *pidfile, os.Args[0], *pidfile)
+			cmd.Process.Pid, *logfile, *pidfile, os.Args[0], *pidfile)
 		lf.Close()
 		os.Exit(0)
 	}
@@ -252,11 +254,6 @@ func main() {
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-
-	if *baseURLFlag != "" {
-		handler.SetBaseURL(*baseURLFlag)
-	}
-	handler.SetTrustForwardedHeaders(*trustForwarded)
 
 	log.Info().Str("domain", *domain).Msg("Directory domain")
 
@@ -282,6 +279,11 @@ func main() {
 
 	switch *mode {
 	case "entra":
+		if *baseURLFlag != "" {
+			handler.SetBaseURL(*baseURLFlag)
+		}
+		handler.SetTrustForwardedHeaders(*trustForwarded)
+
 		auth.SetSigningKey(signingKeyBytes)
 
 		entraStore = store.NewMemoryStore()
@@ -371,6 +373,8 @@ func main() {
 			baseURL := fmt.Sprintf("https://localhost:%d", *port)
 			gui.RegisterUIRoutes(router, baseURL, googleClientID, googleClientSecret)
 		}
+	default:
+		log.Fatal().Str("mode", *mode).Msg("unreachable: invalid mode (validateMode should have caught this)")
 	}
 
 	// Generate self-signed TLS cert if not provided
@@ -417,6 +421,8 @@ func main() {
 		auth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
 	case "google":
 		gauth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
+	default:
+		log.Fatal().Str("mode", *mode).Msg("unreachable: invalid mode")
 	}
 
 	// Wait for interrupt signal

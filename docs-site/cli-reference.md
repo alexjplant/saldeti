@@ -82,9 +82,9 @@ saldeti -base-url https://example.com -trust-forwarded-headers
 | `-tls-key` | string | `""` | Path to a TLS key file (PEM). If not set, a self-signed certificate is auto-generated. |
 | `-base-url` | string | `""` | External base URL (e.g. `https://example.com`). Overrides any proxy header detection. When set, `X-Forwarded-Host` and `X-Forwarded-Proto` headers are ignored. |
 | `-trust-forwarded-headers` | bool | `false` | Trust `X-Forwarded-Host` and `X-Forwarded-Proto` headers for base URL detection. Only enable this if the server is behind a trusted reverse proxy. |
-| `-admin-client-id` | string | `""` | Admin application client ID. If empty, a random UUID is generated. |
-| `-admin-client-secret` | string | `""` | Admin application client secret. If empty, a random UUID is generated. |
-| `-admin-tenant-id` | string | `""` | Admin application tenant ID. If empty, a random UUID is generated. |
+| `-admin-client-id` | string | `""` | Admin application client ID. If empty, a random UUID is generated. (Entra mode only; ignored in google mode) |
+| `-admin-client-secret` | string | `""` | Admin application client secret. If empty, a random UUID is generated. (Entra mode only; ignored in google mode) |
+| `-admin-tenant-id` | string | `""` | Admin application tenant ID. If empty, a random UUID is generated. (Entra mode only; ignored in google mode) |
 
 ### Daemon Mode Flags
 
@@ -100,6 +100,8 @@ saldeti -base-url https://example.com -trust-forwarded-headers
 ### Admin credentials are all-or-nothing
 
 The three admin credential flags (`-admin-client-id`, `-admin-client-secret`, `-admin-tenant-id`) must all be set or all be left empty. If you set one, you must set all three — otherwise the server will refuse to start.
+
+These flags only apply in entra mode. In google mode, they are ignored.
 
 ::: tip
 If you leave all three empty, Saldeti generates random UUIDs and prints them to the console at startup. This is ideal for local development where you just need valid credentials quickly.
