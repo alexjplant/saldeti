@@ -331,7 +331,9 @@ func main() {
 		// Register UI routes if enabled
 		if *uiEnabled {
 			baseURL := fmt.Sprintf("https://localhost:%d", *port)
-			ui.RegisterUIRoutes(router, baseURL, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID)
+			if err := ui.RegisterUIRoutes(router, baseURL, finalAdminClientID, finalAdminClientSecret, finalAdminTenantID); err != nil {
+				log.Fatal().Err(err).Msg("Failed to register Entra UI routes")
+			}
 		}
 
 	case "google":
@@ -371,7 +373,9 @@ func main() {
 		// Register UI routes if enabled
 		if *uiEnabled {
 			baseURL := fmt.Sprintf("https://localhost:%d", *port)
-			gui.RegisterUIRoutes(router, baseURL, googleClientID, googleClientSecret)
+			if err := gui.RegisterUIRoutes(router, baseURL, googleClientID, googleClientSecret); err != nil {
+				log.Fatal().Err(err).Msg("Failed to register Google UI routes")
+			}
 		}
 	default:
 		log.Fatal().Str("mode", *mode).Msg("unreachable: invalid mode (validateMode should have caught this)")

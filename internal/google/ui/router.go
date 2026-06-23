@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -8,9 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSecret string) {
+func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSecret string) error {
 	client := NewGoogleClient(baseURL, adminClientID, adminClientSecret)
-	baseTmpl := parseBaseTemplates()
+	baseTmpl, err := parseBaseTemplates()
+	if err != nil {
+		return fmt.Errorf("failed to parse base templates: %w", err)
+	}
 	handler := NewUIHandler(client, baseTmpl)
 
 	uiGroup := engine.Group("/google-ui")
@@ -57,16 +61,18 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 
 	// Domain routes
 	uiGroup.GET("/domains", DomainListHandler(handler))
+
+	return nil
 }
 
-func parseBaseTemplates() *template.Template {
+func parseBaseTemplates() (*template.Template, error) {
 	t := template.New("").Funcs(funcMap())
 	tmpl, err := t.ParseFS(templateFS,
 		"templates/partials/*.html",
 		"templates/layout.html",
 	)
 	if err != nil {
-		panic("Failed to parse embedded base templates: " + err.Error())
+		return nil, fmt.Errorf("failed to parse embedded base templates: %w", err)
 	}
-	return tmpl
+	return tmpl, nil
 }

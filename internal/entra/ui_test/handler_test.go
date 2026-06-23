@@ -42,7 +42,9 @@ func setupTestServer(t *testing.T) (*httptest.Server, store.Store) {
 
 	// Register UI routes with the HTTPS base URL
 	baseURL := ts.URL
-	ui.RegisterUIRoutes(engine, baseURL, adminClientID, adminClientSecret, adminTenantID)
+	if err := ui.RegisterUIRoutes(engine, baseURL, adminClientID, adminClientSecret, adminTenantID); err != nil {
+		t.Fatalf("Failed to register UI routes: %v", err)
+	}
 
 	t.Cleanup(func() { ts.Close() })
 	return ts, st
