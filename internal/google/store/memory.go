@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -234,6 +235,24 @@ func (s *MemoryStore) RegisterClient(ctx context.Context, clientID, clientSecret
 	}
 	s.store.clients[clientID] = clientEntry{clientID: clientID, clientSecret: clientSecret}
 	return nil
+}
+
+// ListClients returns all registered OAuth clients, sorted by ClientID for determinism.
+func (s *MemoryStore) ListClients(ctx context.Context) ([]Client, error) {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	clients := make([]Client, 0, len(s.store.clients))
+	for _, entry := range s.store.clients {
+		clients = append(clients, Client{
+			ClientID:     entry.clientID,
+			ClientSecret: entry.clientSecret,
+		})
+	}
+	sort.Slice(clients, func(i, j int) bool {
+		return clients[i].ClientID < clients[j].ClientID
+	})
+	return clients, nil
 }
 
 // Users

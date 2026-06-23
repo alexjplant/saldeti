@@ -13,6 +13,7 @@ type Store interface {
 	// Auth
 	GetClient(ctx context.Context, clientID string) (clientSecret string, err error)
 	RegisterClient(ctx context.Context, clientID, clientSecret string) error
+	ListClients(ctx context.Context) ([]Client, error)
 
 	// Users (Tier 1B)
 	CreateUser(ctx context.Context, user model.User) (model.User, error)
@@ -232,4 +233,10 @@ type Store interface {
 	UpdateSubscription(ctx context.Context, name string, sub model.Subscription) (*model.Subscription, error)
 	DeleteSubscription(ctx context.Context, name string) error
 	ReactivateSubscription(ctx context.Context, name string) error
+}
+
+// Client represents a registered OAuth client.
+type Client struct {
+	ClientID     string
+	ClientSecret string
 }

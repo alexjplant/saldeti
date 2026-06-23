@@ -265,7 +265,8 @@ func main() {
 
 	// Create store, register admin client, router, and UI based on mode
 	var router *gin.Engine
-	var entraStore store.Store // assigned in entra mode; nil in google mode (dump is guarded by mode check)
+	var entraStore store.Store   // assigned in entra mode; nil in google mode (dump is guarded by mode check)
+	var googleStore gstore.Store // assigned in google mode; nil in entra mode (dump is guarded by mode check)
 
 	ctx := context.Background()
 
@@ -326,7 +327,7 @@ func main() {
 	case "google":
 		gauth.SetSigningKey(signingKeyBytes)
 
-		googleStore := gstore.NewMemoryStore()
+		googleStore = gstore.NewMemoryStore()
 
 		// Seed data from JSON file if provided
 		if *seedPath != "" {
@@ -417,23 +418,25 @@ func main() {
 	appCancel()
 	log.Info().Msg("Shutting down server...")
 
-	// Dump store if -dump is set (entra only; google dump is not yet supported)
+	// Dump store if -dump is set
 	if *dumpPath != "" {
+		var dumpCfg interface{}
+		var dumpErr error
 		if *mode == "google" {
-			log.Warn().Msg("Dump is not yet supported in google mode")
+			dumpCfg, dumpErr = gseed.DumpStore(googleStore)
 		} else {
-			cfg, err := seed.DumpStore(entraStore)
+			dumpCfg, dumpErr = seed.DumpStore(entraStore)
+		}
+		if dumpErr != nil {
+			log.Warn().Err(dumpErr).Msg("Failed to dump store")
+		} else {
+			data, err := json.MarshalIndent(dumpCfg, "", "  ")
 			if err != nil {
-				log.Warn().Err(err).Msg("Failed to dump store")
+				log.Warn().Err(err).Msg("Failed to marshal dump")
+			} else if err := os.WriteFile(*dumpPath, data, 0600); err != nil {
+				log.Warn().Err(err).Msg("Failed to write dump file")
 			} else {
-				data, err := json.MarshalIndent(cfg, "", "  ")
-				if err != nil {
-					log.Warn().Err(err).Msg("Failed to marshal dump")
-				} else if err := os.WriteFile(*dumpPath, data, 0600); err != nil {
-					log.Warn().Err(err).Msg("Failed to write dump file")
-				} else {
-					log.Info().Str("path", *dumpPath).Msg("Store dumped")
-				}
+				log.Info().Str("path", *dumpPath).Msg("Store dumped")
 			}
 		}
 	}
