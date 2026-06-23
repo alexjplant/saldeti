@@ -417,23 +417,13 @@ func TestLicenseAddAvailableSkusExcludesAssigned(t *testing.T) {
 	// Check if SPE_E5 appears in the assigned licenses table
 	hasAssignedInUI := strings.Contains(body, "<td><strong>SPE_E5</strong></td>")
 	if !hasAssignedInUI {
-		t.Log("Admin's SPE_E5 license is not showing in the assigned licenses table")
-		// This is a known issue with the UI not rendering assigned licenses correctly
-		// The test will verify the filtering works if assigned licenses were properly rendered
+		t.Error("Admin's SPE_E5 license should be showing in the assigned licenses table")
 	}
 
-	// Check if there's an option with the SPE_E5 GUID in the dropdown
+	// Check that SPE_E5 is NOT in the available SKUs dropdown
 	pattern := `value="` + speE5GUID + `"`
 	if strings.Contains(body, pattern) {
-		if hasAssignedInUI {
-			t.Error("SPE_E5 is both assigned and available in dropdown - filtering not working")
-		} else {
-			// If assigned licenses are not showing in the UI, then the dropdown
-			// will incorrectly show all SKUs. This is a bug in the UI rendering,
-			// not the filtering logic.
-			t.Log("Note: SPE_E5 appears in dropdown, but assigned licenses are not showing in UI. " +
-				"This is likely a UI rendering issue, not a filtering issue.")
-		}
+		t.Error("SPE_E5 should not appear in the available SKUs dropdown since it is already assigned")
 	}
 
 	// Verify that the license section exists at all

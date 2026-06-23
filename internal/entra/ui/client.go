@@ -61,6 +61,17 @@ func newGraphClient(baseURL string, cred azcore.TokenCredential) (*msgraphsdk.Gr
 	return client, nil
 }
 
+// userSelectFields is the complete set of user properties the UI requests via
+// $select. Microsoft Graph does NOT return assignedLicenses by default — it must
+// be explicitly requested — so it is always included here. This list mirrors the
+// fields consumed by sdkUserToModel and the user detail/edit templates.
+var userSelectFields = []string{
+	"id", "displayName", "givenName", "surname", "userPrincipalName",
+	"mail", "mailNickname", "jobTitle", "department", "officeLocation",
+	"mobilePhone", "accountEnabled", "createdDateTime", "userType",
+	"assignedLicenses",
+}
+
 // Convert SDK user to model.User for templates
 func sdkUserToModel(u models.Userable) model.User {
 	m := model.User{}
