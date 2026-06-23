@@ -1205,7 +1205,7 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get Admin: %v", err)
 	}
-	diana, err := s.GetUserByUPN(nil, "diana.prince@saldeti.local")
+	diana, err := s.GetUserByUPN(nil, "diana.palmer@saldeti.local")
 	if err != nil {
 		t.Errorf("Failed to get Diana: %v", err)
 	}

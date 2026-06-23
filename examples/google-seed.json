@@ -29,16 +29,16 @@
       "org_unit_path": "/Engineering"
     },
     {
-      "primary_email": "charlie.brown@saldeti.com",
-      "given_name": "Charlie",
-      "family_name": "Brown",
+      "primary_email": "charles.brennan@saldeti.com",
+      "given_name": "Charles",
+      "family_name": "Brennan",
       "password": "Simulator123!",
       "org_unit_path": "/Marketing"
     },
     {
-      "primary_email": "diana.prince@saldeti.com",
+      "primary_email": "diana.palmer@saldeti.com",
       "given_name": "Diana",
-      "family_name": "Prince",
+      "family_name": "Palmer",
       "password": "Simulator123!",
       "org_unit_path": "/HR"
     },
@@ -82,7 +82,7 @@
       "name": "Marketing Team",
       "description": "Marketing department group",
       "member_emails": [
-        "charlie.brown@saldeti.com",
+        "charles.brennan@saldeti.com",
         "grace.lee@saldeti.com"
       ]
     },
@@ -94,8 +94,8 @@
         "admin@saldeti.com",
         "alice.smith@saldeti.com",
         "bob.jones@saldeti.com",
-        "charlie.brown@saldeti.com",
-        "diana.prince@saldeti.com",
+        "charles.brennan@saldeti.com",
+        "diana.palmer@saldeti.com",
         "frank.miller@saldeti.com",
         "grace.lee@saldeti.com"
       ]
@@ -106,7 +106,7 @@
       "description": "Leadership team",
       "member_emails": [
         "admin@saldeti.com",
-        "diana.prince@saldeti.com"
+        "diana.palmer@saldeti.com"
       ]
     }
   ],
@@ -174,7 +174,7 @@
   ],
   "role_assignments": [
     {
-      "assigned_to_email": "diana.prince@saldeti.com",
+      "assigned_to_email": "diana.palmer@saldeti.com",
       "role_id_or_name": "HelpdeskAdmin"
     },
     {
@@ -198,9 +198,9 @@
     },
     {
       "serial_number": "CHROME-002-DEF",
-      "annotated_user": "charlie.brown@saldeti.com",
+      "annotated_user": "charles.brennan@saldeti.com",
       "org_unit_path": "/Marketing",
-      "notes": "Marketing Chromebook - Charlie"
+      "notes": "Marketing Chromebook - Charles"
     },
     {
       "serial_number": "CHROME-003-GHI",
