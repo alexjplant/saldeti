@@ -277,7 +277,7 @@ func TestRemoveLicense(t *testing.T) {
 	// Remove the license
 	removeReq := map[string]interface{}{
 		"addLicenses":    []interface{}{},
-		"removeLicenses": []map[string]interface{}{{"skuId": enterpriseSkuId}},
+		"removeLicenses": []string{enterpriseSkuId},
 	}
 
 	removeBody, _ := json.Marshal(removeReq)
@@ -390,7 +390,7 @@ func TestAssignLicenseMultiple(t *testing.T) {
 	// Remove EMS license, keep ENTERPRISEPACK
 	removeReq := map[string]interface{}{
 		"addLicenses":    []interface{}{},
-		"removeLicenses": []map[string]interface{}{{"skuId": emsSkuId}},
+		"removeLicenses": []string{emsSkuId},
 	}
 
 	removeBody, _ := json.Marshal(removeReq)

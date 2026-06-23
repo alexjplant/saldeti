@@ -6,9 +6,9 @@ type User struct {
 	Etag                       string                 `json:"etag,omitempty"`
 	PrimaryEmail               string                 `json:"primaryEmail"`
 	Name                       *UserName              `json:"name,omitempty"`
-	GivenName                  string                 `json:"givenName,omitempty"`
-	FamilyName                 string                 `json:"familyName,omitempty"`
-	DisplayName                string                 `json:"displayName,omitempty"`
+	GivenName                  string                 `json:"-"`
+	FamilyName                 string                 `json:"-"`
+	DisplayName                string                 `json:"-"`
 	IsAdmin                    bool                   `json:"isAdmin"`
 	IsDelegatedAdmin           bool                   `json:"isDelegatedAdmin"`
 	IsMailboxSetup             bool                   `json:"isMailboxSetup"`
@@ -39,7 +39,6 @@ type User struct {
 	DeletionTime               string                 `json:"deletionTime,omitempty"`
 	IsEnforcedIn2Sv            bool                   `json:"isEnforcedIn2Sv"`
 	IsEnrolledIn2Sv            bool                   `json:"isEnrolledIn2Sv"`
-	Is2svEnrolled              bool                   `json:"is2svEnrolled"`
 	CustomSchemas              map[string]interface{} `json:"customSchemas,omitempty"`
 	Languages                  []interface{}          `json:"languages,omitempty"`
 	SSHPublicKeys              []interface{}          `json:"sshPublicKeys,omitempty"`

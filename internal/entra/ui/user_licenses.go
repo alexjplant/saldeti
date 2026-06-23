@@ -95,7 +95,7 @@ func UserRemoveLicenseHandler(h *UIHandler) gin.HandlerFunc {
 
 		payload := map[string]interface{}{
 			"addLicenses":    []interface{}{},
-			"removeLicenses": []map[string]interface{}{{"skuId": skuID}},
+			"removeLicenses": []string{skuID},
 		}
 		body, err := json.Marshal(payload)
 		if err != nil {

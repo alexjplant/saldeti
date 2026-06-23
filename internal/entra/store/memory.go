@@ -1688,7 +1688,7 @@ func (s *memoryStore) ListSubscribedSkus(ctx context.Context) ([]model.Subscribe
 	return result, nil
 }
 
-func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []model.LicenseRemoval) (*model.User, error) {
+func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []string) (*model.User, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1706,8 +1706,8 @@ func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicen
 	// Track which SKUs are being removed (were present before)
 	removedSkuIds := make(map[string]bool)
 	for _, rem := range removeLicenses {
-		if _, existed := currentLicenses[rem.SkuID]; existed {
-			removedSkuIds[rem.SkuID] = true
+		if _, existed := currentLicenses[rem]; existed {
+			removedSkuIds[rem] = true
 		}
 	}
 
@@ -1716,7 +1716,7 @@ func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicen
 
 	// Remove licenses
 	for _, rem := range removeLicenses {
-		delete(currentLicenses, rem.SkuID)
+		delete(currentLicenses, rem)
 	}
 
 	// Add licenses (overwrite if already present)

@@ -98,11 +98,7 @@ func removeUserLicense(t *testing.T, st store.Store, userUPN, skuPartNumber stri
 	}
 
 	// Remove license using AssignLicense method
-	removeLicenses := []model.LicenseRemoval{
-		{
-			SkuID: skuID,
-		},
-	}
+	removeLicenses := []string{skuID}
 
 	_, err = st.AssignLicense(ctx, user.ID, nil, removeLicenses)
 	if err != nil {

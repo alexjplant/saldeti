@@ -101,8 +101,10 @@ func TestGoogleUser_Patch(t *testing.T) {
 	require.NotEmpty(t, userID)
 
 	// Patch user
-	resp = googleRequest(t, client, http.MethodPatch, base+"/users/"+userID, token, `{"givenName":"Patched"}`)
+	resp = googleRequest(t, client, http.MethodPatch, base+"/users/"+userID, token, `{"name":{"givenName":"Patched","familyName":"User"}}`)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	assert.Equal(t, "Patched", body["givenName"])
+	nameObj, ok := body["name"].(map[string]interface{})
+	require.True(t, ok, "expected name object in response")
+	assert.Equal(t, "Patched", nameObj["givenName"])
 }

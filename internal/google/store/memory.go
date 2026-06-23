@@ -2206,7 +2206,6 @@ func (s *MemoryStore) TurnOff2SV(ctx context.Context, userKey string) error {
 	}
 	existing.IsEnrolledIn2Sv = false
 	existing.IsEnforcedIn2Sv = false
-	existing.Is2svEnrolled = false
 	s.store.users[existing.ID] = existing
 	return nil
 }

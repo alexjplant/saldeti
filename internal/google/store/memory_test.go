@@ -83,10 +83,14 @@ func TestMemoryStore_UserCRUD(t *testing.T) {
 
 	// Patch
 	patched, err := s.PatchUser(ctx, created.ID, map[string]interface{}{
-		"familyName": "Patched",
+		"name": map[string]interface{}{
+			"givenName":  "Alice",
+			"familyName": "Patched",
+		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "Patched", patched.FamilyName)
+	require.NotNil(t, patched.Name)
+	assert.Equal(t, "Patched", patched.Name.FamilyName)
 
 	// List
 	users, _, err := s.ListUsers(ctx, model.ListOptions{})

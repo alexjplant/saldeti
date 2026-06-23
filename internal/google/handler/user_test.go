@@ -50,11 +50,13 @@ func TestGoogleUserCRUD(t *testing.T) {
 	assert.Equal(t, "updated@example.com", body["primaryEmail"])
 
 	// Patch user
-	patchJSON := `{"givenName":"Patched"}`
+	patchJSON := `{"name":{"givenName":"Patched","familyName":"User"}}`
 	resp = doGoogleRequest(t, http.MethodPatch, base+"/users/updated@example.com", token, patchJSON)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	assert.Equal(t, "Patched", body["givenName"])
+	nameObj, ok := body["name"].(map[string]interface{})
+	require.True(t, ok, "expected name object in response")
+	assert.Equal(t, "Patched", nameObj["givenName"])
 
 	// Delete user
 	resp = doGoogleRequest(t, http.MethodDelete, base+"/users/"+userID, token, "")

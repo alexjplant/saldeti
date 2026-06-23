@@ -51,7 +51,7 @@ func assignLicenseHandler(st store.Store) gin.HandlerFunc {
 			req.AddLicenses = []model.LicenseAssignment{}
 		}
 		if req.RemoveLicenses == nil {
-			req.RemoveLicenses = []model.LicenseRemoval{}
+			req.RemoveLicenses = []string{}
 		}
 
 		updatedUser, err := st.AssignLicense(c.Request.Context(), id, req.AddLicenses, req.RemoveLicenses)

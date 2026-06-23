@@ -32,16 +32,12 @@ type ServicePlanInfo struct {
 // LicenseAssignmentRequest is the request body for POST /users/{id}/assignLicense
 type LicenseAssignmentRequest struct {
 	AddLicenses    []LicenseAssignment `json:"addLicenses"`
-	RemoveLicenses []LicenseRemoval    `json:"removeLicenses"`
+	RemoveLicenses []string            `json:"removeLicenses"`
 }
 
 type LicenseAssignment struct {
 	SkuID         string   `json:"skuId"`
 	DisabledPlans []string `json:"disabledPlans,omitempty"`
-}
-
-type LicenseRemoval struct {
-	SkuID string `json:"skuId"`
 }
 
 // SeedLicense is used in seed JSON for user license assignment

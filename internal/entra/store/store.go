@@ -63,7 +63,7 @@ type Store interface {
 
 	// Licenses
 	ListSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error)
-	AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []model.LicenseRemoval) (*model.User, error)
+	AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []string) (*model.User, error)
 
 	// Applications
 	ListApplications(ctx context.Context, opts model.ListOptions) ([]model.Application, int, error)
