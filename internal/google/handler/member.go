@@ -109,7 +109,7 @@ func patchMemberHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		groupKey := c.Param("groupKey")
 		memberKey := c.Param("memberKey")
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
 			return
@@ -129,7 +129,7 @@ func patchMemberHandler(st store.Store) gin.HandlerFunc {
 			writeError(c, http.StatusInternalServerError, "backendError", "Failed to patch member")
 			return
 		}
-		var existingMap map[string]interface{}
+		var existingMap map[string]any
 		if err := json.Unmarshal(existingJSON, &existingMap); err != nil {
 			writeError(c, http.StatusInternalServerError, "backendError", "Failed to patch member")
 			return

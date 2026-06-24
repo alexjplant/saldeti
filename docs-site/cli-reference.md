@@ -66,7 +66,7 @@ saldeti -base-url https://example.com -trust-forwarded-headers
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `-port` | int | `9443` | Port to listen on. |
-| `-ui` | bool | `true` | Enable the admin UI. When enabled, a web dashboard is available at the server root. |
+| `-ui` | bool | `true` | Enable the admin UI. When enabled, a web dashboard is available at `/ui` (Entra mode, default) or `/google-ui/` (Google mode). |
 | `-seed` | string | `""` | Path to a JSON seed file. The format depends on the active `-mode` (`seed.schema.json` for Entra ID, `google-seed.schema.json` for Google Workspace). See [Seed Files](/seed-files) for the file format. |
 | `-dump` | string | `""` | Path to write a seed JSON file on graceful shutdown. Useful for capturing runtime state. |
 | `-domain` | string | `saldeti.local` | Default directory domain. Used for admin user UPN and for seeded users whose username does not contain `@`. |

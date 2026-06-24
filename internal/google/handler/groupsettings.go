@@ -54,7 +54,7 @@ func updateGroupSettingsHandler(st store.Store) gin.HandlerFunc {
 func patchGroupSettingsHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		groupUniqueId := c.Param("groupUniqueId")
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
 			return

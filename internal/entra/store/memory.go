@@ -244,7 +244,7 @@ func (s *memoryStore) ListUsers(ctx context.Context, opts model.ListOptions) ([]
 	return filteredUsers, totalCount, nil
 }
 
-func (s *memoryStore) UpdateUser(ctx context.Context, id string, patch map[string]interface{}) (*model.User, error) {
+func (s *memoryStore) UpdateUser(ctx context.Context, id string, patch map[string]any) (*model.User, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -327,7 +327,7 @@ func (s *memoryStore) DeleteUser(ctx context.Context, id string) error {
 }
 
 // applyPatch applies a patch map to a struct using generics
-func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
+func applyPatch[T any](obj T, patch map[string]any) (T, error) {
 	// Use reflection to update fields
 	v := reflect.ValueOf(&obj).Elem()
 	t := reflect.TypeOf(obj)
@@ -367,7 +367,7 @@ func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
 					}
 				} else if fieldValue.Kind() == reflect.Slice {
 					// Handle slice fields (GroupTypes, ProxyAddresses)
-					if sliceValue, ok := patchValue.([]interface{}); ok {
+					if sliceValue, ok := patchValue.([]any); ok {
 						// Convert []interface{} to appropriate slice type
 						sliceType := fieldValue.Type()
 						elemType := sliceType.Elem()
@@ -399,7 +399,7 @@ func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
 }
 
 // convertValue converts a patch value to the target type
-func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, error) {
+func convertValue(value any, targetType reflect.Type) (reflect.Value, error) {
 	// Guard against nil values (JSON null)
 	if value == nil {
 		return reflect.Zero(targetType), nil
@@ -407,7 +407,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 	sourceValue := reflect.ValueOf(value)
 	sourceType := sourceValue.Type()
 	// Handle map[string]interface{} → struct conversion via JSON round-trip
-	if mapVal, ok := value.(map[string]interface{}); ok {
+	if mapVal, ok := value.(map[string]any); ok {
 		resolvedTarget := targetType
 		if resolvedTarget.Kind() == reflect.Pointer {
 			resolvedTarget = resolvedTarget.Elem()
@@ -429,7 +429,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 	}
 
 	// Handle []interface{} → slice conversion via JSON round-trip
-	if sliceVal, ok := value.([]interface{}); ok {
+	if sliceVal, ok := value.([]any); ok {
 		resolvedTarget := targetType
 		if resolvedTarget.Kind() == reflect.Pointer {
 			resolvedTarget = resolvedTarget.Elem()
@@ -457,7 +457,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		t, err := time.Parse(time.RFC3339, strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid time format: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid time format: %w", err)
 		}
 		return reflect.ValueOf(t), nil
 	}
@@ -467,7 +467,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		t, err := time.Parse(time.RFC3339, strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid time format: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid time format: %w", err)
 		}
 		return reflect.ValueOf(&t), nil
 	}
@@ -477,7 +477,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		boolValue, err := strconv.ParseBool(strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid boolean value: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid boolean value: %w", err)
 		}
 		return reflect.ValueOf(boolValue), nil
 	}
@@ -487,7 +487,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		boolValue, err := strconv.ParseBool(strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid boolean value: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid boolean value: %w", err)
 		}
 		return reflect.ValueOf(&boolValue), nil
 	}
@@ -513,7 +513,7 @@ func isNumericType(t reflect.Type) bool {
 }
 
 // convertNumericValue converts between numeric types
-func convertNumericValue(value interface{}, targetType reflect.Type) (reflect.Value, error) {
+func convertNumericValue(value any, targetType reflect.Type) (reflect.Value, error) {
 	floatValue := 0.0
 
 	switch v := value.(type) {
@@ -666,7 +666,7 @@ func (s *memoryStore) CreateGroup(ctx context.Context, group model.Group) (model
 	return group, nil
 }
 
-func (s *memoryStore) UpdateGroup(ctx context.Context, id string, patch map[string]interface{}) (*model.Group, error) {
+func (s *memoryStore) UpdateGroup(ctx context.Context, id string, patch map[string]any) (*model.Group, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1488,11 +1488,11 @@ func (s *memoryStore) ListUserTransitiveMemberOf(ctx context.Context, userID str
 }
 
 // GetDirectoryObjects returns directory objects for the given IDs, optionally filtered by type
-func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, types []string) ([]map[string]interface{}, error) {
+func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, types []string) ([]map[string]any, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	result := make([]map[string]interface{}, 0, len(ids))
+	result := make([]map[string]any, 0, len(ids))
 
 	for _, id := range ids {
 		// Check if it's a user
@@ -1500,7 +1500,7 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 			if len(types) == 0 || contains(types, "user") {
 				userJSON, err := json.Marshal(user)
 				if err == nil {
-					var userMap map[string]interface{}
+					var userMap map[string]any
 					if err := json.Unmarshal(userJSON, &userMap); err == nil {
 						userMap["@odata.type"] = "#microsoft.graph.user"
 						result = append(result, userMap)
@@ -1515,7 +1515,7 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 			if len(types) == 0 || contains(types, "group") {
 				groupJSON, err := json.Marshal(group)
 				if err == nil {
-					var groupMap map[string]interface{}
+					var groupMap map[string]any
 					if err := json.Unmarshal(groupJSON, &groupMap); err == nil {
 						groupMap["@odata.type"] = "#microsoft.graph.group"
 						result = append(result, groupMap)
@@ -1530,7 +1530,7 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 			if len(types) == 0 || contains(types, "servicePrincipal") {
 				spJSON, err := json.Marshal(sp)
 				if err == nil {
-					var spMap map[string]interface{}
+					var spMap map[string]any
 					if err := json.Unmarshal(spJSON, &spMap); err == nil {
 						spMap["@odata.type"] = "#microsoft.graph.servicePrincipal"
 						result = append(result, spMap)
@@ -1547,7 +1547,7 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 }
 
 // GetUsersDelta returns users changed since the delta token
-func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
+func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1564,7 +1564,7 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 	}
 
 	// Collect changed users (including deleted ones)
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 
 	// Get current users modified after the delta token
 	for _, user := range s.users {
@@ -1574,7 +1574,7 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 			if err != nil {
 				continue
 			}
-			var userMap map[string]interface{}
+			var userMap map[string]any
 			if err := json.Unmarshal(userJSON, &userMap); err != nil {
 				continue
 			}
@@ -1587,9 +1587,9 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 	for userID, deletedAt := range s.deletedUsers {
 		if deltaToken == "" || deletedAt.After(sinceTime) {
 			// Create a minimal representation of the deleted user
-			deletedUser := map[string]interface{}{
+			deletedUser := map[string]any{
 				"id": userID,
-				"@removed": map[string]interface{}{
+				"@removed": map[string]any{
 					"reason": "deleted",
 				},
 			}
@@ -1604,7 +1604,7 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 }
 
 // GetGroupsDelta returns groups changed since the delta token
-func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
+func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1621,7 +1621,7 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 	}
 
 	// Collect changed groups (including deleted ones)
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 
 	// Get current groups modified after the delta token
 	for _, group := range s.groups {
@@ -1631,7 +1631,7 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 			if err != nil {
 				continue
 			}
-			var groupMap map[string]interface{}
+			var groupMap map[string]any
 			if err := json.Unmarshal(groupJSON, &groupMap); err != nil {
 				continue
 			}
@@ -1644,9 +1644,9 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 	for groupID, deletedAt := range s.deletedGroups {
 		if deltaToken == "" || deletedAt.After(sinceTime) {
 			// Create a minimal representation of the deleted group
-			deletedGroup := map[string]interface{}{
+			deletedGroup := map[string]any{
 				"id": groupID,
-				"@removed": map[string]interface{}{
+				"@removed": map[string]any{
 					"reason": "deleted",
 				},
 			}

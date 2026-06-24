@@ -21,12 +21,12 @@ func listGrantsHandler(st store.Store) gin.HandlerFunc {
 		// Parse OData options
 		opts := parseListOptions(c.Request.URL.Query())
 
-		// Validate $top <= 999
+		// Validate $top <= maxTopValue
 		if topStr := c.Request.URL.Query().Get("$top"); topStr != "" {
 			if top, err := strconv.Atoi(topStr); err == nil && top > 0 {
-				if top > 999 {
+				if top > maxTopValue {
 					writeError(c, http.StatusBadRequest, "Request_BadRequest",
-						fmt.Sprintf("$top value %d exceeds maximum of 999.", top))
+						fmt.Sprintf("$top value %d exceeds maximum of %d.", top, maxTopValue))
 					return
 				}
 			}
@@ -178,7 +178,7 @@ func updateGrantHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Decode body as map[string]interface{}
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return

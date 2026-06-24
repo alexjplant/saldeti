@@ -9,8 +9,8 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'CLI Reference', link: '/cli-reference' },
       { text: 'Seed Files', link: '/seed-files' },
-      { text: 'Google Endpoints', link: '/google-endpoints' },
       { text: 'Entra Endpoints', link: '/entra-endpoints' },
+      { text: 'Google Endpoints', link: '/google-endpoints' },
     ],
     sidebar: [
       {
@@ -19,8 +19,8 @@ export default defineConfig({
           { text: 'Introduction', link: '/' },
           { text: 'CLI Reference', link: '/cli-reference' },
           { text: 'Seed Files', link: '/seed-files' },
-          { text: 'Google Endpoints', link: '/google-endpoints' },
           { text: 'Entra Endpoints', link: '/entra-endpoints' },
+          { text: 'Google Endpoints', link: '/google-endpoints' },
         ],
       },
     ],

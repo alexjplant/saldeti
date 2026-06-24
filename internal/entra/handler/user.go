@@ -25,9 +25,9 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 		// Validate $top parameter
 		if topStr := c.Request.URL.Query().Get("$top"); topStr != "" {
 			if top, err := strconv.Atoi(topStr); err == nil && top > 0 {
-				if top > 999 {
+				if top > maxTopValue {
 					writeError(c, http.StatusBadRequest, "Request_BadRequest",
-						fmt.Sprintf("$top value %d exceeds maximum of 999.", top))
+						fmt.Sprintf("$top value %d exceeds maximum of %d.", top, maxTopValue))
 					return
 				}
 			}
@@ -51,11 +51,11 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Handle $expand - convert users to maps with expanded properties
-		var responseValue interface{} = users
+		var responseValue any = users
 		if len(opts.ExpandOptions) > 0 {
-			expandedUsers := make([]map[string]interface{}, 0, len(users))
+			expandedUsers := make([]map[string]any, 0, len(users))
 			for _, u := range users {
-				userMap := make(map[string]interface{})
+				userMap := make(map[string]any)
 				// Serialize user to map
 				userJSON, err := json.Marshal(u)
 				if err != nil {
@@ -84,9 +84,9 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 									// Can't serialize as map; fall back to raw object
 									userMap["manager"] = mgr
 								} else {
-									var mgrMap map[string]interface{}
+									var mgrMap map[string]any
 									if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
-										mgrMap = map[string]interface{}{}
+										mgrMap = map[string]any{}
 									}
 									mgrMap = applySelect(mgrMap, expand.Select)
 									mgrMap["@odata.type"] = "#microsoft.graph.user"
@@ -98,12 +98,12 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 						}
 						// If no manager, don't set the key at all (omit it)
 					case "directReports":
-						reports, _, err := st.ListDirectReports(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
+						reports, _, err := st.ListDirectReports(c.Request.Context(), u.ID, model.ListOptions{Top: maxTopValue})
 						if err == nil {
 							userMap["directReports"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(reports), expand.Select)
 						}
 					case "memberOf":
-						groups, _, err := st.ListUserMemberOf(c.Request.Context(), u.ID, model.ListOptions{Top: 999})
+						groups, _, err := st.ListUserMemberOf(c.Request.Context(), u.ID, model.ListOptions{Top: maxTopValue})
 						if err == nil {
 							userMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 						}
@@ -120,20 +120,20 @@ func listUsersHandler(st store.Store) gin.HandlerFunc {
 				// Items are already maps from expand handling.
 				// Build a set of expanded property names so applySelect doesn't strip them.
 				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
-				maps := responseValue.([]map[string]interface{})
+				maps := responseValue.([]map[string]any)
 				for i, m := range maps {
 					maps[i] = applySelect(m, opts.Select, expandedProps)
 				}
 			} else {
 				// Items are structs, serialize to maps first
-				filteredItems := make([]map[string]interface{}, 0, len(users))
+				filteredItems := make([]map[string]any, 0, len(users))
 				for i := range users {
 					itemJSON, err := json.Marshal(users[i])
 					if err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
 					}
-					var itemMap map[string]interface{}
+					var itemMap map[string]any
 					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
@@ -222,9 +222,9 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 							// Can't serialize as map; fall back to raw object
 							response["manager"] = mgr
 						} else {
-							var mgrMap map[string]interface{}
+							var mgrMap map[string]any
 							if err := json.Unmarshal(mgrJSON, &mgrMap); err != nil {
-								mgrMap = map[string]interface{}{}
+								mgrMap = map[string]any{}
 							}
 							mgrMap = applySelect(mgrMap, expand.Select)
 							mgrMap["@odata.type"] = "#microsoft.graph.user"
@@ -236,12 +236,12 @@ func getUserHandler(st store.Store) gin.HandlerFunc {
 				}
 				// If no manager, don't set the key at all (omit it)
 			case "directReports":
-				reports, _, err := st.ListDirectReports(c.Request.Context(), user.ID, model.ListOptions{Top: 999})
+				reports, _, err := st.ListDirectReports(c.Request.Context(), user.ID, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["directReports"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(reports), expand.Select)
 				}
 			case "memberOf":
-				groups, _, err := st.ListUserMemberOf(c.Request.Context(), user.ID, model.ListOptions{Top: 999})
+				groups, _, err := st.ListUserMemberOf(c.Request.Context(), user.ID, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 				}
@@ -323,7 +323,7 @@ func updateUserHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Decode patch as map
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
@@ -583,7 +583,7 @@ func listLicenseDetailsHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		writeJSON(c, http.StatusOK, gin.H{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('" + c.Param("id") + "')/licenseDetails",
-			"value":          []interface{}{},
+			"value":          []any{},
 		})
 	}
 }

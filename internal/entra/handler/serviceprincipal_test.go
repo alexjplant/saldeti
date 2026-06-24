@@ -51,14 +51,14 @@ func TestServicePrincipalList(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals", listResp["@odata.context"])
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.GreaterOrEqual(t, len(value), 3)
 }
 
@@ -109,22 +109,22 @@ func TestListServicePrincipalsExpandOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	sps := listResp["value"].([]interface{})
+	sps := listResp["value"].([]any)
 	foundSP := false
 	for _, sp := range sps {
-		spMap := sp.(map[string]interface{})
+		spMap := sp.(map[string]any)
 		if spMap["appId"] == createdApp.AppID {
 			foundSP = true
-			owners, ok := spMap["owners"].([]interface{})
+			owners, ok := spMap["owners"].([]any)
 			require.True(t, ok, "SP should have owners key when expanded")
 			assert.Len(t, owners, 1)
-			owner := owners[0].(map[string]interface{})
+			owner := owners[0].(map[string]any)
 			assert.Equal(t, createdUser.ID, owner["id"])
 			assert.Contains(t, owner, "@odata.type")
 			break
@@ -176,20 +176,20 @@ func TestListServicePrincipalsExpandOwnersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	sps := listResp["value"].([]interface{})
+	sps := listResp["value"].([]any)
 	for _, sp := range sps {
-		spMap := sp.(map[string]interface{})
+		spMap := sp.(map[string]any)
 		if spMap["appId"] == createdApp.AppID {
-			owners, ok := spMap["owners"].([]interface{})
+			owners, ok := spMap["owners"].([]any)
 			require.True(t, ok)
 			assert.Len(t, owners, 1)
-			owner := owners[0].(map[string]interface{})
+			owner := owners[0].(map[string]any)
 			assert.Contains(t, owner, "id")
 			assert.Contains(t, owner, "displayName")
 			assert.Contains(t, owner, "@odata.type")
@@ -242,16 +242,16 @@ func TestGetServicePrincipalExpandOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
 	require.NoError(t, err)
 
-	owners, ok := spResp["owners"].([]interface{})
+	owners, ok := spResp["owners"].([]any)
 	require.True(t, ok, "SP response should have owners key when expanded")
 	assert.Len(t, owners, 1)
-	owner := owners[0].(map[string]interface{})
+	owner := owners[0].(map[string]any)
 	assert.Equal(t, createdUser.ID, owner["id"])
 	assert.Contains(t, owner, "@odata.type")
 }
@@ -300,16 +300,16 @@ func TestGetServicePrincipalExpandMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
 	require.NoError(t, err)
 
-	memberOf, ok := spResp["memberOf"].([]interface{})
+	memberOf, ok := spResp["memberOf"].([]any)
 	require.True(t, ok, "SP response should have memberOf key when expanded")
 	assert.Len(t, memberOf, 1)
-	groupEntry := memberOf[0].(map[string]interface{})
+	groupEntry := memberOf[0].(map[string]any)
 	assert.Equal(t, createdGroup.ID, groupEntry["id"])
 	assert.Contains(t, groupEntry, "@odata.type")
 }
@@ -357,25 +357,25 @@ func TestListServicePrincipalsExpandOwnersWithOuterSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	sps := listResp["value"].([]interface{})
+	sps := listResp["value"].([]any)
 	for _, spItem := range sps {
-		spMap := spItem.(map[string]interface{})
+		spMap := spItem.(map[string]any)
 		if spMap["appId"] == createdApp.AppID {
 			// Outer $select=displayName should limit SP fields
 			assert.Contains(t, spMap, "displayName")
 			assert.Contains(t, spMap, "id")
 			assert.NotContains(t, spMap, "appId") // not in $select
 			// But owners should be preserved
-			owners, ok := spMap["owners"].([]interface{})
+			owners, ok := spMap["owners"].([]any)
 			require.True(t, ok, "owners should be preserved even with outer $select")
 			assert.Len(t, owners, 1)
-			owner := owners[0].(map[string]interface{})
+			owner := owners[0].(map[string]any)
 			assert.Contains(t, owner, "id")
 			assert.NotContains(t, owner, "displayName") // nested $select=id only
 			break
@@ -412,17 +412,17 @@ func TestServicePrincipalListWithFilter(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
 	// Verify the SP for our app exists
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	found := false
 	for _, v := range value {
-		sp := v.(map[string]interface{})
+		sp := v.(map[string]any)
 		if sp["appId"] == createdApp.AppID {
 			found = true
 			break
@@ -461,13 +461,13 @@ func TestServicePrincipalListWithTop(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.Equal(t, 2, len(value))
 }
 
@@ -504,7 +504,7 @@ func TestServicePrincipalGet(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
@@ -544,7 +544,7 @@ func TestServicePrincipalGetByAppID(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
@@ -613,7 +613,7 @@ func TestServicePrincipalCreate(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/v1.0/servicePrincipals/")
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
@@ -726,7 +726,7 @@ func TestServicePrincipalCreateWithoutApplication(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	assert.NotEmpty(t, result["id"], "created SP should have an id")
@@ -768,7 +768,7 @@ func TestServicePrincipalUpdate(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
@@ -868,13 +868,13 @@ func TestServicePrincipalListOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.Equal(t, 1, len(value))
 }
 
@@ -1021,13 +1021,13 @@ func TestServicePrincipalListMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.Equal(t, 1, len(value))
 }
 
@@ -1092,13 +1092,13 @@ func TestServicePrincipalListTransitiveMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.GreaterOrEqual(t, len(value), 1)
 }
 
@@ -1162,7 +1162,7 @@ func TestServicePrincipalAppRoleAssignmentCRUD(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
 	// Get assignment ID
-	var assignmentResp map[string]interface{}
+	var assignmentResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &assignmentResp)
@@ -1181,13 +1181,13 @@ func TestServicePrincipalAppRoleAssignmentCRUD(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body2, err := io.ReadAll(resp2.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body2, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.GreaterOrEqual(t, len(value), 1)
 
 	// Delete assignment
@@ -1262,7 +1262,7 @@ func TestServicePrincipalAppRoleAssignedToCRUD(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
 	// Get assignment ID
-	var assignmentResp map[string]interface{}
+	var assignmentResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &assignmentResp)
@@ -1281,13 +1281,13 @@ func TestServicePrincipalAppRoleAssignedToCRUD(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body2, err := io.ReadAll(resp2.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body2, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.GreaterOrEqual(t, len(value), 1)
 
 	// Delete assignment
@@ -1344,13 +1344,13 @@ func TestServicePrincipalListOAuth2Grants(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.GreaterOrEqual(t, len(value), 1)
 }
 
@@ -1389,7 +1389,7 @@ func TestServicePrincipalAddPassword(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var pwdResp map[string]interface{}
+	var pwdResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &pwdResp)
@@ -1434,7 +1434,7 @@ func TestServicePrincipalRemovePassword(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	var pwdResp map[string]interface{}
+	var pwdResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &pwdResp)
@@ -1492,7 +1492,7 @@ func TestServicePrincipalAddKey(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var keyResp map[string]interface{}
+	var keyResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &keyResp)
@@ -1535,7 +1535,7 @@ func TestServicePrincipalRemoveKey(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	var keyResp map[string]interface{}
+	var keyResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &keyResp)
@@ -1598,13 +1598,13 @@ func TestServicePrincipalEmptyPolicies(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var policyResp map[string]interface{}
+		var policyResp map[string]any
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		err = json.Unmarshal(body, &policyResp)
 		require.NoError(t, err)
 
-		value := policyResp["value"].([]interface{})
+		value := policyResp["value"].([]any)
 		assert.Equal(t, 0, len(value))
 		assert.Contains(t, policyResp, "@odata.context")
 	}
@@ -1654,22 +1654,22 @@ func TestListServicePrincipalsExpandMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	sps := listResp["value"].([]interface{})
+	sps := listResp["value"].([]any)
 	foundSP := false
 	for _, spItem := range sps {
-		spMap := spItem.(map[string]interface{})
+		spMap := spItem.(map[string]any)
 		if spMap["appId"] == createdApp.AppID {
 			foundSP = true
-			memberOf, ok := spMap["memberOf"].([]interface{})
+			memberOf, ok := spMap["memberOf"].([]any)
 			require.True(t, ok, "SP should have memberOf key when expanded")
 			assert.Len(t, memberOf, 1)
-			groupEntry := memberOf[0].(map[string]interface{})
+			groupEntry := memberOf[0].(map[string]any)
 			assert.Equal(t, createdGroup.ID, groupEntry["id"])
 			assert.Contains(t, groupEntry, "@odata.type")
 			break
@@ -1722,16 +1722,16 @@ func TestGetServicePrincipalByAppIDExpandMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
 	require.NoError(t, err)
 
-	memberOf, ok := spResp["memberOf"].([]interface{})
+	memberOf, ok := spResp["memberOf"].([]any)
 	require.True(t, ok, "SP response should have memberOf key when expanded")
 	assert.Len(t, memberOf, 1)
-	groupEntry := memberOf[0].(map[string]interface{})
+	groupEntry := memberOf[0].(map[string]any)
 	assert.Equal(t, createdGroup.ID, groupEntry["id"])
 	assert.Contains(t, groupEntry, "@odata.type")
 }
@@ -1779,16 +1779,16 @@ func TestGetServicePrincipalByAppIDExpandOwnersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
 	require.NoError(t, err)
 
-	owners, ok := spResp["owners"].([]interface{})
+	owners, ok := spResp["owners"].([]any)
 	require.True(t, ok, "SP response should have owners key when expanded")
 	assert.Len(t, owners, 1)
-	owner := owners[0].(map[string]interface{})
+	owner := owners[0].(map[string]any)
 	assert.Contains(t, owner, "id")
 	assert.Contains(t, owner, "displayName")
 	assert.Contains(t, owner, "@odata.type")
@@ -1838,16 +1838,16 @@ func TestGetServicePrincipalByAppIDExpandOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &spResp)
 	require.NoError(t, err)
 
-	owners, ok := spResp["owners"].([]interface{})
+	owners, ok := spResp["owners"].([]any)
 	require.True(t, ok, "SP response should have owners key when expanded")
 	assert.Len(t, owners, 1)
-	owner := owners[0].(map[string]interface{})
+	owner := owners[0].(map[string]any)
 	assert.Equal(t, createdUser.ID, owner["id"])
 	assert.Contains(t, owner, "@odata.type")
 }

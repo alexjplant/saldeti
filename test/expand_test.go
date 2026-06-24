@@ -50,11 +50,11 @@ func TestExpandUserManager(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert response contains "manager" field
-	manager, ok := result["manager"].(map[string]interface{})
+	manager, ok := result["manager"].(map[string]any)
 	require.True(t, ok, "Expected manager field to be present")
 	require.NotNil(t, manager, "Expected manager to not be null")
 
@@ -89,7 +89,7 @@ func TestExpandUserManagerNull(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Per Microsoft Graph API behavior, when a user has no manager,
@@ -132,18 +132,18 @@ func TestExpandUserDirectReports(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert response contains "directReports" array
-	directReports, ok := result["directReports"].([]interface{})
+	directReports, ok := result["directReports"].([]any)
 	require.True(t, ok, "Expected directReports field to be an array")
 	assert.NotEmpty(t, directReports, "Expected at least one direct report")
 
 	// Verify the report user is in the list
 	found := false
 	for _, dr := range directReports {
-		drMap, ok := dr.(map[string]interface{})
+		drMap, ok := dr.(map[string]any)
 		require.True(t, ok, "Expected direct report to be an object")
 		drID, ok := drMap["id"].(string)
 		if ok && drID == reportID {
@@ -187,18 +187,18 @@ func TestExpandUserMemberOf(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert response contains "memberOf" array
-	memberOf, ok := result["memberOf"].([]interface{})
+	memberOf, ok := result["memberOf"].([]any)
 	require.True(t, ok, "Expected memberOf field to be an array")
 	assert.NotEmpty(t, memberOf, "Expected at least one memberOf entry")
 
 	// Verify the group is in the list
 	found := false
 	for _, mo := range memberOf {
-		moMap, ok := mo.(map[string]interface{})
+		moMap, ok := mo.(map[string]any)
 		require.True(t, ok, "Expected memberOf entry to be an object")
 		moID, ok := moMap["id"].(string)
 		if ok && moID == groupID {
@@ -242,18 +242,18 @@ func TestExpandGroupMembers(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert response contains "members" array
-	members, ok := result["members"].([]interface{})
+	members, ok := result["members"].([]any)
 	require.True(t, ok, "Expected members field to be an array")
 	assert.NotEmpty(t, members, "Expected at least one member")
 
 	// Verify the user is in the list
 	found := false
 	for _, m := range members {
-		mMap, ok := m.(map[string]interface{})
+		mMap, ok := m.(map[string]any)
 		require.True(t, ok, "Expected member to be an object")
 		mID, ok := mMap["id"].(string)
 		if ok && mID == userID {
@@ -297,18 +297,18 @@ func TestExpandGroupOwners(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert response contains "owners" array
-	owners, ok := result["owners"].([]interface{})
+	owners, ok := result["owners"].([]any)
 	require.True(t, ok, "Expected owners field to be an array")
 	assert.NotEmpty(t, owners, "Expected at least one owner")
 
 	// Verify the user is in the list
 	found := false
 	for _, o := range owners {
-		oMap, ok := o.(map[string]interface{})
+		oMap, ok := o.(map[string]any)
 		require.True(t, ok, "Expected owner to be an object")
 		oID, ok := oMap["id"].(string)
 		if ok && oID == userID {
@@ -352,18 +352,18 @@ func TestExpandGroupMemberOf(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert response contains "memberOf" array
-	memberOf, ok := result["memberOf"].([]interface{})
+	memberOf, ok := result["memberOf"].([]any)
 	require.True(t, ok, "Expected memberOf field to be an array")
 	assert.NotEmpty(t, memberOf, "Expected at least one memberOf entry")
 
 	// Verify the parent group is in the list
 	found := false
 	for _, mo := range memberOf {
-		moMap, ok := mo.(map[string]interface{})
+		moMap, ok := mo.(map[string]any)
 		require.True(t, ok, "Expected memberOf entry to be an object")
 		moID, ok := moMap["id"].(string)
 		if ok && moID == parentGroupID {
@@ -416,23 +416,23 @@ func TestExpandMultipleProps(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert both "manager" and "memberOf" are present
-	manager, ok := result["manager"].(map[string]interface{})
+	manager, ok := result["manager"].(map[string]any)
 	require.True(t, ok, "Expected manager field to be present")
 	require.NotNil(t, manager, "Expected manager to not be null")
 	assert.Equal(t, user2ID, manager["id"], "Expected manager ID to match")
 
-	memberOf, ok := result["memberOf"].([]interface{})
+	memberOf, ok := result["memberOf"].([]any)
 	require.True(t, ok, "Expected memberOf field to be an array")
 	assert.NotEmpty(t, memberOf, "Expected at least one memberOf entry")
 
 	// Verify the group is in memberOf
 	found := false
 	for _, mo := range memberOf {
-		moMap, ok := mo.(map[string]interface{})
+		moMap, ok := mo.(map[string]any)
 		if ok {
 			moID, ok := moMap["id"].(string)
 			if ok && moID == groupID {
@@ -508,18 +508,18 @@ func TestExpandListUsersManager(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert each user has a "manager" field
-	users, ok := result["value"].([]interface{})
+	users, ok := result["value"].([]any)
 	require.True(t, ok, "Expected value to be an array")
 	assert.NotEmpty(t, users, "Expected at least one user")
 
 	// Check that our created users have the manager expanded
 	foundCount := 0
 	for _, u := range users {
-		userMap, ok := u.(map[string]interface{})
+		userMap, ok := u.(map[string]any)
 		require.True(t, ok, "Expected user to be an object")
 
 		// Check for manager field presence
@@ -531,7 +531,7 @@ func TestExpandListUsersManager(t *testing.T) {
 				for _, createdID := range userIDs {
 					if userID == createdID {
 						foundCount++
-						managerMap, ok := managerField.(map[string]interface{})
+						managerMap, ok := managerField.(map[string]any)
 						require.True(t, ok, "Expected manager to be an object")
 						assert.Equal(t, managerID, managerMap["id"], "Expected manager ID to match")
 						break
@@ -583,18 +583,18 @@ func TestExpandListGroupsMembers(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert each group has a "members" field
-	groups, ok := result["value"].([]interface{})
+	groups, ok := result["value"].([]any)
 	require.True(t, ok, "Expected value to be an array")
 	assert.NotEmpty(t, groups, "Expected at least one group")
 
 	// Check that our created groups have members expanded
 	foundCount := 0
 	for _, g := range groups {
-		groupMap, ok := g.(map[string]interface{})
+		groupMap, ok := g.(map[string]any)
 		require.True(t, ok, "Expected group to be an object")
 
 		// Check for members field presence
@@ -606,7 +606,7 @@ func TestExpandListGroupsMembers(t *testing.T) {
 				for _, createdID := range groupIDs {
 					if groupID == createdID {
 						foundCount++
-						membersArray, ok := membersField.([]interface{})
+						membersArray, ok := membersField.([]any)
 						require.True(t, ok, "Expected members to be an array")
 						assert.NotEmpty(t, membersArray, "Expected at least one member")
 						break

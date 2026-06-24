@@ -375,7 +375,7 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 
 	// 13. Apply group settings (must be after groups are created)
 	for _, gs := range cfg.GroupSettings {
-		patch := map[string]interface{}{}
+		patch := map[string]any{}
 		if gs.WhoCanPostMessage != "" {
 			patch["whoCanPostMessage"] = gs.WhoCanPostMessage
 		}

@@ -82,8 +82,8 @@ func TestMemoryStore_UserCRUD(t *testing.T) {
 	assert.Equal(t, created.ID, gotNew.ID)
 
 	// Patch
-	patched, err := s.PatchUser(ctx, created.ID, map[string]interface{}{
-		"name": map[string]interface{}{
+	patched, err := s.PatchUser(ctx, created.ID, map[string]any{
+		"name": map[string]any{
 			"givenName":  "Alice",
 			"familyName": "Patched",
 		},
@@ -280,7 +280,7 @@ func TestMemoryStore_GroupCRUD(t *testing.T) {
 	assert.Equal(t, created.ID, gotNew.ID)
 
 	// Patch
-	patched, err := s.PatchGroup(ctx, created.ID, map[string]interface{}{
+	patched, err := s.PatchGroup(ctx, created.ID, map[string]any{
 		"description": "Patched description",
 	})
 	require.NoError(t, err)
@@ -424,7 +424,7 @@ func TestMemoryStore_OrgUnitCRUD(t *testing.T) {
 	assert.Equal(t, "Engineering Updated", gotNew.Name)
 
 	// Patch
-	patched, err := s.PatchOrgUnit(ctx, customerID, "/eng-updated", map[string]interface{}{
+	patched, err := s.PatchOrgUnit(ctx, customerID, "/eng-updated", map[string]any{
 		"name": "Patched OU",
 	})
 	require.NoError(t, err)
@@ -481,7 +481,7 @@ func TestMemoryStore_RoleCRUD(t *testing.T) {
 	assert.Equal(t, "UpdatedRole", updated.RoleName)
 
 	// Patch
-	patched, err := s.PatchRole(ctx, customerID, created.RoleId, map[string]interface{}{
+	patched, err := s.PatchRole(ctx, customerID, created.RoleId, map[string]any{
 		"roleDescription": "Patched description",
 	})
 	require.NoError(t, err)
@@ -658,7 +658,7 @@ func TestMemoryStore_PatchUserPreservesJsonIgnoreFields(t *testing.T) {
 	require.NoError(t, err)
 
 	// Patch an unrelated field; the json:"-" name fields must survive the round-trip.
-	patched, err := s.PatchUser(ctx, created.ID, map[string]interface{}{
+	patched, err := s.PatchUser(ctx, created.ID, map[string]any{
 		"orgUnitPath": "/Engineering",
 	})
 	require.NoError(t, err)

@@ -41,15 +41,15 @@ func TestE2E_SearchFieldQualified_DisplayName(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
-	values, ok := result["value"].([]interface{})
+	values, ok := result["value"].([]any)
 	require.True(t, ok, "Expected value to be an array")
 	assert.Len(t, values, 1, "Expected exactly 1 result for displayName:Alpha")
 
 	if len(values) > 0 {
-		user := values[0].(map[string]interface{})
+		user := values[0].(map[string]any)
 		assert.Equal(t, "Alpha Beta", user["displayName"])
 	}
 }
@@ -73,10 +73,10 @@ func TestE2E_SearchFieldQualified_Mail(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
-	values, ok := result["value"].([]interface{})
+	values, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, values, 1, "Expected exactly 1 result for mail:search1@")
 }
@@ -99,10 +99,10 @@ func TestE2E_SearchUnqualified(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
-	values, ok := result["value"].([]interface{})
+	values, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, values, 1, "Expected exactly 1 result for UniqueSearchName")
 }
@@ -253,13 +253,13 @@ func TestE2E_FilterAssignedLicenses(t *testing.T) {
 	token := getToken(t, tss)
 
 	// Create user with licenses via raw HTTP (SDK may not support assignedLicenses directly)
-	licensedUser := map[string]interface{}{
+	licensedUser := map[string]any{
 		"displayName":       "Licensed User",
 		"userPrincipalName": "licensed@saldeti.local",
 		"mail":              "licensed@saldeti.local",
 		"accountEnabled":    true,
 		"userType":          "Member",
-		"assignedLicenses": []map[string]interface{}{
+		"assignedLicenses": []map[string]any{
 			{"skuId": "sku-enterprise-001"},
 			{"skuId": "sku-ems-002"},
 		},
@@ -278,15 +278,15 @@ func TestE2E_FilterAssignedLicenses(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
-	values, ok := result["value"].([]interface{})
+	values, ok := result["value"].([]any)
 	require.True(t, ok)
 
 	found := false
 	for _, v := range values {
-		user := v.(map[string]interface{})
+		user := v.(map[string]any)
 		if user["displayName"] == "Licensed User" {
 			found = true
 			break
@@ -312,10 +312,10 @@ func TestE2E_FilterAssignedLicensesNoMatch(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
-	values, ok := result["value"].([]interface{})
+	values, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Empty(t, values, "Expected no results for nonexistent skuId")
 }
@@ -362,16 +362,16 @@ func TestE2E_FilterGroupTypesAny(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
-	values, ok := result["value"].([]interface{})
+	values, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.NotEmpty(t, values, "Expected at least one Unified group")
 
 	// Verify all results have Unified groupType
 	for _, v := range values {
-		group := v.(map[string]interface{})
+		group := v.(map[string]any)
 		assert.Equal(t, "Unified Test Group", group["displayName"])
 	}
 }
@@ -388,14 +388,14 @@ func getToken(t *testing.T, tss *TestServer) string {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
-	var tokenResp map[string]interface{}
+	var tokenResp map[string]any
 	require.NoError(t, json.Unmarshal(body, &tokenResp))
 	token, ok := tokenResp["access_token"].(string)
 	require.True(t, ok, "Expected access_token in response")
 	return token
 }
 
-func createUserViaHTTP(t *testing.T, tss *TestServer, token string, user map[string]interface{}) map[string]interface{} {
+func createUserViaHTTP(t *testing.T, tss *TestServer, token string, user map[string]any) map[string]any {
 	t.Helper()
 	userJSON, _ := json.Marshal(user)
 	req, _ := http.NewRequest("POST", tss.BaseURL+"/v1.0/users", strings.NewReader(string(userJSON)))
@@ -406,7 +406,7 @@ func createUserViaHTTP(t *testing.T, tss *TestServer, token string, user map[str
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusCreated, resp.StatusCode, fmt.Sprintf("Expected 201 creating user, got %d", resp.StatusCode))
 	body, _ := io.ReadAll(resp.Body)
-	var created map[string]interface{}
+	var created map[string]any
 	require.NoError(t, json.Unmarshal(body, &created))
 	return created
 }

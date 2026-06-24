@@ -24,9 +24,9 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 		// Validate $top parameter
 		if topStr := c.Request.URL.Query().Get("$top"); topStr != "" {
 			if top, err := strconv.Atoi(topStr); err == nil && top > 0 {
-				if top > 999 {
+				if top > maxTopValue {
 					writeError(c, http.StatusBadRequest, "Request_BadRequest",
-						fmt.Sprintf("$top value %d exceeds maximum of 999.", top))
+						fmt.Sprintf("$top value %d exceeds maximum of %d.", top, maxTopValue))
 					return
 				}
 			}
@@ -50,11 +50,11 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Handle $expand - convert groups to maps with expanded properties
-		var responseValue interface{} = groups
+		var responseValue any = groups
 		if len(opts.ExpandOptions) > 0 {
-			expandedGroups := make([]map[string]interface{}, 0, len(groups))
+			expandedGroups := make([]map[string]any, 0, len(groups))
 			for _, g := range groups {
-				groupMap := make(map[string]interface{})
+				groupMap := make(map[string]any)
 				groupJSON, err := json.Marshal(g)
 				if err != nil {
 					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process group expansion")
@@ -68,17 +68,17 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 				for _, expand := range opts.ExpandOptions {
 					switch expand.Property {
 					case "members":
-						members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						members, _, err := st.ListMembers(c.Request.Context(), g.ID, model.ListOptions{Top: maxTopValue})
 						if err == nil {
 							groupMap["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
 						}
 					case "owners":
-						owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						owners, _, err := st.ListOwners(c.Request.Context(), g.ID, model.ListOptions{Top: maxTopValue})
 						if err == nil {
 							groupMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 						}
 					case "memberOf":
-						memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: 999})
+						memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), g.ID, model.ListOptions{Top: maxTopValue})
 						if err == nil {
 							groupMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
 						}
@@ -95,20 +95,20 @@ func listGroupsHandler(st store.Store) gin.HandlerFunc {
 				// Items are already maps from expand handling.
 				// Build a set of expanded property names so applySelect doesn't strip them.
 				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
-				maps := responseValue.([]map[string]interface{})
+				maps := responseValue.([]map[string]any)
 				for i, m := range maps {
 					maps[i] = applySelect(m, opts.Select, expandedProps)
 				}
 			} else {
 				// Items are structs, serialize to maps first
-				filteredItems := make([]map[string]interface{}, 0, len(groups))
+				filteredItems := make([]map[string]any, 0, len(groups))
 				for i := range groups {
 					itemJSON, err := json.Marshal(groups[i])
 					if err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
 					}
-					var itemMap map[string]interface{}
+					var itemMap map[string]any
 					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
@@ -177,17 +177,17 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 		for _, expand := range opts.ExpandOptions {
 			switch expand.Property {
 			case "members":
-				members, _, err := st.ListMembers(c.Request.Context(), id, model.ListOptions{Top: 999})
+				members, _, err := st.ListMembers(c.Request.Context(), id, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["members"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(members), expand.Select)
 				}
 			case "owners":
-				owners, _, err := st.ListOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
+				owners, _, err := st.ListOwners(c.Request.Context(), id, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 				}
 			case "memberOf":
-				memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+				memberOf, _, err := st.ListGroupMemberOf(c.Request.Context(), id, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(memberOf), expand.Select)
 				}
@@ -209,7 +209,7 @@ func getGroupHandler(st store.Store) gin.HandlerFunc {
 func createGroupHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// First, read the raw request body to handle members@odata.bind and owners@odata.bind
-		var requestBody map[string]interface{}
+		var requestBody map[string]any
 		bodyBytes, err := io.ReadAll(io.LimitReader(c.Request.Body, maxBodyBytes))
 		if err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Failed to read request body")
@@ -228,7 +228,7 @@ func createGroupHandler(st store.Store) gin.HandlerFunc {
 
 		// Handle members@odata.bind
 		if membersBind, ok := requestBody["members@odata.bind"]; ok {
-			if membersArray, ok := membersBind.([]interface{}); ok {
+			if membersArray, ok := membersBind.([]any); ok {
 				for _, memberRef := range membersArray {
 					if memberStr, ok := memberRef.(string); ok {
 						group.Members = append(group.Members, model.DirectoryObjectRef{
@@ -245,7 +245,7 @@ func createGroupHandler(st store.Store) gin.HandlerFunc {
 
 		// Handle owners@odata.bind
 		if ownersBind, ok := requestBody["owners@odata.bind"]; ok {
-			if ownersArray, ok := ownersBind.([]interface{}); ok {
+			if ownersArray, ok := ownersBind.([]any); ok {
 				for _, ownerRef := range ownersArray {
 					if ownerStr, ok := ownerRef.(string); ok {
 						group.Owners = append(group.Owners, model.DirectoryObjectRef{
@@ -304,7 +304,7 @@ func updateGroupHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Decode patch as map
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
@@ -821,7 +821,7 @@ func checkMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(Edm.String)",
 			"value":          matchingGroups,
 		}
@@ -857,7 +857,7 @@ func getMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(Edm.String)",
 			"value":          memberGroups,
 		}
@@ -987,7 +987,7 @@ func getMemberObjectsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(Edm.String)",
 			"value":          memberObjects,
 		}

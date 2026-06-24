@@ -43,15 +43,15 @@ func BenchmarkBatchHandler(b *testing.B) {
 
 	for _, count := range []int{1, 5, 10} {
 		b.Run(fmt.Sprintf("%dRequests", count), func(b *testing.B) {
-			requests := make([]map[string]interface{}, count)
+			requests := make([]map[string]any, count)
 			for i := 0; i < count; i++ {
-				requests[i] = map[string]interface{}{
+				requests[i] = map[string]any{
 					"id":     fmt.Sprintf("%d", i+1),
 					"method": "GET",
 					"url":    "/v1.0/users",
 				}
 			}
-			batchBody, _ := json.Marshal(map[string]interface{}{
+			batchBody, _ := json.Marshal(map[string]any{
 				"requests": requests,
 			})
 

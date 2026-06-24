@@ -86,16 +86,16 @@ func TestListUserAppRoleAssignments(t *testing.T) {
 	// Assert 200, value has 1 item with correct fields
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	assignments := listResp["value"].([]interface{})
+	assignments := listResp["value"].([]any)
 	assert.Len(t, assignments, 1)
 
-	assignmentMap := assignments[0].(map[string]interface{})
+	assignmentMap := assignments[0].(map[string]any)
 	assert.Equal(t, assignment.ID, assignmentMap["id"])
 	assert.Equal(t, createdUser.ID, assignmentMap["principalId"])
 	assert.Equal(t, spID, assignmentMap["resourceId"])
@@ -141,7 +141,7 @@ func TestCreateUserAppRoleAssignment(t *testing.T) {
 	// Assert 201, response has id, principalId == userID, resourceId == spID, appRoleId == roleID
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
-	var assignmentResp map[string]interface{}
+	var assignmentResp map[string]any
 	respBody, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(respBody, &assignmentResp)
@@ -239,16 +239,16 @@ func TestListGroupAppRoleAssignments(t *testing.T) {
 	// Assert 200, value has 1 item
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	assignments := listResp["value"].([]interface{})
+	assignments := listResp["value"].([]any)
 	assert.Len(t, assignments, 1)
 
-	assignmentMap := assignments[0].(map[string]interface{})
+	assignmentMap := assignments[0].(map[string]any)
 	assert.Equal(t, assignment.ID, assignmentMap["id"])
 	assert.Equal(t, createdGroup.ID, assignmentMap["principalId"])
 	assert.Equal(t, spID, assignmentMap["resourceId"])
@@ -296,7 +296,7 @@ func TestCreateGroupAppRoleAssignment(t *testing.T) {
 	// Assert 201
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
-	var assignmentResp map[string]interface{}
+	var assignmentResp map[string]any
 	respBody, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(respBody, &assignmentResp)

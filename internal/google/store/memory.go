@@ -19,6 +19,11 @@ import (
 	"github.com/saldeti/saldeti/internal/google/model"
 )
 
+const (
+	maxGoogleResults     = 500 // Maximum number of Google API results returned per page
+	defaultGoogleResults = 100 // Default results per page when maxResults is omitted or invalid
+)
+
 var (
 	ErrNotFound      = errors.New("entity not found")
 	ErrAlreadyExists = errors.New("entity already exists")
@@ -157,7 +162,7 @@ func decodePageToken(token string) int {
 }
 
 // Generic patch helper using JSON round-trip
-func applyPatchMap(data interface{}, patch map[string]interface{}) error {
+func applyPatchMap(data any, patch map[string]any) error {
 	// Snapshot json:"-" fields before round-trip. Fields tagged json:"-"
 	// are omitted during marshal and cannot be repopulated during unmarshal,
 	// so they would be silently zeroed by the round-trip below.
@@ -167,7 +172,7 @@ func applyPatchMap(data interface{}, patch map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	var originalMap map[string]interface{}
+	var originalMap map[string]any
 	if err := json.Unmarshal(original, &originalMap); err != nil {
 		return err
 	}
@@ -192,7 +197,7 @@ func applyPatchMap(data interface{}, patch map[string]interface{}) error {
 // a struct. Iteration order matches field declaration order, which is stable
 // across calls, so the returned slice can be passed back to
 // restoreJsonIgnoreFields to set fields in the same order.
-func extractJsonIgnoreFields(data interface{}) []reflect.Value {
+func extractJsonIgnoreFields(data any) []reflect.Value {
 	v := reflect.ValueOf(data).Elem()
 	t := v.Type()
 	var saved []reflect.Value
@@ -210,7 +215,7 @@ func extractJsonIgnoreFields(data interface{}) []reflect.Value {
 // restoreJsonIgnoreFields sets every top-level struct field on data tagged
 // `json:"-"` back to the corresponding value in saved (matched by position).
 // It is a no-op when saved is empty (e.g. the struct has no json:"-" fields).
-func restoreJsonIgnoreFields(data interface{}, saved []reflect.Value) {
+func restoreJsonIgnoreFields(data any, saved []reflect.Value) {
 	v := reflect.ValueOf(data).Elem()
 	t := v.Type()
 	idx := 0
@@ -254,8 +259,8 @@ func (ms *memoryStore) resolveGroupKey(groupKey string) (*model.Group, error) {
 }
 
 func maxResultsOrDefault(mr int) int {
-	if mr <= 0 || mr > 500 {
-		return 100
+	if mr <= 0 || mr > maxGoogleResults {
+		return defaultGoogleResults
 	}
 	return mr
 }
@@ -382,7 +387,7 @@ func (s *MemoryStore) UpdateUser(ctx context.Context, userKey string, user model
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchUser(ctx context.Context, userKey string, patch map[string]interface{}) (*model.User, error) {
+func (s *MemoryStore) PatchUser(ctx context.Context, userKey string, patch map[string]any) (*model.User, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -608,7 +613,7 @@ func (s *MemoryStore) UpdateGroup(ctx context.Context, groupKey string, group mo
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchGroup(ctx context.Context, groupKey string, patch map[string]interface{}) (*model.Group, error) {
+func (s *MemoryStore) PatchGroup(ctx context.Context, groupKey string, patch map[string]any) (*model.Group, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -915,7 +920,7 @@ func (s *MemoryStore) UpdateOrgUnit(ctx context.Context, customerID, orgUnitPath
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchOrgUnit(ctx context.Context, customerID, orgUnitPath string, patch map[string]interface{}) (*model.OrgUnit, error) {
+func (s *MemoryStore) PatchOrgUnit(ctx context.Context, customerID, orgUnitPath string, patch map[string]any) (*model.OrgUnit, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	ouMap, ok := s.store.orgUnits[customerID]
@@ -985,6 +990,7 @@ func (s *MemoryStore) CreateRole(ctx context.Context, customerID string, role mo
 	if role.RoleId == "" {
 		role.RoleId = uuid.New().String()
 	}
+	role.Kind = "admin#directory#role"
 	if s.store.roles[customerID] == nil {
 		s.store.roles[customerID] = make(map[string]*model.Role)
 	}
@@ -1003,12 +1009,13 @@ func (s *MemoryStore) UpdateRole(ctx context.Context, customerID, roleID string,
 		return nil, ErrNotFound
 	}
 	role.RoleId = roleID
+	role.Kind = "admin#directory#role"
 	rMap[roleID] = &role
 	cp := role
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchRole(ctx context.Context, customerID, roleID string, patch map[string]interface{}) (*model.Role, error) {
+func (s *MemoryStore) PatchRole(ctx context.Context, customerID, roleID string, patch map[string]any) (*model.Role, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.roles[customerID]
@@ -1138,7 +1145,7 @@ func (s *MemoryStore) UpdateCustomer(ctx context.Context, customerKey string, cu
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchCustomer(ctx context.Context, customerKey string, patch map[string]interface{}) (*model.Customer, error) {
+func (s *MemoryStore) PatchCustomer(ctx context.Context, customerKey string, patch map[string]any) (*model.Customer, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	c, ok := s.store.customers[customerKey]
@@ -1313,7 +1320,7 @@ func (s *MemoryStore) GetChromeOSDevice(ctx context.Context, customerID, deviceI
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchChromeOSDevice(ctx context.Context, customerID, deviceID string, patch map[string]interface{}) (*model.ChromeOSDevice, error) {
+func (s *MemoryStore) PatchChromeOSDevice(ctx context.Context, customerID, deviceID string, patch map[string]any) (*model.ChromeOSDevice, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	dMap, ok := s.store.chromeDevices[customerID]
@@ -2378,7 +2385,7 @@ func (s *MemoryStore) UpdateSchema(ctx context.Context, customerID, schemaKey st
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchSchema(ctx context.Context, customerID, schemaKey string, patch map[string]interface{}) (*model.Schema, error) {
+func (s *MemoryStore) PatchSchema(ctx context.Context, customerID, schemaKey string, patch map[string]any) (*model.Schema, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	sMap, ok := s.store.schemas[customerID]
@@ -2472,7 +2479,7 @@ func (s *MemoryStore) UpdateCalendarResource(ctx context.Context, customerID, re
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchCalendarResource(ctx context.Context, customerID, resourceID string, patch map[string]interface{}) (*model.CalendarResource, error) {
+func (s *MemoryStore) PatchCalendarResource(ctx context.Context, customerID, resourceID string, patch map[string]any) (*model.CalendarResource, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.calendarResources[customerID]
@@ -2565,7 +2572,7 @@ func (s *MemoryStore) UpdateBuilding(ctx context.Context, customerID, buildingID
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchBuilding(ctx context.Context, customerID, buildingID string, patch map[string]interface{}) (*model.Building, error) {
+func (s *MemoryStore) PatchBuilding(ctx context.Context, customerID, buildingID string, patch map[string]any) (*model.Building, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	bMap, ok := s.store.buildings[customerID]
@@ -2655,7 +2662,7 @@ func (s *MemoryStore) UpdateFeature(ctx context.Context, customerID, featureKey 
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchFeature(ctx context.Context, customerID, featureKey string, patch map[string]interface{}) (*model.Feature, error) {
+func (s *MemoryStore) PatchFeature(ctx context.Context, customerID, featureKey string, patch map[string]any) (*model.Feature, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	fMap, ok := s.store.features[customerID]
@@ -2732,7 +2739,7 @@ func (s *MemoryStore) UpdateGroupSettings(ctx context.Context, groupUniqueId str
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchGroupSettings(ctx context.Context, groupUniqueId string, patch map[string]interface{}) (*model.GroupSettings, error) {
+func (s *MemoryStore) PatchGroupSettings(ctx context.Context, groupUniqueId string, patch map[string]any) (*model.GroupSettings, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	gs, ok := s.store.groupSettingsMap[groupUniqueId]

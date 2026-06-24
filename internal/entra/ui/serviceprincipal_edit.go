@@ -28,7 +28,7 @@ func SPEditHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     true,
 				"FormAction": "/ui/servicePrincipals/" + spID + "/edit",
 				"CancelURL":  "/ui/servicePrincipals/" + spID,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"ID":             sp.ID,
 					"DisplayName":    sp.DisplayName,
 					"Notes":          sp.Description,
@@ -49,7 +49,7 @@ func SPEditHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/servicePrincipals/" + spID + "/edit",
 				"CancelURL":  "/ui/servicePrincipals/" + spID,
 				"Error":      "Display name is required",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"ID":             c.PostForm("id"),
 					"DisplayName":    c.PostForm("displayName"),
 					"Notes":          c.PostForm("notes"),
@@ -75,7 +75,7 @@ func SPEditHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/servicePrincipals/" + spID + "/edit",
 				"CancelURL":  "/ui/servicePrincipals/" + spID,
 				"Error":      fmt.Sprintf("Failed to update service principal: %v", err),
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"ID":             c.PostForm("id"),
 					"DisplayName":    c.PostForm("displayName"),
 					"Notes":          c.PostForm("notes"),

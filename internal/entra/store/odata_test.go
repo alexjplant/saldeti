@@ -13,7 +13,7 @@ import (
 // ============================================================================
 
 func TestApplySearch_Unqualified(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice Smith", "userPrincipalName": "alice@example.com", "mail": "alice@example.com", "mailNickname": "alice"},
 		{"displayName": "Bob Jones", "userPrincipalName": "bob@example.com", "mail": "bob@example.com", "mailNickname": "bob"},
 		{"displayName": "Charlie Brown", "userPrincipalName": "charlie@example.com", "mail": "charlie@example.com", "mailNickname": "charlie"},
@@ -41,7 +41,7 @@ func TestApplySearch_Unqualified(t *testing.T) {
 }
 
 func TestApplySearch_FieldQualified(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice Smith", "userPrincipalName": "alice@example.com", "mail": "alice@corp.com", "mailNickname": "alice"},
 		{"displayName": "Alice Jones", "userPrincipalName": "alice2@example.com", "mail": "alice2@corp.com", "mailNickname": "alice2"},
 		{"displayName": "Bob Smith", "userPrincipalName": "bob@example.com", "mail": "bob@corp.com", "mailNickname": "bob"},
@@ -68,7 +68,7 @@ func TestApplySearch_FieldQualified(t *testing.T) {
 }
 
 func TestApplySearch_MultipleTermsImplicitAnd(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice Smith", "mail": "alice@example.com", "userPrincipalName": "alice@example.com", "mailNickname": "alice"},
 		{"displayName": "Alice Jones", "mail": "alice2@corp.com", "userPrincipalName": "alice2@corp.com", "mailNickname": "alice2"},
 		{"displayName": "Bob Smith", "mail": "bob@example.com", "userPrincipalName": "bob@example.com", "mailNickname": "bob"},
@@ -81,7 +81,7 @@ func TestApplySearch_MultipleTermsImplicitAnd(t *testing.T) {
 }
 
 func TestApplySearch_MultipleTermsExplicitAND(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice Smith", "mail": "alice@example.com", "userPrincipalName": "alice@example.com", "mailNickname": "alice"},
 		{"displayName": "Alice Jones", "mail": "alice2@corp.com", "userPrincipalName": "alice2@corp.com", "mailNickname": "alice2"},
 	}
@@ -93,7 +93,7 @@ func TestApplySearch_MultipleTermsExplicitAND(t *testing.T) {
 }
 
 func TestApplySearch_QuotedInput(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice Smith", "userPrincipalName": "alice@example.com", "mail": "alice@example.com", "mailNickname": "alice"},
 		{"displayName": "Bob Jones", "userPrincipalName": "bob@example.com", "mail": "bob@example.com", "mailNickname": "bob"},
 	}
@@ -110,7 +110,7 @@ func TestApplySearch_QuotedInput(t *testing.T) {
 }
 
 func TestApplySearch_CaseInsensitive(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice Smith", "userPrincipalName": "alice@example.com", "mail": "alice@example.com", "mailNickname": "alice"},
 	}
 
@@ -123,7 +123,7 @@ func TestApplySearch_CaseInsensitive(t *testing.T) {
 }
 
 func TestApplySearch_EmptySearch(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice"},
 	}
 
@@ -133,7 +133,7 @@ func TestApplySearch_EmptySearch(t *testing.T) {
 }
 
 func TestApplySearch_NoMatch(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice", "userPrincipalName": "alice@example.com", "mail": "alice@example.com", "mailNickname": "alice"},
 	}
 
@@ -145,7 +145,7 @@ func TestApplySearch_NoMatch(t *testing.T) {
 }
 
 func TestApplySearch_SubstringMatch(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice Smith", "userPrincipalName": "alice.smith@example.com", "mail": "alice.smith@example.com", "mailNickname": "alice"},
 	}
 
@@ -162,7 +162,7 @@ func TestApplySearch_SubstringMatch(t *testing.T) {
 // ============================================================================
 
 func TestApplyFilter_UserType(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"userType": "Member", "displayName": "Alice"},
 		{"userType": "Guest", "displayName": "Bob"},
 		{"userType": "Member", "displayName": "Charlie"},
@@ -186,7 +186,7 @@ func TestApplyFilter_UserType(t *testing.T) {
 }
 
 func TestApplyFilter_UserTypeCombinedWithOtherFilters(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"userType": "Member", "accountEnabled": true, "displayName": "Alice"},
 		{"userType": "Member", "accountEnabled": false, "displayName": "Bob"},
 		{"userType": "Guest", "accountEnabled": true, "displayName": "Charlie"},
@@ -213,7 +213,7 @@ func TestApplyFilter_AnyNestedPath_SkuId(t *testing.T) {
 		SkuID string `json:"skuId,omitempty"`
 	}
 
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{
 			"displayName": "Alice",
 			"assignedLicenses": []License{
@@ -246,7 +246,7 @@ func TestApplyFilter_AnyNestedPath_SkuId(t *testing.T) {
 }
 
 func TestApplyFilter_AnyFlatStringArray(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Group1", "groupTypes": []string{"Unified"}},
 		{"displayName": "Group2", "groupTypes": []string{"Security"}},
 		{"displayName": "Group3", "groupTypes": []string{}},
@@ -264,7 +264,7 @@ func TestApplyFilter_AnyNestedWithAnd(t *testing.T) {
 		SkuID string `json:"skuId,omitempty"`
 	}
 
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{
 			"displayName":      "Alice",
 			"accountEnabled":   true,
@@ -294,9 +294,9 @@ func TestApplyFilter_AnyNestedWithAnd(t *testing.T) {
 // ============================================================================
 
 func TestApplyFilter_NullAssignedLicenses(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Alice", "assignedLicenses": nil},
-		{"displayName": "Bob", "assignedLicenses": []interface{}{}},
+		{"displayName": "Bob", "assignedLicenses": []any{}},
 	}
 
 	// Filter where assignedLicenses is null
@@ -322,7 +322,7 @@ type testItemWithInts struct {
 
 func TestMapToStruct_Float64ToIntConversion(t *testing.T) {
 	// Simulate a map produced by JSON unmarshaling where numbers are float64
-	m := map[string]interface{}{
+	m := map[string]any{
 		"id":      "abc-123",
 		"name":    "Test Item",
 		"count":   float64(42),
@@ -338,7 +338,7 @@ func TestMapToStruct_Float64ToIntConversion(t *testing.T) {
 }
 
 func TestMapToStruct_NilAndIncompatibleValues(t *testing.T) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"id":    "xyz",
 		"name":  "Another",
 		"count": "not-a-number", // string targeting int — should be skipped
@@ -375,7 +375,7 @@ func TestApplyOData_SelectThenFilter_NoPanic(t *testing.T) {
 }
 
 func TestApplyFilter_NestedParentheses(t *testing.T) {
-	items := []map[string]interface{}{
+	items := []map[string]any{
 		{"displayName": "Test", "accountEnabled": true},
 		{"displayName": "Other", "accountEnabled": true},
 		{"displayName": "Third", "accountEnabled": false},
@@ -398,7 +398,7 @@ func TestApplyFilter_NestedParentheses(t *testing.T) {
 }
 
 func TestApplySelect_PreservesId(t *testing.T) {
-	item := map[string]interface{}{
+	item := map[string]any{
 		"id":          "abc-123",
 		"displayName": "Test User",
 		"mail":        "test@example.com",
@@ -418,7 +418,7 @@ func TestApplySelect_PreservesId(t *testing.T) {
 	assert.Equal(t, "Test User", result["displayName"])
 
 	// When id is not present in source map, nothing should be added
-	itemNoId := map[string]interface{}{
+	itemNoId := map[string]any{
 		"displayName": "NoId",
 	}
 	result = selectFields(itemNoId, []string{"displayName"})
@@ -427,7 +427,7 @@ func TestApplySelect_PreservesId(t *testing.T) {
 }
 
 func TestSelectFields_PreservesODataType(t *testing.T) {
-	item := map[string]interface{}{
+	item := map[string]any{
 		"@odata.type": "#microsoft.graph.user",
 		"id":          "user-123",
 		"displayName": "Alice Smith",
@@ -444,7 +444,7 @@ func TestSelectFields_PreservesODataType(t *testing.T) {
 	assert.False(t, hasMail, "mail should not be included when not in $select")
 
 	// When @odata.type is not in source map, nothing should be added
-	itemNoType := map[string]interface{}{
+	itemNoType := map[string]any{
 		"id":          "user-456",
 		"displayName": "Bob",
 	}

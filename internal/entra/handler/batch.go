@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,16 +12,18 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const maxBatchRequests = 20 // Maximum number of individual requests allowed in a single $batch
+
 type BatchRequest struct {
 	Requests []BatchSubRequest `json:"requests"`
 }
 
 type BatchSubRequest struct {
-	ID      string                 `json:"id"`
-	Method  string                 `json:"method"`
-	URL     string                 `json:"url"`
-	Headers map[string]string      `json:"headers,omitempty"`
-	Body    map[string]interface{} `json:"body,omitempty"`
+	ID      string            `json:"id"`
+	Method  string            `json:"method"`
+	URL     string            `json:"url"`
+	Headers map[string]string `json:"headers,omitempty"`
+	Body    map[string]any    `json:"body,omitempty"`
 }
 
 type BatchResponse struct {
@@ -28,10 +31,10 @@ type BatchResponse struct {
 }
 
 type BatchSubResponse struct {
-	ID      string                 `json:"id"`
-	Status  int                    `json:"status"`
-	Headers map[string]string      `json:"headers,omitempty"`
-	Body    map[string]interface{} `json:"body,omitempty"`
+	ID      string            `json:"id"`
+	Status  int               `json:"status"`
+	Headers map[string]string `json:"headers,omitempty"`
+	Body    map[string]any    `json:"body,omitempty"`
 }
 
 func batchHandler(engine *gin.Engine) gin.HandlerFunc {
@@ -45,8 +48,8 @@ func batchHandler(engine *gin.Engine) gin.HandlerFunc {
 			return
 		}
 
-		if len(req.Requests) > 20 {
-			writeError(c, http.StatusBadRequest, "BadRequest", "Batch request exceeds maximum of 20 individual requests")
+		if len(req.Requests) > maxBatchRequests {
+			writeError(c, http.StatusBadRequest, "BadRequest", fmt.Sprintf("Batch request exceeds maximum of %d individual requests", maxBatchRequests))
 			return
 		}
 
@@ -74,7 +77,7 @@ func processBatchSubRequests(c *gin.Context, engine *gin.Engine, requests []Batc
 				responses = append(responses, BatchSubResponse{
 					ID:     sub.ID,
 					Status: http.StatusInternalServerError,
-					Body: map[string]interface{}{
+					Body: map[string]any{
 						"error": gin.H{
 							"code":    "InternalError",
 							"message": "Failed to marshal request body",
@@ -102,7 +105,7 @@ func processBatchSubRequests(c *gin.Context, engine *gin.Engine, requests []Batc
 		w := httptest.NewRecorder()
 		engine.ServeHTTP(w, req)
 
-		var responseBody map[string]interface{}
+		var responseBody map[string]any
 		if w.Body.Len() > 0 {
 			if err := json.Unmarshal(w.Body.Bytes(), &responseBody); err != nil {
 				log.Error().
@@ -111,7 +114,7 @@ func processBatchSubRequests(c *gin.Context, engine *gin.Engine, requests []Batc
 					Str("sub_url", sub.URL).
 					Int("status", w.Code).
 					Msg("Failed to unmarshal batch sub-response body")
-				responseBody = map[string]interface{}{
+				responseBody = map[string]any{
 					"error": gin.H{
 						"code":    "InternalError",
 						"message": "Failed to parse sub-response body",

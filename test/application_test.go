@@ -262,14 +262,14 @@ func TestApplication_Owners(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 	result := readJSON(t, resp2)
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 	assert.NotEmpty(t, value, "Owners list should not be empty")
 
 	// Verify the owner is in the list
 	found := false
 	for _, item := range value {
-		if owner, ok := item.(map[string]interface{}); ok {
+		if owner, ok := item.(map[string]any); ok {
 			if owner["id"] == userID {
 				found = true
 				break
@@ -315,11 +315,11 @@ func TestApplication_ExtensionProperties(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 	result2 := readJSON(t, resp2)
-	value, ok := result2["value"].([]interface{})
+	value, ok := result2["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 	found := false
 	for _, item := range value {
-		if ext, ok := item.(map[string]interface{}); ok {
+		if ext, ok := item.(map[string]any); ok {
 			if ext["id"] == extID {
 				found = true
 				break
@@ -355,7 +355,7 @@ func TestApplication_Delta(t *testing.T) {
 	_, hasContext := result["@odata.context"]
 	assert.True(t, hasContext, "Response should have @odata.context")
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 
 	_, hasDeltaLink := result["@odata.deltaLink"]
@@ -364,7 +364,7 @@ func TestApplication_Delta(t *testing.T) {
 	// Verify the created app appears in delta results
 	found := false
 	for _, item := range value {
-		if appItem, ok := item.(map[string]interface{}); ok {
+		if appItem, ok := item.(map[string]any); ok {
 			if appItem["id"] == appID {
 				found = true
 				break
@@ -412,7 +412,7 @@ func TestApplication_ODataParams(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	result := readJSON(t, resp)
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 	assert.Len(t, value, 1, "$top=1 should return exactly 1 result")
 
@@ -457,13 +457,13 @@ func TestApplication_OrderBy(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	result := readJSON(t, resp)
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 
 	// Filter to only our test apps
-	var testApps []map[string]interface{}
+	var testApps []map[string]any
 	for _, item := range value {
-		if app, ok := item.(map[string]interface{}); ok {
+		if app, ok := item.(map[string]any); ok {
 			dn, _ := app["displayName"].(string)
 			if (strings.HasPrefix(dn, "aaa-") || strings.HasPrefix(dn, "mmm-") || strings.HasPrefix(dn, "zzz-")) && strings.Contains(dn, "-orderby-") {
 				testApps = append(testApps, app)
@@ -483,12 +483,12 @@ func TestApplication_OrderBy(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 	result2 := readJSON(t, resp2)
-	value2, ok := result2["value"].([]interface{})
+	value2, ok := result2["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 
-	var testApps2 []map[string]interface{}
+	var testApps2 []map[string]any
 	for _, item := range value2 {
-		if app, ok := item.(map[string]interface{}); ok {
+		if app, ok := item.(map[string]any); ok {
 			dn, _ := app["displayName"].(string)
 			if (strings.HasPrefix(dn, "aaa-") || strings.HasPrefix(dn, "mmm-") || strings.HasPrefix(dn, "zzz-")) && strings.Contains(dn, "-orderby-") {
 				testApps2 = append(testApps2, app)

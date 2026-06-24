@@ -180,7 +180,7 @@ func (s *memoryStore) CreateApplication(ctx context.Context, app model.Applicati
 	return app, nil
 }
 
-func (s *memoryStore) UpdateApplication(ctx context.Context, id string, patch map[string]interface{}) (*model.Application, error) {
+func (s *memoryStore) UpdateApplication(ctx context.Context, id string, patch map[string]any) (*model.Application, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -525,7 +525,7 @@ func (s *memoryStore) DeleteExtensionProperty(ctx context.Context, appID, extID 
 
 // ========== Application Delta ==========
 
-func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
+func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -540,7 +540,7 @@ func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken strin
 		}
 	}
 
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 
 	for _, app := range s.applications {
 		if deltaToken == "" || app.ModifiedAt.After(sinceTime) {
@@ -548,7 +548,7 @@ func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken strin
 			if err != nil {
 				continue
 			}
-			var appMap map[string]interface{}
+			var appMap map[string]any
 			if err := json.Unmarshal(appJSON, &appMap); err != nil {
 				continue
 			}
@@ -559,9 +559,9 @@ func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken strin
 
 	for appID, deletedAt := range s.deletedApplications {
 		if deltaToken == "" || deletedAt.After(sinceTime) {
-			result = append(result, map[string]interface{}{
+			result = append(result, map[string]any{
 				"id": appID,
-				"@removed": map[string]interface{}{
+				"@removed": map[string]any{
 					"reason": "deleted",
 				},
 			})
@@ -674,7 +674,7 @@ func (s *memoryStore) CreateServicePrincipal(ctx context.Context, sp model.Servi
 	return sp, nil
 }
 
-func (s *memoryStore) UpdateServicePrincipal(ctx context.Context, id string, patch map[string]interface{}) (*model.ServicePrincipal, error) {
+func (s *memoryStore) UpdateServicePrincipal(ctx context.Context, id string, patch map[string]any) (*model.ServicePrincipal, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1072,7 +1072,7 @@ func (s *memoryStore) CreateOAuth2PermissionGrant(ctx context.Context, grant mod
 	return grant, nil
 }
 
-func (s *memoryStore) UpdateOAuth2PermissionGrant(ctx context.Context, id string, patch map[string]interface{}) (*model.OAuth2PermissionGrant, error) {
+func (s *memoryStore) UpdateOAuth2PermissionGrant(ctx context.Context, id string, patch map[string]any) (*model.OAuth2PermissionGrant, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

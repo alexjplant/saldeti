@@ -33,11 +33,11 @@ func UserAddLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"addLicenses": []map[string]interface{}{
+		payload := map[string]any{
+			"addLicenses": []map[string]any{
 				{"skuId": skuID},
 			},
-			"removeLicenses": []interface{}{},
+			"removeLicenses": []any{},
 		}
 		body, err := json.Marshal(payload)
 		if err != nil {
@@ -93,8 +93,8 @@ func UserRemoveLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"addLicenses":    []interface{}{},
+		payload := map[string]any{
+			"addLicenses":    []any{},
 			"removeLicenses": []string{skuID},
 		}
 		body, err := json.Marshal(payload)

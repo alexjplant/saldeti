@@ -204,7 +204,7 @@ var errNotFound = fmt.Errorf("not found")
 // caller is expected to map this to a nil result). When nilOn404 is false, a
 // 404 is treated like any other non-200 status and surfaced as an error. Any
 // other non-200 status is logged and returned as an error.
-func (h *UIHandler) doGet(ctx context.Context, url string, result interface{}, nilOn404 bool) error {
+func (h *UIHandler) doGet(ctx context.Context, url string, result any, nilOn404 bool) error {
 	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
 		Scopes: []string{"https://graph.microsoft.com/.default"},
 	})

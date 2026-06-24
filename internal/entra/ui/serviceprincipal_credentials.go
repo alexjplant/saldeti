@@ -28,8 +28,8 @@ func SPAddPasswordHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"passwordCredential": map[string]interface{}{
+		payload := map[string]any{
+			"passwordCredential": map[string]any{
 				"displayName": displayName,
 			},
 		}
@@ -84,7 +84,7 @@ func SPRemovePasswordHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"keyId": keyID,
 		}
 		payloadJSON, err := json.Marshal(payload)
@@ -157,8 +157,8 @@ func SPAddKeyHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"keyCredential": map[string]interface{}{
+		payload := map[string]any{
+			"keyCredential": map[string]any{
 				"displayName": displayName,
 				"type":        keyType,
 				"usage":       keyUsage,
@@ -216,7 +216,7 @@ func SPRemoveKeyHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"keyId": keyID,
 		}
 		payloadJSON, err := json.Marshal(payload)

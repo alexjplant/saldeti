@@ -30,15 +30,15 @@ func TestBatchHandler_ExceedsLimit(t *testing.T) {
 	require.NoError(t, err)
 
 	// Build 21 sub-requests
-	requests := make([]map[string]interface{}, 21)
+	requests := make([]map[string]any, 21)
 	for i := 0; i < 21; i++ {
-		requests[i] = map[string]interface{}{
+		requests[i] = map[string]any{
 			"id":     fmt.Sprintf("%d", i+1),
 			"method": "GET",
 			"url":    "/v1.0/me",
 		}
 	}
-	batchBody, _ := json.Marshal(map[string]interface{}{
+	batchBody, _ := json.Marshal(map[string]any{
 		"requests": requests,
 	})
 
@@ -56,11 +56,11 @@ func TestBatchHandler_ExceedsLimit(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var errResp map[string]interface{}
+	var errResp map[string]any
 	err = json.Unmarshal(body, &errResp)
 	require.NoError(t, err)
 
-	errObj := errResp["error"].(map[string]interface{})
+	errObj := errResp["error"].(map[string]any)
 	assert.Equal(t, "BadRequest", errObj["code"])
 	assert.Contains(t, errObj["message"], "exceeds maximum of 20")
 }
@@ -88,8 +88,8 @@ func TestBatchHandler_NoContentResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	// Build batch with a DELETE sub-request
-	batchBody, _ := json.Marshal(map[string]interface{}{
-		"requests": []map[string]interface{}{
+	batchBody, _ := json.Marshal(map[string]any{
+		"requests": []map[string]any{
 			{
 				"id":     "1",
 				"method": "DELETE",
@@ -112,14 +112,14 @@ func TestBatchHandler_NoContentResponse(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var batchResp map[string]interface{}
+	var batchResp map[string]any
 	err = json.Unmarshal(body, &batchResp)
 	require.NoError(t, err)
 
-	responses := batchResp["responses"].([]interface{})
+	responses := batchResp["responses"].([]any)
 	require.Len(t, responses, 1)
 
-	subResp := responses[0].(map[string]interface{})
+	subResp := responses[0].(map[string]any)
 	assert.Equal(t, "1", subResp["id"])
 	// Status should be 204 (float64 from JSON unmarshal)
 	assert.Equal(t, float64(204), subResp["status"])
@@ -148,8 +148,8 @@ func TestBatchHandler_RelativeURLNoPrefix(t *testing.T) {
 	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
-	batchBody, _ := json.Marshal(map[string]interface{}{
-		"requests": []map[string]interface{}{
+	batchBody, _ := json.Marshal(map[string]any{
+		"requests": []map[string]any{
 			{
 				"id":     "1",
 				"method": "DELETE",
@@ -172,14 +172,14 @@ func TestBatchHandler_RelativeURLNoPrefix(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var batchResp map[string]interface{}
+	var batchResp map[string]any
 	err = json.Unmarshal(body, &batchResp)
 	require.NoError(t, err)
 
-	responses := batchResp["responses"].([]interface{})
+	responses := batchResp["responses"].([]any)
 	assert.Len(t, responses, 1)
 
-	subResp := responses[0].(map[string]interface{})
+	subResp := responses[0].(map[string]any)
 	assert.Equal(t, "1", subResp["id"])
 	assert.Equal(t, float64(204), subResp["status"])
 	assert.Nil(t, subResp["body"])
@@ -223,8 +223,8 @@ func TestBatchHandler_MixedSuccessFailure(t *testing.T) {
 	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
-	batchBody, _ := json.Marshal(map[string]interface{}{
-		"requests": []map[string]interface{}{
+	batchBody, _ := json.Marshal(map[string]any{
+		"requests": []map[string]any{
 			{
 				"id":     "1",
 				"method": "GET",
@@ -257,25 +257,25 @@ func TestBatchHandler_MixedSuccessFailure(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var batchResp map[string]interface{}
+	var batchResp map[string]any
 	err = json.Unmarshal(body, &batchResp)
 	require.NoError(t, err)
 
-	responses := batchResp["responses"].([]interface{})
+	responses := batchResp["responses"].([]any)
 	require.Len(t, responses, 3)
 
 	// First request: 200 OK
-	subResp1 := responses[0].(map[string]interface{})
+	subResp1 := responses[0].(map[string]any)
 	assert.Equal(t, "1", subResp1["id"])
 	assert.Equal(t, float64(200), subResp1["status"])
 
 	// Second request: 404 Not Found
-	subResp2 := responses[1].(map[string]interface{})
+	subResp2 := responses[1].(map[string]any)
 	assert.Equal(t, "2", subResp2["id"])
 	assert.Equal(t, float64(404), subResp2["status"])
 
 	// Third request: 404 Not Found
-	subResp3 := responses[2].(map[string]interface{})
+	subResp3 := responses[2].(map[string]any)
 	assert.Equal(t, "3", subResp3["id"])
 	assert.Equal(t, float64(404), subResp3["status"])
 }
@@ -300,8 +300,8 @@ func TestBatchHandler_MultiRequestBatch(t *testing.T) {
 	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All", "Group.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
-	batchBody, _ := json.Marshal(map[string]interface{}{
-		"requests": []map[string]interface{}{
+	batchBody, _ := json.Marshal(map[string]any{
+		"requests": []map[string]any{
 			{
 				"id":     "1",
 				"method": "GET",
@@ -311,7 +311,7 @@ func TestBatchHandler_MultiRequestBatch(t *testing.T) {
 				"id":     "2",
 				"method": "POST",
 				"url":    "/v1.0/groups",
-				"body": map[string]interface{}{
+				"body": map[string]any{
 					"displayName": "Batch Test Group",
 				},
 			},
@@ -347,23 +347,23 @@ func TestBatchHandler_MultiRequestBatch(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var batchResp map[string]interface{}
+	var batchResp map[string]any
 	err = json.Unmarshal(body, &batchResp)
 	require.NoError(t, err)
 
-	responses := batchResp["responses"].([]interface{})
+	responses := batchResp["responses"].([]any)
 	require.Len(t, responses, 5)
 
 	// Request 1: GET /users -> 200
-	assert.Equal(t, float64(200), responses[0].(map[string]interface{})["status"])
+	assert.Equal(t, float64(200), responses[0].(map[string]any)["status"])
 	// Request 2: POST /groups -> 201
-	assert.Equal(t, float64(201), responses[1].(map[string]interface{})["status"])
+	assert.Equal(t, float64(201), responses[1].(map[string]any)["status"])
 	// Request 3: GET /groups -> 200
-	assert.Equal(t, float64(200), responses[2].(map[string]interface{})["status"])
+	assert.Equal(t, float64(200), responses[2].(map[string]any)["status"])
 	// Request 4: GET /subscribedSkus -> 200
-	assert.Equal(t, float64(200), responses[3].(map[string]interface{})["status"])
+	assert.Equal(t, float64(200), responses[3].(map[string]any)["status"])
 	// Request 5: GET /users/{id} -> 200
-	assert.Equal(t, float64(200), responses[4].(map[string]interface{})["status"])
+	assert.Equal(t, float64(200), responses[4].(map[string]any)["status"])
 }
 
 func TestBatchHandler_CreateAndGetInBatch(t *testing.T) {
@@ -386,13 +386,13 @@ func TestBatchHandler_CreateAndGetInBatch(t *testing.T) {
 	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
-	batchBody, _ := json.Marshal(map[string]interface{}{
-		"requests": []map[string]interface{}{
+	batchBody, _ := json.Marshal(map[string]any{
+		"requests": []map[string]any{
 			{
 				"id":     "1",
 				"method": "POST",
 				"url":    "/v1.0/users",
-				"body": map[string]interface{}{
+				"body": map[string]any{
 					"displayName":       "Created In Batch",
 					"userPrincipalName": "batchcreated@example.com",
 					"mail":              "batchcreated@example.com",
@@ -421,21 +421,21 @@ func TestBatchHandler_CreateAndGetInBatch(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var batchResp map[string]interface{}
+	var batchResp map[string]any
 	err = json.Unmarshal(body, &batchResp)
 	require.NoError(t, err)
 
-	responses := batchResp["responses"].([]interface{})
+	responses := batchResp["responses"].([]any)
 	require.Len(t, responses, 2)
 
 	// Request 1: POST create user -> 201
-	subResp1 := responses[0].(map[string]interface{})
+	subResp1 := responses[0].(map[string]any)
 	assert.Equal(t, "1", subResp1["id"])
 	assert.Equal(t, float64(201), subResp1["status"])
 	assert.NotNil(t, subResp1["body"])
 
 	// Request 2: GET existing user -> 200
-	subResp2 := responses[1].(map[string]interface{})
+	subResp2 := responses[1].(map[string]any)
 	assert.Equal(t, "2", subResp2["id"])
 	assert.Equal(t, float64(200), subResp2["status"])
 }
@@ -464,11 +464,11 @@ func TestBatchHandler_InvalidJSON(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var errResp map[string]interface{}
+	var errResp map[string]any
 	err = json.Unmarshal(body, &errResp)
 	require.NoError(t, err)
 
-	errObj := errResp["error"].(map[string]interface{})
+	errObj := errResp["error"].(map[string]any)
 	assert.Equal(t, "BadRequest", errObj["code"])
 }
 
@@ -482,8 +482,8 @@ func TestBatchHandler_EmptyRequests(t *testing.T) {
 	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
-	batchBody, _ := json.Marshal(map[string]interface{}{
-		"requests": []map[string]interface{}{},
+	batchBody, _ := json.Marshal(map[string]any{
+		"requests": []map[string]any{},
 	})
 
 	req, err := http.NewRequest("POST", server.URL+"/v1.0/$batch", strings.NewReader(string(batchBody)))
@@ -500,11 +500,11 @@ func TestBatchHandler_EmptyRequests(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var batchResp map[string]interface{}
+	var batchResp map[string]any
 	err = json.Unmarshal(body, &batchResp)
 	require.NoError(t, err)
 
-	responses := batchResp["responses"].([]interface{})
+	responses := batchResp["responses"].([]any)
 	assert.Len(t, responses, 0)
 }
 
@@ -518,8 +518,8 @@ func TestBatchHandler_NonExistentURL(t *testing.T) {
 	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
 	require.NoError(t, err)
 
-	batchBody, _ := json.Marshal(map[string]interface{}{
-		"requests": []map[string]interface{}{
+	batchBody, _ := json.Marshal(map[string]any{
+		"requests": []map[string]any{
 			{
 				"id":     "1",
 				"method": "GET",
@@ -542,14 +542,14 @@ func TestBatchHandler_NonExistentURL(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var batchResp map[string]interface{}
+	var batchResp map[string]any
 	err = json.Unmarshal(body, &batchResp)
 	require.NoError(t, err)
 
-	responses := batchResp["responses"].([]interface{})
+	responses := batchResp["responses"].([]any)
 	assert.Len(t, responses, 1)
 
-	subResp := responses[0].(map[string]interface{})
+	subResp := responses[0].(map[string]any)
 	assert.Equal(t, "1", subResp["id"])
 	assert.Equal(t, float64(404), subResp["status"])
 }
@@ -573,7 +573,7 @@ func TestBatchHandler_MarshalError(t *testing.T) {
 			ID:     "1",
 			Method: "POST",
 			URL:    "/v1.0/users",
-			Body:   map[string]interface{}{"bad": make(chan int)},
+			Body:   map[string]any{"bad": make(chan int)},
 		},
 	}
 

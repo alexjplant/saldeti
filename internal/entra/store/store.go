@@ -11,7 +11,7 @@ type Store interface {
 	GetUserByUPN(ctx context.Context, upn string) (*model.User, error)
 	CreateUser(ctx context.Context, user model.User) (model.User, error)
 	ListUsers(ctx context.Context, opts model.ListOptions) ([]model.User, int, error)
-	UpdateUser(ctx context.Context, id string, patch map[string]interface{}) (*model.User, error)
+	UpdateUser(ctx context.Context, id string, patch map[string]any) (*model.User, error)
 	DeleteUser(ctx context.Context, id string) error
 
 	// Tenant/App registration for auth
@@ -23,7 +23,7 @@ type Store interface {
 	ListGroups(ctx context.Context, opts model.ListOptions) ([]model.Group, int, error)
 	GetGroup(ctx context.Context, id string) (*model.Group, error)
 	CreateGroup(ctx context.Context, group model.Group) (model.Group, error)
-	UpdateGroup(ctx context.Context, id string, patch map[string]interface{}) (*model.Group, error)
+	UpdateGroup(ctx context.Context, id string, patch map[string]any) (*model.Group, error)
 	DeleteGroup(ctx context.Context, id string) error
 
 	// Membership
@@ -55,11 +55,11 @@ type Store interface {
 	ListUserTransitiveMemberOf(ctx context.Context, userID string, opts model.ListOptions) ([]model.DirectoryObject, int, error)
 
 	// Directory object operations
-	GetDirectoryObjects(ctx context.Context, ids []string, types []string) ([]map[string]interface{}, error)
+	GetDirectoryObjects(ctx context.Context, ids []string, types []string) ([]map[string]any, error)
 
 	// Delta query
-	GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error)
-	GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error)
+	GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error)
+	GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error)
 
 	// Licenses
 	ListSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error)
@@ -70,7 +70,7 @@ type Store interface {
 	GetApplication(ctx context.Context, id string) (*model.Application, error)
 	GetApplicationByAppID(ctx context.Context, appId string) (*model.Application, error)
 	CreateApplication(ctx context.Context, app model.Application) (model.Application, error)
-	UpdateApplication(ctx context.Context, id string, patch map[string]interface{}) (*model.Application, error)
+	UpdateApplication(ctx context.Context, id string, patch map[string]any) (*model.Application, error)
 	DeleteApplication(ctx context.Context, id string) error
 	AddApplicationPassword(ctx context.Context, appID string, cred model.PasswordCredential) (model.PasswordCredential, error)
 	RemoveApplicationPassword(ctx context.Context, appID, keyID string) error
@@ -82,14 +82,14 @@ type Store interface {
 	ListExtensionProperties(ctx context.Context, appID string) ([]model.ExtensionProperty, error)
 	CreateExtensionProperty(ctx context.Context, appID string, ep model.ExtensionProperty) (model.ExtensionProperty, error)
 	DeleteExtensionProperty(ctx context.Context, appID, extID string) error
-	GetApplicationsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error)
+	GetApplicationsDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error)
 
 	// Service Principals (expanded)
 	ListServicePrincipals(ctx context.Context, opts model.ListOptions) ([]model.ServicePrincipal, int, error)
 	GetServicePrincipal(ctx context.Context, id string) (*model.ServicePrincipal, error)
 	GetServicePrincipalByAppID(ctx context.Context, appId string) (*model.ServicePrincipal, error)
 	CreateServicePrincipal(ctx context.Context, sp model.ServicePrincipal) (model.ServicePrincipal, error)
-	UpdateServicePrincipal(ctx context.Context, id string, patch map[string]interface{}) (*model.ServicePrincipal, error)
+	UpdateServicePrincipal(ctx context.Context, id string, patch map[string]any) (*model.ServicePrincipal, error)
 	DeleteServicePrincipal(ctx context.Context, id string) error
 	ListSPOwners(ctx context.Context, spID string, opts model.ListOptions) ([]model.DirectoryObject, int, error)
 	AddSPOwner(ctx context.Context, spID, objectID, objectType string) error
@@ -108,6 +108,6 @@ type Store interface {
 	ListOAuth2PermissionGrants(ctx context.Context, opts model.ListOptions) ([]model.OAuth2PermissionGrant, int, error)
 	GetOAuth2PermissionGrant(ctx context.Context, id string) (*model.OAuth2PermissionGrant, error)
 	CreateOAuth2PermissionGrant(ctx context.Context, grant model.OAuth2PermissionGrant) (model.OAuth2PermissionGrant, error)
-	UpdateOAuth2PermissionGrant(ctx context.Context, id string, patch map[string]interface{}) (*model.OAuth2PermissionGrant, error)
+	UpdateOAuth2PermissionGrant(ctx context.Context, id string, patch map[string]any) (*model.OAuth2PermissionGrant, error)
 	DeleteOAuth2PermissionGrant(ctx context.Context, id string) error
 }

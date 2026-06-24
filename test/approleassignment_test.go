@@ -20,10 +20,10 @@ func createAppWithRole(t *testing.T, ts *TestServer, appDisplayName, roleValue s
 
 	// Create application with app role via raw HTTP
 	roleID = uuid.New().String()
-	appBody := map[string]interface{}{
+	appBody := map[string]any{
 		"displayName": appDisplayName,
-		"appRoles": []interface{}{
-			map[string]interface{}{
+		"appRoles": []any{
+			map[string]any{
 				"id":                 roleID,
 				"allowedMemberTypes": []string{"User", "Application"},
 				"description":        "Test app role",
@@ -64,7 +64,7 @@ func TestAppRoleAssignment_CreateAndGetForUser(t *testing.T) {
 	spID, roleID := createAppWithRole(t, tss, "Role Test App", "Test.Role")
 
 	// 3. Create app role assignment via raw HTTP POST to /users/{id}/appRoleAssignments
-	assignBody := map[string]interface{}{
+	assignBody := map[string]any{
 		"principalId": userID,
 		"resourceId":  spID,
 		"appRoleId":   roleID,
@@ -94,7 +94,7 @@ func TestAppRoleAssignment_CreateAndGetForUser(t *testing.T) {
 	require.Equal(t, http.StatusOK, listResp.StatusCode)
 
 	listResult := readJSON(t, listResp)
-	values := listResult["value"].([]interface{})
+	values := listResult["value"].([]any)
 	assert.GreaterOrEqual(t, len(values), 1, "Expected at least 1 app role assignment")
 
 	// 5. Delete the assignment
@@ -110,7 +110,7 @@ func TestAppRoleAssignment_CreateAndGetForUser(t *testing.T) {
 	)
 	defer listResp2.Body.Close()
 	listResult2 := readJSON(t, listResp2)
-	values2 := listResult2["value"].([]interface{})
+	values2 := listResult2["value"].([]any)
 	assert.Empty(t, values2, "Expected 0 app role assignments after deletion")
 }
 
@@ -130,7 +130,7 @@ func TestAppRoleAssignment_SPAppRoleAssignments(t *testing.T) {
 	principalSPID := *principalSP.GetId()
 
 	// 3. Assign the role from resource SP to principal SP
-	assignBody := map[string]interface{}{
+	assignBody := map[string]any{
 		"principalId": principalSPID,
 		"resourceId":  resourceSPID,
 		"appRoleId":   roleID,
@@ -157,7 +157,7 @@ func TestAppRoleAssignment_SPAppRoleAssignments(t *testing.T) {
 	require.Equal(t, http.StatusOK, listResp.StatusCode)
 
 	listResult := readJSON(t, listResp)
-	values := listResult["value"].([]interface{})
+	values := listResult["value"].([]any)
 	assert.GreaterOrEqual(t, len(values), 1, "Expected at least 1 app role assignment for principal SP")
 
 	// 5. Also verify via appRoleAssignedTo on the resource SP
@@ -167,7 +167,7 @@ func TestAppRoleAssignment_SPAppRoleAssignments(t *testing.T) {
 	defer assignedToResp.Body.Close()
 	require.Equal(t, http.StatusOK, assignedToResp.StatusCode)
 	assignedToResult := readJSON(t, assignedToResp)
-	assignedToValues := assignedToResult["value"].([]interface{})
+	assignedToValues := assignedToResult["value"].([]any)
 	assert.GreaterOrEqual(t, len(assignedToValues), 1, "Expected at least 1 appRoleAssignedTo for resource SP")
 
 	// 6. Delete the assignment via SP endpoint
@@ -191,7 +191,7 @@ func TestAppRoleAssignment_AppRoleAssignedTo(t *testing.T) {
 	spID, roleID := createAppWithRole(t, tss, "AssignedTo App", "Assigned.Role")
 
 	// 3. Create app role assignment via appRoleAssignedTo endpoint
-	assignBody := map[string]interface{}{
+	assignBody := map[string]any{
 		"principalId": userID,
 		"resourceId":  spID,
 		"appRoleId":   roleID,
@@ -214,7 +214,7 @@ func TestAppRoleAssignment_AppRoleAssignedTo(t *testing.T) {
 	require.Equal(t, http.StatusOK, listResp.StatusCode)
 
 	listResult := readJSON(t, listResp)
-	values := listResult["value"].([]interface{})
+	values := listResult["value"].([]any)
 	assert.GreaterOrEqual(t, len(values), 1, "Expected at least 1 appRoleAssignedTo")
 }
 
@@ -231,7 +231,7 @@ func TestAppRoleAssignment_GroupAssignment(t *testing.T) {
 	spID, roleID := createAppWithRole(t, tss, "Group Role App", "Group.Role")
 
 	// 3. Create app role assignment via group endpoint
-	assignBody := map[string]interface{}{
+	assignBody := map[string]any{
 		"principalId": groupID,
 		"resourceId":  spID,
 		"appRoleId":   roleID,
@@ -261,7 +261,7 @@ func TestAppRoleAssignment_GroupAssignment(t *testing.T) {
 	require.Equal(t, http.StatusOK, listResp.StatusCode)
 
 	listResult := readJSON(t, listResp)
-	values := listResult["value"].([]interface{})
+	values := listResult["value"].([]any)
 	assert.GreaterOrEqual(t, len(values), 1)
 
 	// 5. Delete the assignment
@@ -282,12 +282,12 @@ func TestAppRoleAssignment_DeleteNonExistent(t *testing.T) {
 	sp := getAutoCreatedSP(t, tss, appId)
 	spID := *sp.GetId()
 
-	// Generate a fake assignment ID
-	fakeAssignmentID := uuid.New().String()
+	// Generate a non-existent assignment ID
+	nonExistentAssignmentID := uuid.New().String()
 
 	// DELETE non-existent assignment → 404
 	resp := authedDelete(t, tss,
-		fmt.Sprintf("%s/v1.0/servicePrincipals/%s/appRoleAssignments/%s", tss.BaseURL, spID, fakeAssignmentID),
+		fmt.Sprintf("%s/v1.0/servicePrincipals/%s/appRoleAssignments/%s", tss.BaseURL, spID, nonExistentAssignmentID),
 	)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)

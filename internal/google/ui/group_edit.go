@@ -24,7 +24,7 @@ func GroupEditHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     true,
 				"FormAction": "/google-ui/groups/" + id + "/edit",
 				"CancelURL":  "/google-ui/groups/" + id,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"Email":       group.Email,
 					"Name":        group.Name,
 					"Description": group.Description,
@@ -43,7 +43,7 @@ func GroupEditHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/google-ui/groups/" + id + "/edit",
 				"CancelURL":  "/google-ui/groups/" + id,
 				"Error":      "Email is required",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"Email":       c.PostForm("email"),
 					"Name":        c.PostForm("name"),
 					"Description": c.PostForm("description"),

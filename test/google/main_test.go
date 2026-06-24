@@ -61,7 +61,7 @@ func getGoogleToken(t *testing.T, client *http.Client, baseURL string) string {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "token request failed: %s", string(body))
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 	token, _ := result["access_token"].(string)
 	require.NotEmpty(t, token, "access_token was empty")
@@ -85,12 +85,12 @@ func googleRequest(t *testing.T, client *http.Client, method, url, token, body s
 	return resp
 }
 
-func readBody(t *testing.T, resp *http.Response) map[string]interface{} {
+func readBody(t *testing.T, resp *http.Response) map[string]any {
 	t.Helper()
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	resp.Body.Close()
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 	return result
 }

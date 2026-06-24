@@ -34,7 +34,7 @@ func TestGoogleGroup_CRUD(t *testing.T) {
 	resp = googleRequest(t, client, http.MethodGet, base+"/groups", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	groups, ok := body["groups"].([]interface{})
+	groups, ok := body["groups"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(groups), 1)
 
@@ -80,7 +80,7 @@ func TestGoogleGroup_Members(t *testing.T) {
 	resp = googleRequest(t, client, http.MethodGet, base+"/groups/"+groupID+"/members", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	members, ok := body["members"].([]interface{})
+	members, ok := body["members"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(members), 1)
 

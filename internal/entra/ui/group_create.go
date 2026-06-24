@@ -21,7 +21,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     false,
 				"FormAction": "/ui/groups/new",
 				"CancelURL":  "/ui/groups",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":     "",
 					"Description":     "",
 					"MailNickname":    "",
@@ -45,7 +45,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/groups/new",
 				"CancelURL":  "/ui/groups",
 				"Error":      "Display Name is required",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":     c.PostForm("displayName"),
 					"Description":     c.PostForm("description"),
 					"MailNickname":    c.PostForm("mailNickname"),
@@ -100,7 +100,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				err = fmt.Errorf("failed to get token for manual request: %w", tokenErr)
 			} else {
 				// Manually construct the JSON payload
-				groupPayload := map[string]interface{}{
+				groupPayload := map[string]any{
 					"displayName":     displayName,
 					"securityEnabled": securityEnabled,
 					"mailEnabled":     mailEnabled,
@@ -135,7 +135,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 						// Make request
 						resp, httpErr := httpClient.Do(req)
 						if httpErr != nil {
-							err = fmt.Errorf("HTTP request failed: %w", httpErr)
+							err = fmt.Errorf("http request failed: %w", httpErr)
 						} else {
 							defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
@@ -144,7 +144,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 								err = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 							} else {
 								// Parse response to get ID
-								var result map[string]interface{}
+								var result map[string]any
 								if parseErr := json.NewDecoder(resp.Body).Decode(&result); parseErr != nil {
 									err = fmt.Errorf("failed to decode response: %w", parseErr)
 								} else {
@@ -172,7 +172,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/groups/new",
 				"CancelURL":  "/ui/groups",
 				"Error":      fmt.Sprintf("Failed to create group: %v", err),
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":     c.PostForm("displayName"),
 					"Description":     c.PostForm("description"),
 					"MailNickname":    c.PostForm("mailNickname"),
@@ -193,7 +193,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/groups/new",
 				"CancelURL":  "/ui/groups",
 				"Error":      "Group was created but response was empty",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":     c.PostForm("displayName"),
 					"Description":     c.PostForm("description"),
 					"MailNickname":    c.PostForm("mailNickname"),
@@ -223,7 +223,7 @@ func GroupCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/groups/new",
 				"CancelURL":  "/ui/groups",
 				"Error":      "Group was created but ID was not returned in response",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":     c.PostForm("displayName"),
 					"Description":     c.PostForm("description"),
 					"MailNickname":    c.PostForm("mailNickname"),

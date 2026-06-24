@@ -28,7 +28,7 @@ func TestGoogleToken_ClientCredentials(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "unexpected status: %s", string(body))
 
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 	assert.NotEmpty(t, result["access_token"])
 	assert.Equal(t, "Bearer", result["token_type"])
@@ -51,7 +51,7 @@ func TestGoogleToken_InvalidCredentials(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 	errField, ok := result["error"].(string)
 	require.True(t, ok)

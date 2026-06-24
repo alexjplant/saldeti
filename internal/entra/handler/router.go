@@ -302,12 +302,14 @@ func openIDConfigurationHandler(c *gin.Context) {
 	baseURL := getBaseURL(c) + "/" + tenantID
 
 	c.JSON(http.StatusOK, gin.H{
-		"issuer":                                baseURL,
-		"authorization_endpoint":                baseURL + "/oauth2/v2.0/authorize",
-		"token_endpoint":                        baseURL + "/oauth2/v2.0/token",
-		"jwks_uri":                              baseURL + "/discovery/v2.0/keys",
-		"response_types_supported":              []string{"code", "id_token", "token", "token id_token"},
-		"subject_types_supported":               []string{"pairwise"},
+		"issuer":                   baseURL,
+		"authorization_endpoint":   baseURL + "/oauth2/v2.0/authorize",
+		"token_endpoint":           baseURL + "/oauth2/v2.0/token",
+		"jwks_uri":                 baseURL + "/discovery/v2.0/keys",
+		"response_types_supported": []string{"code", "id_token", "token", "token id_token"},
+		"subject_types_supported":  []string{"pairwise"},
+		// Simulator uses HS256 (symmetric key); real Azure AD uses RS256 (asymmetric).
+		// This is expected for a local simulator.
 		"id_token_signing_alg_values_supported": []string{"HS256"},
 		"scopes_supported":                      []string{"openid", "profile", "email", "offline_access"},
 		"token_endpoint_auth_methods_supported": []string{"client_secret_post", "private_key_jwt", "client_secret_basic"},

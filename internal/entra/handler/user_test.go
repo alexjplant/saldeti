@@ -55,14 +55,14 @@ func TestListUsers(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://graph.microsoft.com/v1.0/$metadata#users", listResp["@odata.context"])
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	assert.Len(t, users, 5)
 }
 
@@ -103,13 +103,13 @@ func TestListUsersWithFilter(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	assert.Len(t, users, 3) // Should have 3 Engineering users
 }
 
@@ -147,16 +147,16 @@ func TestListUsersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	require.Len(t, users, 1)
 
-	userMap := users[0].(map[string]interface{})
+	userMap := users[0].(map[string]any)
 	assert.Contains(t, userMap, "displayName")
 	assert.Contains(t, userMap, "id")
 	assert.Contains(t, userMap, "department")
@@ -199,13 +199,13 @@ func TestListUsersWithTop(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	assert.Len(t, users, 5)
 
 	// Check for nextLink
@@ -250,7 +250,7 @@ func TestListUsersWithCount(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
@@ -294,7 +294,7 @@ func TestGetUserByID(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
@@ -339,7 +339,7 @@ func TestGetUserByUPN(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
@@ -402,7 +402,7 @@ func TestCreateUser(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/v1.0/users/")
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
@@ -523,7 +523,7 @@ func TestUpdateUser(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
@@ -615,19 +615,19 @@ func TestODataFilterStartsWith(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	assert.Len(t, users, 2) // Alice and Alex
 
 	// Verify correct users
 	userNames := make([]string, len(users))
 	for i, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		userNames[i] = userMap["displayName"].(string)
 	}
 
@@ -684,13 +684,13 @@ func TestODataFilterBoolean(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	usersResp := listResp["value"].([]interface{})
+	usersResp := listResp["value"].([]any)
 	assert.Len(t, usersResp, 3) // 3 enabled users
 }
 
@@ -732,19 +732,19 @@ func TestODataOrderBy(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	require.Len(t, users, 3)
 
 	// Verify alphabetical order: Alice, Bob, Charlie
-	assert.Equal(t, "Alice", users[0].(map[string]interface{})["displayName"])
-	assert.Equal(t, "Bob", users[1].(map[string]interface{})["displayName"])
-	assert.Equal(t, "Charlie", users[2].(map[string]interface{})["displayName"])
+	assert.Equal(t, "Alice", users[0].(map[string]any)["displayName"])
+	assert.Equal(t, "Bob", users[1].(map[string]any)["displayName"])
+	assert.Equal(t, "Charlie", users[2].(map[string]any)["displayName"])
 }
 
 func TestODataSearch(t *testing.T) {
@@ -783,20 +783,20 @@ func TestODataSearch(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	// Should match: Alice Smith, Alice Cooper, David Aliceson (contains "Alice")
 	assert.Len(t, users, 3)
 
 	// Verify correct users
 	userNames := make([]string, len(users))
 	for i, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		userNames[i] = userMap["displayName"].(string)
 	}
 
@@ -829,14 +829,14 @@ func TestODataInvalidFilter(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
 	// Verify error response
-	var errorResp map[string]interface{}
+	var errorResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &errorResp)
 	require.NoError(t, err)
 
 	assert.Contains(t, errorResp, "error")
-	errorObj := errorResp["error"].(map[string]interface{})
+	errorObj := errorResp["error"].(map[string]any)
 	assert.Contains(t, errorObj, "code")
 	assert.Contains(t, errorObj, "message")
 	assert.Equal(t, "InvalidRequest", errorObj["code"])
@@ -915,22 +915,22 @@ func TestListUsersExpandManager(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	require.Len(t, users, 4)
 
 	// Find employee and verify manager
 	for _, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		if userMap["userPrincipalName"] == "employee@example.com" {
 			// Employee should have a manager
 			assert.Contains(t, userMap, "manager", "employee should have manager key")
-			mgrMap, ok := userMap["manager"].(map[string]interface{})
+			mgrMap, ok := userMap["manager"].(map[string]any)
 			require.True(t, ok, "manager should be a map")
 			assert.Equal(t, createdTopManager.ID, mgrMap["id"])
 			assert.Equal(t, "Top Manager", mgrMap["displayName"])
@@ -992,20 +992,20 @@ func TestListUsersExpandManagerWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	require.Len(t, users, 2)
 
 	// Find employee and verify manager has only selected fields
 	for _, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		if userMap["userPrincipalName"] == "employee@example.com" {
-			mgrMap, ok := userMap["manager"].(map[string]interface{})
+			mgrMap, ok := userMap["manager"].(map[string]any)
 			require.True(t, ok, "manager should be a map")
 			// Should have userPrincipalName, id, @odata.type
 			assert.Contains(t, mgrMap, "userPrincipalName", "manager should have userPrincipalName from $select")
@@ -1068,7 +1068,7 @@ func TestGetUserExpandManager(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
@@ -1076,7 +1076,7 @@ func TestGetUserExpandManager(t *testing.T) {
 
 	// Should have manager object
 	assert.Contains(t, userResp, "manager", "response should have manager key")
-	mgrMap, ok := userResp["manager"].(map[string]interface{})
+	mgrMap, ok := userResp["manager"].(map[string]any)
 	require.True(t, ok, "manager should be a map")
 	assert.Equal(t, createdManager.ID, mgrMap["id"])
 	assert.Equal(t, "Manager User", mgrMap["displayName"])
@@ -1133,7 +1133,7 @@ func TestGetUserExpandManagerByUPN(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
@@ -1141,7 +1141,7 @@ func TestGetUserExpandManagerByUPN(t *testing.T) {
 
 	// Should have manager object when fetched by UPN
 	assert.Contains(t, userResp, "manager", "response should have manager key when fetched by UPN")
-	mgrMap, ok := userResp["manager"].(map[string]interface{})
+	mgrMap, ok := userResp["manager"].(map[string]any)
 	require.True(t, ok, "manager should be a map")
 	assert.Equal(t, createdManager.ID, mgrMap["id"])
 	assert.Equal(t, "manager@example.com", mgrMap["userPrincipalName"])
@@ -1196,14 +1196,14 @@ func TestGetUserExpandManagerWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
 	require.NoError(t, err)
 
 	// Should have manager object
-	mgrMap, ok := userResp["manager"].(map[string]interface{})
+	mgrMap, ok := userResp["manager"].(map[string]any)
 	require.True(t, ok, "manager should be a map")
 	// Should have id, @odata.type, userPrincipalName, displayName
 	assert.Contains(t, mgrMap, "id")
@@ -1248,16 +1248,16 @@ func TestListUsersExpandManagerNoManager(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	require.Len(t, users, 1)
 
-	userMap := users[0].(map[string]interface{})
+	userMap := users[0].(map[string]any)
 	// User without manager should NOT have "manager" key at all
 	_, hasManager := userMap["manager"]
 	assert.False(t, hasManager, "user without manager should not have manager key in response")
@@ -1311,17 +1311,17 @@ func TestListUsersExpandManagerWithUserSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	require.Len(t, users, 2)
 
 	for _, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		// User should only have id, userPrincipalName, @odata.context
 		assert.Contains(t, userMap, "id")
 		assert.Contains(t, userMap, "userPrincipalName")
@@ -1331,7 +1331,7 @@ func TestListUsersExpandManagerWithUserSelect(t *testing.T) {
 
 		// If this is the employee, check the manager
 		if userMap["userPrincipalName"] == "employee@example.com" {
-			mgrMap, ok := userMap["manager"].(map[string]interface{})
+			mgrMap, ok := userMap["manager"].(map[string]any)
 			require.True(t, ok)
 			assert.Contains(t, mgrMap, "id")
 			assert.Contains(t, mgrMap, "userPrincipalName")
@@ -1398,18 +1398,18 @@ func TestListUsersExpandDirectReports(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	// Find the manager and verify directReports
 	for _, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		if userMap["userPrincipalName"] == "manager@example.com" {
-			dr, ok := userMap["directReports"].([]interface{})
+			dr, ok := userMap["directReports"].([]any)
 			require.True(t, ok, "manager should have directReports key")
 			assert.Len(t, dr, 2, "manager should have 2 direct reports")
 		}
@@ -1417,7 +1417,7 @@ func TestListUsersExpandDirectReports(t *testing.T) {
 			// Reports should have empty or absent directReports
 			drRaw, hasDR := userMap["directReports"]
 			if hasDR {
-				dr, ok := drRaw.([]interface{})
+				dr, ok := drRaw.([]any)
 				if ok {
 					assert.Len(t, dr, 0, "reports should have empty directReports")
 				}
@@ -1482,17 +1482,17 @@ func TestListUsersExpandMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	for _, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		if userMap["id"] == createdUser.ID {
-			memberOf, ok := userMap["memberOf"].([]interface{})
+			memberOf, ok := userMap["memberOf"].([]any)
 			require.True(t, ok, "user should have memberOf key")
 			assert.Len(t, memberOf, 2, "user should be member of 2 groups")
 		}
@@ -1542,20 +1542,20 @@ func TestListUsersExpandDirectReportsWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	for _, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		if userMap["id"] == createdManager.ID {
-			dr, ok := userMap["directReports"].([]interface{})
+			dr, ok := userMap["directReports"].([]any)
 			require.True(t, ok, "manager should have directReports key")
 			require.Len(t, dr, 1, "manager should have 1 direct report")
-			drMap := dr[0].(map[string]interface{})
+			drMap := dr[0].(map[string]any)
 			assert.Contains(t, drMap, "id")
 			assert.Contains(t, drMap, "displayName")
 			assert.Contains(t, drMap, "@odata.type")
@@ -1610,16 +1610,16 @@ func TestGetUserExpandDirectReports(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
 	require.NoError(t, err)
 
-	directReports, ok := userResp["directReports"].([]interface{})
+	directReports, ok := userResp["directReports"].([]any)
 	require.True(t, ok, "user should have directReports key when expanded")
 	assert.Len(t, directReports, 1)
-	dr := directReports[0].(map[string]interface{})
+	dr := directReports[0].(map[string]any)
 	assert.Equal(t, createdReport.ID, dr["id"])
 	assert.Contains(t, dr, "@odata.type")
 }
@@ -1669,16 +1669,16 @@ func TestGetUserExpandMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var userResp map[string]interface{}
+	var userResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &userResp)
 	require.NoError(t, err)
 
-	memberOf, ok := userResp["memberOf"].([]interface{})
+	memberOf, ok := userResp["memberOf"].([]any)
 	require.True(t, ok, "user should have memberOf key when expanded")
 	assert.Len(t, memberOf, 1)
-	groupEntry := memberOf[0].(map[string]interface{})
+	groupEntry := memberOf[0].(map[string]any)
 	assert.Equal(t, createdGroup.ID, groupEntry["id"])
 	assert.Contains(t, groupEntry, "@odata.type")
 }
@@ -1728,20 +1728,20 @@ func TestListUsersExpandMemberOfWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	users := listResp["value"].([]interface{})
+	users := listResp["value"].([]any)
 	for _, u := range users {
-		userMap := u.(map[string]interface{})
+		userMap := u.(map[string]any)
 		if userMap["id"] == createdUser.ID {
-			memberOf, ok := userMap["memberOf"].([]interface{})
+			memberOf, ok := userMap["memberOf"].([]any)
 			require.True(t, ok, "user should have memberOf key")
 			require.Len(t, memberOf, 1, "user should be member of 1 group")
-			groupMap := memberOf[0].(map[string]interface{})
+			groupMap := memberOf[0].(map[string]any)
 			assert.Contains(t, groupMap, "id")
 			assert.Contains(t, groupMap, "displayName")
 			assert.Contains(t, groupMap, "@odata.type")

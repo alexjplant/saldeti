@@ -102,7 +102,7 @@ func patchCalendarResourceHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")
 		resourceID := c.Param("resourceId")
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
 			return
@@ -228,7 +228,7 @@ func patchBuildingHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")
 		buildingID := c.Param("buildingId")
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
 			return
@@ -354,7 +354,7 @@ func patchFeatureHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")
 		featureKey := c.Param("featureKey")
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
 			return

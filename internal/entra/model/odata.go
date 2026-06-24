@@ -17,13 +17,13 @@ type ListOptions struct {
 }
 
 type ListResponse struct {
-	Context  string      `json:"@odata.context"`
-	Count    *int        `json:"@odata.count,omitempty"`
-	NextLink string      `json:"@odata.nextLink,omitempty"`
-	Value    interface{} `json:"value"`
+	Context  string `json:"@odata.context"`
+	Count    *int   `json:"@odata.count,omitempty"`
+	NextLink string `json:"@odata.nextLink,omitempty"`
+	Value    any    `json:"value"`
 }
 
 type SingleResponse struct {
-	Context string      `json:"@odata.context"`
-	Value   interface{} `json:"value"`
+	Context string `json:"@odata.context"`
+	Value   any    `json:"value"`
 }

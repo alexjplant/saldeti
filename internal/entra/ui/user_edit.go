@@ -29,7 +29,7 @@ func UserEditHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     true,
 				"FormAction": "/ui/users/" + id + "/edit",
 				"CancelURL":  "/ui/users/" + id,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":       strVal(sdkUser.GetDisplayName()),
 					"GivenName":         strVal(sdkUser.GetGivenName()),
 					"Surname":           strVal(sdkUser.GetSurname()),

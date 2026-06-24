@@ -195,7 +195,7 @@ func getByIdsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		writeJSON(c, http.StatusOK, map[string]interface{}{
+		writeJSON(c, http.StatusOK, map[string]any{
 			"value": objects,
 		})
 	}
@@ -229,7 +229,7 @@ func checkUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		writeJSON(c, http.StatusOK, map[string]interface{}{
+		writeJSON(c, http.StatusOK, map[string]any{
 			"value": memberGroups,
 		})
 	}
@@ -258,7 +258,7 @@ func getUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		writeJSON(c, http.StatusOK, map[string]interface{}{
+		writeJSON(c, http.StatusOK, map[string]any{
 			"value": memberGroups,
 		})
 	}
@@ -275,7 +275,7 @@ func usersDeltaHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
 			"value":          items,
 		}
@@ -300,7 +300,7 @@ func groupsDeltaHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#groups",
 			"value":          items,
 		}

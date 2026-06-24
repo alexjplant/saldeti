@@ -181,7 +181,7 @@ type CloudIdentityDevice struct {
 	WifiMacAddresses             []string                      `json:"wifiMacAddresses,omitempty"`
 	NetworkInterfaces            []NetworkInterface            `json:"networkInterfaces,omitempty"`
 	EndpointVerificationMetadata *EndpointVerificationMetadata `json:"endpointVerificationMetadata,omitempty"`
-	CustomAttributes             map[string]interface{}        `json:"customAttributes,omitempty"`
+	CustomAttributes             map[string]any                `json:"customAttributes,omitempty"`
 	CreateTime                   string                        `json:"createTime,omitempty"`
 	UpdateTime                   string                        `json:"updateTime,omitempty"`
 }

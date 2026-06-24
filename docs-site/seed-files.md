@@ -178,12 +178,12 @@ Both seed file formats have machine-readable JSON Schema definitions that you ca
 | Entra ID | [`seed.schema.json`](https://raw.githubusercontent.com/alexjplant/saldeti/main/schema/seed.schema.json) |
 | Google Workspace | [`google-seed.schema.json`](https://raw.githubusercontent.com/alexjplant/saldeti/main/schema/google-seed.schema.json) |
 
-### Validating with Python
+### Validating with check-jsonschema
 
 ```sh
-pip install jsonschema
-python -m jsonschema schema/seed.schema.json -i examples/seed.json
-python -m jsonschema schema/google-seed.schema.json -i examples/google-seed.json
+pip install check-jsonschema
+check-jsonschema --schemafile schema/seed.schema.json examples/seed.json
+check-jsonschema --schemafile schema/google-seed.schema.json examples/google-seed.json
 ```
 
 ### Validating with Node.js (ajv-cli)

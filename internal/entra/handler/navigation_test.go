@@ -67,17 +67,17 @@ func TestListUserMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 2)
 
 	// Verify each group is returned as a directory object with correct @odata.type
 	for _, item := range value {
-		obj, ok := item.(map[string]interface{})
+		obj, ok := item.(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "#microsoft.graph.group", obj["@odata.type"])
 		assert.Contains(t, []string{"Group 1", "Group 2"}, obj["displayName"])
@@ -140,18 +140,18 @@ func TestListUserTransitiveMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 3) // User should be transitive member of A, B, and C
 
 	// Verify all groups are returned
 	groupNames := make([]string, 0, 3)
 	for _, item := range value {
-		obj, ok := item.(map[string]interface{})
+		obj, ok := item.(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "#microsoft.graph.group", obj["@odata.type"])
 		groupNames = append(groupNames, obj["displayName"].(string))
@@ -210,7 +210,7 @@ func TestGetManager(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
@@ -253,12 +253,12 @@ func TestGetManagerNotSet(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
 	assert.Contains(t, result, "error")
-	errorObj := result["error"].(map[string]interface{})
+	errorObj := result["error"].(map[string]any)
 	assert.Equal(t, "Request_ResourceNotFound", errorObj["code"])
 }
 
@@ -319,7 +319,7 @@ func TestSetManager(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp2.Body).Decode(&result)
 	require.NoError(t, err)
 
@@ -437,18 +437,18 @@ func TestDirectReports(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 3)
 
 	// Verify all direct reports are returned
 	reportNames := make([]string, 0, 3)
 	for _, item := range value {
-		obj, ok := item.(map[string]interface{})
+		obj, ok := item.(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "#microsoft.graph.user", obj["@odata.type"])
 		reportNames = append(reportNames, obj["displayName"].(string))
@@ -509,11 +509,11 @@ func TestGetByIds(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 3)
 
@@ -521,7 +521,7 @@ func TestGetByIds(t *testing.T) {
 	userCount := 0
 	groupCount := 0
 	for _, item := range value {
-		obj, ok := item.(map[string]interface{})
+		obj, ok := item.(map[string]any)
 		require.True(t, ok)
 		switch obj["@odata.type"] {
 		case "#microsoft.graph.user":
@@ -585,17 +585,17 @@ func TestGetByIdsWithTypeFilter(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 2) // Only users should be returned
 
 	// Verify only users are returned
 	for _, item := range value {
-		obj, ok := item.(map[string]interface{})
+		obj, ok := item.(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "#microsoft.graph.user", obj["@odata.type"])
 	}
@@ -657,11 +657,11 @@ func TestUserCheckMemberGroups(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 2) // User is only member of groups 1 and 2
 
@@ -732,11 +732,11 @@ func TestUserGetMemberGroups(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 2) // User should be transitive member of both A and B
 
@@ -786,7 +786,7 @@ func TestUsersDelta(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
@@ -795,7 +795,7 @@ func TestUsersDelta(t *testing.T) {
 	assert.Contains(t, result, "@odata.deltaLink")
 	assert.Contains(t, result, "value")
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 3)
 
@@ -840,7 +840,7 @@ func TestGroupsDelta(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
@@ -849,7 +849,7 @@ func TestGroupsDelta(t *testing.T) {
 	assert.Contains(t, result, "@odata.deltaLink")
 	assert.Contains(t, result, "value")
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 3)
 
@@ -894,11 +894,11 @@ func TestCheckMemberGroupsNonexistentUser(t *testing.T) {
 	// Should return 404, not 500
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	errorObj := result["error"].(map[string]interface{})
+	errorObj := result["error"].(map[string]any)
 	assert.Equal(t, "Request_ResourceNotFound", errorObj["code"])
 }
 
@@ -926,10 +926,10 @@ func TestGetMemberGroupsNonexistentUser(t *testing.T) {
 	// Should return 404, not 500
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 
-	errorObj := result["error"].(map[string]interface{})
+	errorObj := result["error"].(map[string]any)
 	assert.Equal(t, "Request_ResourceNotFound", errorObj["code"])
 }

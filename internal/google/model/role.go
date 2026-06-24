@@ -8,7 +8,7 @@ type Role struct {
 	RolePrivileges   []RolePrivilege `json:"rolePrivileges,omitempty"`
 	IsSystemRole     bool            `json:"isSystemRole"`
 	IsSuperAdminRole bool            `json:"isSuperAdminRole"`
-	Kind             string          `json:"kind,omitempty"`
+	Kind             string          `json:"kind"`
 }
 
 type RolePrivilege struct {

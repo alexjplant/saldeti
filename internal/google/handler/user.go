@@ -99,7 +99,7 @@ func updateUserHandler(st store.Store) gin.HandlerFunc {
 func patchUserHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userKey := c.Param("userKey")
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
 			return

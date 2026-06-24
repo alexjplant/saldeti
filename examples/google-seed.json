@@ -47,7 +47,6 @@
       "given_name": "Eve",
       "family_name": "Wilson",
       "password": "Simulator123!",
-      "suspended": true,
       "org_unit_path": "/"
     },
     {

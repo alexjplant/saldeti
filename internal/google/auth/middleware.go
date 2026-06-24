@@ -17,7 +17,7 @@ func RequireAuth() gin.HandlerFunc {
 		}
 
 		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 			writeAuthError(c, 401, "Invalid token", "UNAUTHENTICATED")
 			c.Abort()
 			return

@@ -39,6 +39,8 @@ import (
 	gui "github.com/saldeti/saldeti/internal/google/ui"
 )
 
+const refreshTokenCleanupInterval = 10 * time.Minute // How often expired refresh tokens are removed
+
 func generateSelfSignedCert() (tls.Certificate, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -72,27 +74,6 @@ func generateSelfSignedCert() (tls.Certificate, error) {
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 
 	return tls.X509KeyPair(certPEM, keyPEM)
-}
-
-// newEngine creates a gin.Engine with request logging and recovery middleware,
-// mirroring the setup used by entra handler.NewRouter.
-func newEngine() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
-	r.RedirectTrailingSlash = false
-	r.Use(func(c *gin.Context) {
-		start := time.Now()
-		c.Next()
-		log.Info().
-			Str("method", c.Request.Method).
-			Str("path", c.Request.URL.Path).
-			Int("status", c.Writer.Status()).
-			Dur("latency", time.Since(start)).
-			Str("client_ip", c.ClientIP()).
-			Msg("request")
-	})
-	r.Use(gin.Recovery())
-	return r
 }
 
 // validateMode returns an error if mode is not "entra" or "google".
@@ -362,8 +343,7 @@ func main() {
 		log.Info().Str("client_id", googleClientID).Str("client_secret", googleClientSecret).Msg("Admin app credentials")
 
 		// Create router and register Google routes
-		router = newEngine()
-		ghandler.RegisterRoutes(router, googleStore)
+		router = ghandler.NewRouter(googleStore)
 
 		// Health check endpoint
 		router.GET("/healthz", func(c *gin.Context) {
@@ -425,9 +405,9 @@ func main() {
 	// Start refresh token cleanup for the active mode
 	switch *mode {
 	case "entra":
-		auth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
+		auth.StartRefreshTokenCleanup(appCtx, refreshTokenCleanupInterval)
 	case "google":
-		gauth.StartRefreshTokenCleanup(appCtx, 10*time.Minute)
+		gauth.StartRefreshTokenCleanup(appCtx, refreshTokenCleanupInterval)
 	default:
 		log.Fatal().Str("mode", *mode).Msg("unreachable: invalid mode")
 	}
@@ -446,7 +426,7 @@ func main() {
 
 	// Dump store if -dump is set
 	if *dumpPath != "" {
-		var dumpCfg interface{}
+		var dumpCfg any
 		var dumpErr error
 		if *mode == "google" {
 			dumpCfg, dumpErr = gseed.DumpStore(googleStore)

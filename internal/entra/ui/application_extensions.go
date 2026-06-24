@@ -46,7 +46,7 @@ func ApplicationCreateExtensionHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"name":          name,
 			"dataType":      dataType,
 			"targetObjects": targets,

@@ -1,6 +1,6 @@
 ---
 title: Entra ID Endpoint Coverage
-description: Complete reference of all implemented Microsoft Graph v1.0 API endpoints in saldeti.
+description: Complete reference of all 78 implemented Microsoft Graph v1.0 API endpoints in saldeti.
 ---
 
 # Entra ID Endpoint Coverage

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -10,9 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/saldeti/saldeti/internal/entra/model"
+	"github.com/saldeti/saldeti/internal/entra/store"
 )
 
 const maxBodyBytes int64 = 1 << 20 // 1MB
+const maxTopValue = 999            // Maximum $top value accepted by the MS Graph API; also used for $expand to fetch all related objects
 
 var (
 	configuredBaseURL     string
@@ -32,7 +35,7 @@ func SetTrustForwardedHeaders(trust bool) {
 	trustForwardedHeaders = trust
 }
 
-func writeJSON(c *gin.Context, status int, data interface{}) {
+func writeJSON(c *gin.Context, status int, data any) {
 	c.JSON(status, data)
 }
 
@@ -83,7 +86,7 @@ func getBaseURL(c *gin.Context) string {
 	return scheme + "://" + host
 }
 
-func applySelect(itemMap map[string]interface{}, selects []string, extraPreserve ...map[string]bool) map[string]interface{} {
+func applySelect(itemMap map[string]any, selects []string, extraPreserve ...map[string]bool) map[string]any {
 	if len(selects) == 0 {
 		return itemMap
 	}
@@ -97,7 +100,7 @@ func applySelect(itemMap map[string]interface{}, selects []string, extraPreserve
 			selectSet[k] = true
 		}
 	}
-	result := make(map[string]interface{}, 0)
+	result := make(map[string]any, 0)
 	for k, v := range itemMap {
 		if strings.HasPrefix(k, "@odata.") || selectSet[k] {
 			result[k] = v
@@ -111,26 +114,25 @@ func applySelect(itemMap map[string]interface{}, selects []string, extraPreserve
 }
 
 func isFilterError(err error) bool {
-	errStr := err.Error()
-	return strings.Contains(errStr, "unable to parse filter expression") ||
-		strings.Contains(errStr, "cannot compare values") ||
-		strings.Contains(errStr, "operator not supported") ||
-		strings.Contains(errStr, "function value must be string") ||
-		strings.Contains(errStr, "unknown function") ||
-		strings.Contains(errStr, "invalid filter node")
+	return errors.Is(err, store.ErrUnableToParseFilter) ||
+		errors.Is(err, store.ErrCannotCompareValues) ||
+		errors.Is(err, store.ErrOperatorNotSupported) ||
+		errors.Is(err, store.ErrFunctionValueMustString) ||
+		errors.Is(err, store.ErrUnknownFunction) ||
+		errors.Is(err, store.ErrInvalidFilterNode)
 }
 
 // buildEntityResponse creates a response map with @odata.context and merges in
 // all fields from the entity by marshaling it to JSON and back.
-func buildEntityResponse(odataCtx string, entity any) (map[string]interface{}, error) {
-	response := map[string]interface{}{
+func buildEntityResponse(odataCtx string, entity any) (map[string]any, error) {
+	response := map[string]any{
 		"@odata.context": odataCtx,
 	}
 	entityJSON, err := json.Marshal(entity)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal entity: %w", err)
 	}
-	var entityMap map[string]interface{}
+	var entityMap map[string]any
 	if err := json.Unmarshal(entityJSON, &entityMap); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal entity: %w", err)
 	}
@@ -142,8 +144,8 @@ func buildEntityResponse(odataCtx string, entity any) (map[string]interface{}, e
 
 // buildEntityResponseWithType creates a response map with @odata.context and
 // @odata.type, then merges in all fields from the entity.
-func buildEntityResponseWithType(odataCtx string, odataType string, entity any) (map[string]interface{}, error) {
-	response := map[string]interface{}{
+func buildEntityResponseWithType(odataCtx string, odataType string, entity any) (map[string]any, error) {
+	response := map[string]any{
 		"@odata.context": odataCtx,
 		"@odata.type":    odataType,
 	}
@@ -151,7 +153,7 @@ func buildEntityResponseWithType(odataCtx string, odataType string, entity any) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal entity: %w", err)
 	}
-	var entityMap map[string]interface{}
+	var entityMap map[string]any
 	if err := json.Unmarshal(entityJSON, &entityMap); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal entity: %w", err)
 	}
@@ -164,20 +166,20 @@ func buildEntityResponseWithType(odataCtx string, odataType string, entity any) 
 // applyNestedSelectToDirectoryObjects applies nested $select from an ExpandOption
 // to a slice of DirectoryObject. Returns the raw slice if no select fields are specified,
 // or a slice of filtered maps if select fields are present.
-func applyNestedSelectToDirectoryObjects(objects []model.DirectoryObject, selectFields []string) interface{} {
+func applyNestedSelectToDirectoryObjects(objects []model.DirectoryObject, selectFields []string) any {
 	if len(selectFields) == 0 {
 		return objects
 	}
-	maps := make([]map[string]interface{}, 0, len(objects))
+	maps := make([]map[string]any, 0, len(objects))
 	for _, obj := range objects {
 		objJSON, err := json.Marshal(obj)
 		if err != nil {
-			maps = append(maps, map[string]interface{}{})
+			maps = append(maps, map[string]any{})
 			continue
 		}
-		var m map[string]interface{}
+		var m map[string]any
 		if err := json.Unmarshal(objJSON, &m); err != nil {
-			maps = append(maps, map[string]interface{}{})
+			maps = append(maps, map[string]any{})
 			continue
 		}
 		m = applySelect(m, selectFields)
@@ -189,11 +191,11 @@ func applyNestedSelectToDirectoryObjects(objects []model.DirectoryObject, select
 // applyNestedSelectToUser applies nested $select from an ExpandOption
 // to a User object. Serializes the user to a map, applies select filtering,
 // and ensures @odata.type is set to #microsoft.graph.user.
-func applyNestedSelectToUser(user *model.User, selectFields []string) map[string]interface{} {
+func applyNestedSelectToUser(user *model.User, selectFields []string) map[string]any {
 	userJSON, _ := json.Marshal(user)
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(userJSON, &m); err != nil {
-		return map[string]interface{}{"@odata.type": "#microsoft.graph.user"}
+		return map[string]any{"@odata.type": "#microsoft.graph.user"}
 	}
 	if len(selectFields) > 0 {
 		m = applySelect(m, selectFields)

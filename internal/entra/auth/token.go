@@ -19,6 +19,8 @@ import (
 	"github.com/saldeti/saldeti/internal/entra/store"
 )
 
+const refreshTokenTTL = 24 * time.Hour // Refresh token time-to-live
+
 var (
 	signingKey         atomic.Pointer[[]byte]
 	refreshTokens      = make(map[string]refreshTokenClaims)
@@ -82,7 +84,7 @@ func SetSigningKey(key []byte) {
 func MintToken(tenantID, clientID, subject string, scopes []string, roles []string, lifetime time.Duration, displayName string, userPrincipalName string) (string, error) {
 	key := signingKey.Load()
 	if key == nil || *key == nil {
-		return "", errors.New("JWT signing key not configured")
+		return "", errors.New("jwt signing key not configured")
 	}
 	now := time.Now()
 	claims := TokenClaims{
@@ -130,14 +132,14 @@ func GenerateRefreshToken(tenantID, clientID, subject string, scopes []string, r
 	refreshTokensMutex.Lock()
 	defer refreshTokensMutex.Unlock()
 
-	// Store refresh token with 24h TTL
+	// Store refresh token with TTL
 	refreshTokens[tokenID] = refreshTokenClaims{
 		TenantID:  tenantID,
 		ClientID:  clientID,
 		Subject:   subject,
 		Scopes:    scopes,
 		Roles:     roles,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		ExpiresAt: time.Now().Add(refreshTokenTTL),
 	}
 
 	return tokenID, nil
@@ -146,9 +148,9 @@ func GenerateRefreshToken(tenantID, clientID, subject string, scopes []string, r
 func ValidateToken(tokenString string) (*TokenClaims, error) {
 	key := signingKey.Load()
 	if key == nil || *key == nil {
-		return nil, errors.New("JWT signing key not configured")
+		return nil, errors.New("jwt signing key not configured")
 	}
-	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

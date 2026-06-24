@@ -203,12 +203,12 @@ func authedDelete(t *testing.T, ts *TestServer, url string) *http.Response {
 }
 
 // readJSON reads the response body and unmarshals it as map[string]interface{}
-func readJSON(t *testing.T, resp *http.Response) map[string]interface{} {
+func readJSON(t *testing.T, resp *http.Response) map[string]any {
 	t.Helper()
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	resp.Body.Close()
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal(body, &result)
 	require.NoError(t, err)
 	return result
