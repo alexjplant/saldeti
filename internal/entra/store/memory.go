@@ -99,7 +99,17 @@ func NewMemoryStore() Store {
 		subscribedSkus:         model.DefaultSubscribedSkus(),
 	}
 }
+
+// checkContext returns the context's error if it has been cancelled or expired.
+// All public methods call this at entry to honour context cancellation.
+func checkContext(ctx context.Context) error {
+	return ctx.Err()
+}
+
 func (s *memoryStore) GetUser(ctx context.Context, id string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -111,6 +121,9 @@ func (s *memoryStore) GetUser(ctx context.Context, id string) (*model.User, erro
 }
 
 func (s *memoryStore) GetUserByUPN(ctx context.Context, upn string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -123,6 +136,9 @@ func (s *memoryStore) GetUserByUPN(ctx context.Context, upn string) (*model.User
 }
 
 func (s *memoryStore) CreateUser(ctx context.Context, user model.User) (model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.User{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -162,6 +178,9 @@ func (s *memoryStore) CreateUser(ctx context.Context, user model.User) (model.Us
 }
 
 func (s *memoryStore) GetClient(ctx context.Context, clientID string) (string, string, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return "", "", "", err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -173,6 +192,9 @@ func (s *memoryStore) GetClient(ctx context.Context, clientID string) (string, s
 }
 
 func (s *memoryStore) RegisterClient(ctx context.Context, clientID, clientSecret, tenantID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -211,6 +233,9 @@ func (s *memoryStore) RegisterClient(ctx context.Context, clientID, clientSecret
 }
 
 func (s *memoryStore) ListClients(ctx context.Context) ([]Client, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -226,6 +251,9 @@ func (s *memoryStore) ListClients(ctx context.Context) ([]Client, error) {
 }
 
 func (s *memoryStore) ListUsers(ctx context.Context, opts model.ListOptions) ([]model.User, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -245,6 +273,9 @@ func (s *memoryStore) ListUsers(ctx context.Context, opts model.ListOptions) ([]
 }
 
 func (s *memoryStore) UpdateUser(ctx context.Context, id string, patch map[string]any) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -267,6 +298,9 @@ func (s *memoryStore) UpdateUser(ctx context.Context, id string, patch map[strin
 }
 
 func (s *memoryStore) DeleteUser(ctx context.Context, id string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -545,6 +579,9 @@ func convertNumericValue(value any, targetType reflect.Type) (reflect.Value, err
 
 // Group methods
 func (s *memoryStore) ListGroups(ctx context.Context, opts model.ListOptions) ([]model.Group, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -564,6 +601,9 @@ func (s *memoryStore) ListGroups(ctx context.Context, opts model.ListOptions) ([
 }
 
 func (s *memoryStore) GetGroup(ctx context.Context, id string) (*model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -575,6 +615,9 @@ func (s *memoryStore) GetGroup(ctx context.Context, id string) (*model.Group, er
 }
 
 func (s *memoryStore) CreateGroup(ctx context.Context, group model.Group) (model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Group{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -667,6 +710,9 @@ func (s *memoryStore) CreateGroup(ctx context.Context, group model.Group) (model
 }
 
 func (s *memoryStore) UpdateGroup(ctx context.Context, id string, patch map[string]any) (*model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -689,6 +735,9 @@ func (s *memoryStore) UpdateGroup(ctx context.Context, id string, patch map[stri
 }
 
 func (s *memoryStore) DeleteGroup(ctx context.Context, id string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -745,6 +794,9 @@ func (s *memoryStore) DeleteGroup(ctx context.Context, id string) error {
 
 // Membership methods
 func (s *memoryStore) AddMember(ctx context.Context, groupID, objectID, objectType string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -796,6 +848,9 @@ func (s *memoryStore) AddMember(ctx context.Context, groupID, objectID, objectTy
 }
 
 func (s *memoryStore) RemoveMember(ctx context.Context, groupID, objectID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -824,6 +879,9 @@ func (s *memoryStore) RemoveMember(ctx context.Context, groupID, objectID string
 }
 
 func (s *memoryStore) ListMembers(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -879,6 +937,9 @@ func (s *memoryStore) ListMembers(ctx context.Context, groupID string, opts mode
 }
 
 func (s *memoryStore) ListTransitiveMembers(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -955,6 +1016,9 @@ func (s *memoryStore) ListTransitiveMembers(ctx context.Context, groupID string,
 }
 
 func (s *memoryStore) AddOwner(ctx context.Context, groupID, objectID, objectType string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1001,6 +1065,9 @@ func (s *memoryStore) AddOwner(ctx context.Context, groupID, objectID, objectTyp
 }
 
 func (s *memoryStore) RemoveOwner(ctx context.Context, groupID, objectID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1029,6 +1096,9 @@ func (s *memoryStore) RemoveOwner(ctx context.Context, groupID, objectID string)
 }
 
 func (s *memoryStore) ListOwners(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1084,6 +1154,9 @@ func (s *memoryStore) ListOwners(ctx context.Context, groupID string, opts model
 }
 
 func (s *memoryStore) ListGroupMemberOf(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1118,6 +1191,9 @@ func (s *memoryStore) ListGroupMemberOf(ctx context.Context, groupID string, opt
 }
 
 func (s *memoryStore) ListGroupTransitiveMemberOf(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1174,6 +1250,9 @@ func (s *memoryStore) ListGroupTransitiveMemberOf(ctx context.Context, groupID s
 }
 
 func (s *memoryStore) CheckMemberGroups(ctx context.Context, objectID string, groupIDs []string) ([]string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1207,6 +1286,9 @@ func (s *memoryStore) CheckMemberGroups(ctx context.Context, objectID string, gr
 }
 
 func (s *memoryStore) GetMemberGroups(ctx context.Context, objectID string, securityEnabledOnly bool) ([]string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1273,6 +1355,9 @@ func (s *memoryStore) isTransitiveMember(objectID, objectType, groupID string, v
 }
 
 func (s *memoryStore) ResolveObjectType(ctx context.Context, objectID string) (string, error) {
+	if err := checkContext(ctx); err != nil {
+		return "", err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.resolveObjectTypeUnsafe(objectID)
@@ -1301,6 +1386,9 @@ func (s *memoryStore) resolveObjectTypeUnsafe(objectID string) (string, error) {
 
 // GetManager returns the manager of a user
 func (s *memoryStore) GetManager(ctx context.Context, userID string) (*model.DirectoryObject, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1331,6 +1419,9 @@ func (s *memoryStore) GetManager(ctx context.Context, userID string) (*model.Dir
 
 // SetManager sets the manager for a user
 func (s *memoryStore) SetManager(ctx context.Context, userID, managerID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1351,6 +1442,9 @@ func (s *memoryStore) SetManager(ctx context.Context, userID, managerID string) 
 
 // RemoveManager removes the manager for a user
 func (s *memoryStore) RemoveManager(ctx context.Context, userID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1366,6 +1460,9 @@ func (s *memoryStore) RemoveManager(ctx context.Context, userID string) error {
 
 // ListDirectReports returns all users who have the given user as their manager
 func (s *memoryStore) ListDirectReports(ctx context.Context, userID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1399,6 +1496,9 @@ func (s *memoryStore) ListDirectReports(ctx context.Context, userID string, opts
 
 // ListUserMemberOf returns all groups the user is a direct member of
 func (s *memoryStore) ListUserMemberOf(ctx context.Context, userID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1432,6 +1532,9 @@ func (s *memoryStore) ListUserMemberOf(ctx context.Context, userID string, opts 
 
 // ListUserTransitiveMemberOf returns all groups the user is transitively a member of
 func (s *memoryStore) ListUserTransitiveMemberOf(ctx context.Context, userID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1489,6 +1592,9 @@ func (s *memoryStore) ListUserTransitiveMemberOf(ctx context.Context, userID str
 
 // GetDirectoryObjects returns directory objects for the given IDs, optionally filtered by type
 func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, types []string) ([]map[string]any, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1548,6 +1654,9 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 
 // GetUsersDelta returns users changed since the delta token
 func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1605,6 +1714,9 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 
 // GetGroupsDelta returns groups changed since the delta token
 func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1672,6 +1784,9 @@ func contains(slice []string, item string) bool {
 
 // License methods
 func (s *memoryStore) ListSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1691,6 +1806,9 @@ func (s *memoryStore) ListSubscribedSkus(ctx context.Context) ([]model.Subscribe
 }
 
 func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

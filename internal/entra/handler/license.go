@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -42,7 +43,7 @@ func assignLicenseHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		var req model.LicenseAssignmentRequest
-		if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&req); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
 		}
