@@ -590,6 +590,7 @@ func SeedFromConfig(s store.Store, cfg *SeedConfig) error {
 		}
 		// Create SP
 		sp := model.ServicePrincipal{
+			ID:    seedSP.ID,
 			AppID: seedSP.AppID,
 		}
 		if _, err := s.CreateServicePrincipal(ctx, sp); err != nil {

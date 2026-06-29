@@ -335,6 +335,10 @@
     },
     "SeedServicePrincipal": {
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Optional deterministic object ID. If omitted, a random UUID is generated."
+        },
         "app_id": {
           "type": "string"
         },

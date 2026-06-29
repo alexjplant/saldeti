@@ -94,6 +94,7 @@ type SeedAppRole struct {
 
 // SeedServicePrincipal defines a seed service principal.
 type SeedServicePrincipal struct {
+	ID        string   `json:"id,omitempty"`
 	AppID     string   `json:"app_id"`
 	OwnerUPNs []string `json:"owner_upns,omitempty"`
 }
