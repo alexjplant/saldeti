@@ -19,11 +19,20 @@ import (
 	ui "github.com/saldeti/saldeti/internal/entra/ui"
 )
 
-func setupTestServer(t *testing.T) (*httptest.Server, store.Store) {
-	st := store.NewMemoryStore()
-	if err := seed.Seed(st); err != nil {
+func seedTestStore(t *testing.T, st store.Store) {
+	t.Helper()
+	cfg, err := seed.LoadFromFile("../../../examples/seed.json")
+	if err != nil {
+		t.Fatalf("Failed to load seed file: %v", err)
+	}
+	if err := seed.SeedFromConfig(st, cfg); err != nil {
 		t.Fatalf("Failed to seed data: %v", err)
 	}
+}
+
+func setupTestServer(t *testing.T) (*httptest.Server, store.Store) {
+	st := store.NewMemoryStore()
+	seedTestStore(t, st)
 
 	// Register admin client for UI first
 	ctx := context.Background()

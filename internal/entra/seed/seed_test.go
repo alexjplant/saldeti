@@ -1000,10 +1000,13 @@ func TestSeedBackwardCompat(t *testing.T) {
 	// Create a memory store
 	s := store.NewMemoryStore()
 
-	// Call the existing Seed() function
-	err := Seed(s)
+	// Load the canonical seed data from examples/seed.json
+	cfg, err := LoadFromFile("../../../examples/seed.json")
 	if err != nil {
-		t.Fatalf("Seed() failed: %v", err)
+		t.Fatalf("LoadFromFile failed: %v", err)
+	}
+	if err := SeedFromConfig(s, cfg); err != nil {
+		t.Fatalf("SeedFromConfig failed: %v", err)
 	}
 
 	// Verify admin user exists
@@ -1019,7 +1022,7 @@ func TestSeedBackwardCompat(t *testing.T) {
 	expectedUsers := []string{
 		"alice.smith@saldeti.local",
 		"bob.jones@saldeti.local",
-		"charlie.brown@saldeti.local",
+		"charles.brennan@saldeti.local",
 		"ivan.guest@external.com",
 	}
 	for _, email := range expectedUsers {
@@ -1325,4 +1328,8 @@ func TestSeedFromConfigNewSchema(t *testing.T) {
 	if !foundMkt {
 		t.Error("Expected Marketing Team to be a member of All Staff")
 	}
+}
+
+func intPtr(i int) *int {
+	return &i
 }

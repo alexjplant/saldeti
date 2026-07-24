@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/saldeti/saldeti/internal/entra/handler"
-	"github.com/saldeti/saldeti/internal/entra/seed"
 	"github.com/saldeti/saldeti/internal/entra/store"
 	ui "github.com/saldeti/saldeti/internal/entra/ui"
 )
@@ -21,9 +20,7 @@ func TestDashboardShowsStatsAfterLogin(t *testing.T) {
 
 	// Create test store and seed data
 	st := store.NewMemoryStore()
-	if err := seed.Seed(st); err != nil {
-		t.Fatalf("Failed to seed data: %v", err)
-	}
+	seedTestStore(t, st)
 
 	// Create engine with API routes
 	engine := handler.NewRouter(st)

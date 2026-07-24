@@ -19,7 +19,9 @@ import (
 func TestDumpStore(t *testing.T) {
 	// Seed a store with the default seed data
 	s := store.NewMemoryStore()
-	err := Seed(s)
+	seedCfg, err := LoadFromFile("../../../examples/seed.json")
+	require.NoError(t, err)
+	err = SeedFromConfig(s, seedCfg)
 	require.NoError(t, err)
 
 	// Dump the store
@@ -204,8 +206,10 @@ func TestRoundTrip(t *testing.T) {
 
 	// 1. Seed a store with the default Seed() data (which covers all entity types)
 	s1 := store.NewMemoryStore()
-	err := Seed(s1)
-	require.NoError(t, err, "Seed() should succeed")
+	seedCfg, err := LoadFromFile("../../../examples/seed.json")
+	require.NoError(t, err)
+	err = SeedFromConfig(s1, seedCfg)
+	require.NoError(t, err)
 
 	// 2. Dump the store
 	cfg, err := DumpStore(s1)
