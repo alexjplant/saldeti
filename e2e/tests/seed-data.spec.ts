@@ -25,8 +25,8 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/groups\//);
 
     const membersArticle = page.locator('#members');
-    await expect(membersArticle.locator('td', { hasText: 'Charlie Brown' })).toBeVisible();
-    await expect(membersArticle.locator('td', { hasText: 'Julia Roberts' })).toBeVisible();
+    await expect(membersArticle.locator('td', { hasText: 'Charles Brennan' })).toBeVisible();
+    await expect(membersArticle.locator('td', { hasText: 'Julia Robertson' })).toBeVisible();
   });
 
   test('All Staff contains nested groups', async ({ page }) => {
@@ -48,7 +48,7 @@ test.describe('Seed Data Relationships', () => {
     await expect(page).toHaveURL(/\/ui\/groups\//);
 
     const membersArticle = page.locator('#members');
-    await expect(membersArticle.locator('td', { hasText: 'Diana Prince' })).toBeVisible();
+    await expect(membersArticle.locator('td', { hasText: 'Diana Palmer' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Frank Miller' })).toBeVisible();
   });
 
@@ -59,7 +59,7 @@ test.describe('Seed Data Relationships', () => {
 
     const membersArticle = page.locator('#members');
     await expect(membersArticle.locator('td', { hasText: 'Alice Smith' })).toBeVisible();
-    await expect(membersArticle.locator('td', { hasText: 'Charlie Brown' })).toBeVisible();
+    await expect(membersArticle.locator('td', { hasText: 'Charles Brennan' })).toBeVisible();
     await expect(membersArticle.locator('td', { hasText: 'Eve Wilson' })).toBeVisible();
   });
 
@@ -101,7 +101,7 @@ test.describe('Seed Data Relationships', () => {
 
   test('Diana has Admin as manager', async ({ page }) => {
     await page.goto('/ui/users');
-    await page.locator('tr', { hasText: 'Diana Prince' }).locator('a').first().click();
+    await page.locator('tr', { hasText: 'Diana Palmer' }).locator('a').first().click();
     await expect(page).toHaveURL(/\/ui\/users\//);
 
     const managerArticle = page.locator('article').filter({ hasText: 'Manager' });
@@ -125,7 +125,7 @@ test.describe('Seed Data Relationships', () => {
 
     const reportsArticle = page.locator('article').filter({ hasText: 'Direct Reports' });
     await expect(reportsArticle.getByText('Frank Miller')).toBeVisible();
-    await expect(reportsArticle.getByText('Diana Prince')).toBeVisible();
+    await expect(reportsArticle.getByText('Diana Palmer')).toBeVisible();
   });
 
   test('Alice is member of Engineering Team, All Staff, and Project Alpha', async ({ page }) => {
