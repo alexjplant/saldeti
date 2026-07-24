@@ -47,7 +47,7 @@ func TestTokenEndpoint(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var tokenResp map[string]interface{}
+	var tokenResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &tokenResp)
@@ -242,7 +242,7 @@ func TestMeEndpointWithClientCredentials(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var spResp map[string]interface{}
+	var spResp map[string]any
 	err = json.Unmarshal(body, &spResp)
 	require.NoError(t, err)
 
@@ -295,11 +295,11 @@ func TestMeEndpointWithClientCredentialsNoSP(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var errResp map[string]interface{}
+	var errResp map[string]any
 	err = json.Unmarshal(body, &errResp)
 	require.NoError(t, err)
 
-	inner, ok := errResp["error"].(map[string]interface{})
+	inner, ok := errResp["error"].(map[string]any)
 	require.True(t, ok, "response should have .error object")
 	assert.Equal(t, "ResourceNotFound", inner["code"])
 }

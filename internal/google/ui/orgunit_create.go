@@ -13,10 +13,10 @@ func OrgUnitCreateHandler(h *UIHandler) gin.HandlerFunc {
 			h.render(c, "templates/orgunits/form.html", gin.H{
 				"ActiveNav": "orgunits",
 				"Form": gin.H{
-					"Name":               "",
-					"OrgUnitPath":        "",
-					"ParentOrgUnitPath":  "",
-					"Description":        "",
+					"Name":              "",
+					"OrgUnitPath":       "",
+					"ParentOrgUnitPath": "",
+					"Description":       "",
 				},
 				"FormAction": "/google-ui/orgunits/new",
 				"CancelURL":  "/google-ui/orgunits",
@@ -37,10 +37,10 @@ func OrgUnitCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"ActiveNav": "orgunits",
 				"Error":     "Name and Org Unit Path are required",
 				"Form": gin.H{
-					"Name":               name,
-					"OrgUnitPath":        orgUnitPath,
-					"ParentOrgUnitPath":  parentOrgUnitPath,
-					"Description":        description,
+					"Name":              name,
+					"OrgUnitPath":       orgUnitPath,
+					"ParentOrgUnitPath": parentOrgUnitPath,
+					"Description":       description,
 				},
 				"FormAction": "/google-ui/orgunits/new",
 				"CancelURL":  "/google-ui/orgunits",
@@ -49,10 +49,10 @@ func OrgUnitCreateHandler(h *UIHandler) gin.HandlerFunc {
 		}
 
 		ou := model.OrgUnit{
-			Name:               name,
-			OrgUnitPath:        orgUnitPath,
-			ParentOrgUnitPath:  parentOrgUnitPath,
-			Description:        description,
+			Name:              name,
+			OrgUnitPath:       orgUnitPath,
+			ParentOrgUnitPath: parentOrgUnitPath,
+			Description:       description,
 		}
 
 		if _, err := h.client.CreateOrgUnit(ctx, "my_customer", ou); err != nil {
@@ -60,10 +60,10 @@ func OrgUnitCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"ActiveNav": "orgunits",
 				"Error":     "Failed to create org unit: " + err.Error(),
 				"Form": gin.H{
-					"Name":               name,
-					"OrgUnitPath":        orgUnitPath,
-					"ParentOrgUnitPath":  parentOrgUnitPath,
-					"Description":        description,
+					"Name":              name,
+					"OrgUnitPath":       orgUnitPath,
+					"ParentOrgUnitPath": parentOrgUnitPath,
+					"Description":       description,
 				},
 				"FormAction": "/google-ui/orgunits/new",
 				"CancelURL":  "/google-ui/orgunits",

@@ -25,9 +25,9 @@ func listOrgUnitsHandler(st store.Store) gin.HandlerFunc {
 			orgUnits = []model.OrgUnit{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":               "admin#directory#orgUnits",
-			"etag":               "\"placeholder\"",
-			"organizationUnits":  orgUnits,
+			"kind":              "admin#directory#orgUnits",
+			"etag":              "\"placeholder\"",
+			"organizationUnits": orgUnits,
 		})
 	}
 }
@@ -102,7 +102,7 @@ func patchOrgUnitHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID := c.Param("customer")
 		orgUnitPath := strings.TrimPrefix(c.Param("orgUnitPath"), "/")
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "invalid", "Invalid JSON body")
 			return

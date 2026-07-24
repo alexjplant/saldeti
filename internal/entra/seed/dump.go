@@ -57,11 +57,12 @@ func DumpStore(s store.Store) (*SeedConfig, error) {
 
 		// Dump AssignedLicenses
 		for _, al := range u.AssignedLicenses {
+			skuPartNumber, _ := model.FindSkuBySkuID(al.SkuID)
 			sl := model.SeedLicense{
-				SkuPartNumber: al.SkuPartNumber,
+				SkuPartNumber: skuPartNumber,
 			}
 			for _, planID := range al.DisabledPlans {
-				planName, found := model.FindServicePlanName(al.SkuPartNumber, planID)
+				planName, found := model.FindServicePlanName(skuPartNumber, planID)
 				if found {
 					sl.DisabledPlans = append(sl.DisabledPlans, planName)
 				} else {

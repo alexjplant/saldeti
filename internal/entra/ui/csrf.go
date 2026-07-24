@@ -12,10 +12,12 @@ const csrfCookieName = "saldeti_csrf"
 const csrfFormField = "csrf_token"
 const csrfContextKey = "csrf_token"
 
-func generateCSRFToken() string {
+func generateCSRFToken() (string, error) {
 	b := make([]byte, 32)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func csrfMiddleware() gin.HandlerFunc {
@@ -23,9 +25,12 @@ func csrfMiddleware() gin.HandlerFunc {
 		isUnsafe := c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut ||
 			c.Request.Method == http.MethodPatch || c.Request.Method == http.MethodDelete
 
-		// For unsafe methods: validate against the EXISTING cookie before generating a new token.
-		// htmx requests automatically include the cookie, so they can skip CSRF validation.
-		if isUnsafe && c.GetHeader("HX-Request") != "true" && c.GetHeader("Authorization") == "" {
+		// For unsafe methods: validate CSRF token — the form field must match the cookie.
+		// API requests authenticating via Authorization header are exempt.
+		// htmx requests are NOT exempt: every htmx form submission includes the CSRF
+		// hidden input, and SameSite=Lax prevents a cross-site attacker from reading
+		// the victim's CSRF cookie to forge a matching token.
+		if isUnsafe && c.GetHeader("Authorization") == "" {
 			formToken := c.PostForm(csrfFormField)
 			cookieToken, err := c.Cookie(csrfCookieName)
 			if err != nil || formToken == "" || formToken != cookieToken {
@@ -39,10 +44,15 @@ func csrfMiddleware() gin.HandlerFunc {
 		// overwriting the cookie between page render and form submit.
 		token, _ := c.Cookie(csrfCookieName)
 		if token == "" {
-			token = generateCSRFToken()
+			t, err := generateCSRFToken()
+			if err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+			token = t
 		}
 		c.SetSameSite(http.SameSiteLaxMode)
-		c.SetCookie(csrfCookieName, token, 3600, "/ui", "", false, false)
+		c.SetCookie(csrfCookieName, token, 3600, "/ui", "", true, false)
 		c.Set(csrfContextKey, token)
 
 		c.Next()

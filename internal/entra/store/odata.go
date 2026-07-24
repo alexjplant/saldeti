@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -13,10 +14,21 @@ import (
 
 var comparisonRegex = regexp.MustCompile(`(?i)^(.+?)\s+(eq|ne|gt|ge|lt|le)\s+(.+)$`)
 
+// Sentinel errors for OData filter parsing and evaluation. These enable
+// errors.Is checks instead of fragile string matching in the handler layer.
+var (
+	ErrUnableToParseFilter     = errors.New("unable to parse filter expression")
+	ErrCannotCompareValues     = errors.New("cannot compare values")
+	ErrOperatorNotSupported    = errors.New("not supported")
+	ErrFunctionValueMustString = errors.New("function value must be string")
+	ErrUnknownFunction         = errors.New("unknown function")
+	ErrInvalidFilterNode       = errors.New("invalid filter node")
+)
+
 // ApplyOData applies OData query options to a slice of items
 func ApplyOData[T any](items []T, opts model.ListOptions) ([]T, int, error) {
 	// Convert items to maps for filtering
-	maps := make([]map[string]interface{}, len(items))
+	maps := make([]map[string]any, len(items))
 	for i, item := range items {
 		m, err := structToMap(item)
 		if err != nil {
@@ -84,13 +96,13 @@ func ApplyOData[T any](items []T, opts model.ListOptions) ([]T, int, error) {
 }
 
 // structToMap converts a struct to a map[string]interface{}
-func structToMap(item interface{}) (map[string]interface{}, error) {
-	result := make(map[string]interface{})
+func structToMap(item any) (map[string]any, error) {
+	result := make(map[string]any)
 	v := reflect.ValueOf(item)
 	t := reflect.TypeOf(item)
 
 	// Handle pointers
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 		t = t.Elem()
 	}
@@ -109,7 +121,7 @@ func structToMap(item interface{}) (map[string]interface{}, error) {
 		jsonName := strings.Split(jsonTag, ",")[0]
 
 		// Handle zero values for pointers
-		if value.Kind() == reflect.Ptr {
+		if value.Kind() == reflect.Pointer {
 			if value.IsNil() {
 				result[jsonName] = nil
 			} else {
@@ -124,7 +136,7 @@ func structToMap(item interface{}) (map[string]interface{}, error) {
 }
 
 // mapToStruct converts a map back to a struct
-func mapToStruct[T any](m map[string]interface{}) (T, error) {
+func mapToStruct[T any](m map[string]any) (T, error) {
 	var result T
 	v := reflect.ValueOf(&result).Elem()
 	t := reflect.TypeOf(result)
@@ -140,7 +152,7 @@ func mapToStruct[T any](m map[string]interface{}) (T, error) {
 		if val, ok := m[jsonName]; ok {
 			fieldValue := v.Field(i)
 
-			if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.Kind() == reflect.Pointer {
 				if val == nil {
 					fieldValue.Set(reflect.Zero(fieldValue.Type()))
 				} else {
@@ -169,7 +181,7 @@ func mapToStruct[T any](m map[string]interface{}) (T, error) {
 }
 
 // applyFilter applies OData filter expression to items
-func applyFilter(items []map[string]interface{}, filter string) ([]map[string]interface{}, error) {
+func applyFilter(items []map[string]any, filter string) ([]map[string]any, error) {
 	if filter == "" {
 		return items, nil
 	}
@@ -181,7 +193,7 @@ func applyFilter(items []map[string]interface{}, filter string) ([]map[string]in
 	}
 
 	// Evaluate filter for each item
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 	for _, item := range items {
 		matches, err := evaluateExpression(expr, item)
 		if err != nil {
@@ -235,17 +247,16 @@ func parseFilterExpression(filter string) (*filterNode, error) {
 		return node, nil
 	}
 
-	return nil, fmt.Errorf("unable to parse filter expression: %s", filter)
+	return nil, fmt.Errorf("%w: %s", ErrUnableToParseFilter, filter)
 }
 
 type filterNode struct {
 	operator   string
 	left       *filterNode
 	right      *filterNode
-	value      interface{}
+	value      any
 	property   string
 	function   string
-	args       []*filterNode
 	nestedPath string // for any() with nested property access, e.g., "skuId" from "a/skuId"
 }
 
@@ -271,9 +282,10 @@ func parseOr(expr string) *filterNode {
 			depth := 1
 			j := i + 1
 			for ; j < len(expr) && depth > 0; j++ {
-				if expr[j] == '(' {
+				switch expr[j] {
+				case '(':
 					depth++
-				} else if expr[j] == ')' {
+				case ')':
 					depth--
 				}
 			}
@@ -322,9 +334,10 @@ func parseAnd(expr string) *filterNode {
 			depth := 1
 			j := i + 1
 			for ; j < len(expr) && depth > 0; j++ {
-				if expr[j] == '(' {
+				switch expr[j] {
+				case '(':
 					depth++
-				} else if expr[j] == ')' {
+				case ')':
 					depth--
 				}
 			}
@@ -411,7 +424,7 @@ func parseComparisonExpression(expr string) *filterNode {
 	valueStr := strings.TrimSpace(matches[3])
 
 	// Parse value (case-insensitive for boolean and null)
-	var value interface{}
+	var value any
 	if strings.EqualFold(valueStr, "null") {
 		value = nil
 	} else if strings.EqualFold(valueStr, "true") {
@@ -575,7 +588,7 @@ func parseAnyFunction(expr string) *filterNode {
 }
 
 // evaluateExpression evaluates a filter node against an item
-func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, error) {
+func evaluateExpression(node *filterNode, item map[string]any) (bool, error) {
 	if node == nil {
 		return true, nil
 	}
@@ -632,7 +645,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 					}
 				}
 				return false, nil
-			case []interface{}:
+			case []any:
 				// Mixed array
 				for _, elem := range v {
 					match, err := compareValues(elem, node.value, node.operator)
@@ -651,7 +664,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 				for i := 0; i < rv.Len(); i++ {
 					elem := rv.Index(i)
 					// Dereference pointer if needed
-					if elem.Kind() == reflect.Ptr {
+					if elem.Kind() == reflect.Pointer {
 						elem = elem.Elem()
 					}
 					if elem.Kind() != reflect.Struct {
@@ -691,7 +704,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 
 		funcValue, ok := node.value.(string)
 		if !ok {
-			return false, fmt.Errorf("function value must be string")
+			return false, ErrFunctionValueMustString
 		}
 
 		switch node.function {
@@ -702,7 +715,7 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 		case "contains":
 			return strings.Contains(strValue, funcValue), nil
 		default:
-			return false, fmt.Errorf("unknown function: %s", node.function)
+			return false, fmt.Errorf("%w: %s", ErrUnknownFunction, node.function)
 		}
 	}
 
@@ -717,13 +730,13 @@ func evaluateExpression(node *filterNode, item map[string]interface{}) (bool, er
 		return compareValues(itemValue, node.value, node.operator)
 	}
 
-	return false, fmt.Errorf("invalid filter node")
+	return false, ErrInvalidFilterNode
 }
 
 // getNestedFieldValue gets a field value from a struct by JSON tag name.
 // Supports dot-separated nested paths (e.g., "skuId" or "nested.prop").
-func getNestedFieldValue(v reflect.Value, jsonPath string) interface{} {
-	if v.Kind() == reflect.Ptr {
+func getNestedFieldValue(v reflect.Value, jsonPath string) any {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	if v.Kind() != reflect.Struct {
@@ -748,7 +761,7 @@ func getNestedFieldValue(v reflect.Value, jsonPath string) interface{} {
 		jsonName := strings.Split(jsonTag, ",")[0]
 		if jsonName == targetField {
 			fieldValue := v.Field(i)
-			if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.Kind() == reflect.Pointer {
 				if fieldValue.IsNil() {
 					return nil
 				}
@@ -771,7 +784,7 @@ func getNestedFieldValue(v reflect.Value, jsonPath string) interface{} {
 }
 
 // compareValues compares two values using the specified operator
-func compareValues(a, b interface{}, operator string) (bool, error) {
+func compareValues(a, b any, operator string) (bool, error) {
 	// Handle null comparisons
 	if a == nil || b == nil {
 		switch operator {
@@ -780,7 +793,7 @@ func compareValues(a, b interface{}, operator string) (bool, error) {
 		case "ne":
 			return a != b, nil
 		default:
-			return false, fmt.Errorf("operator %s not supported for null values", operator)
+			return false, fmt.Errorf("operator %s %w for null values", operator, ErrOperatorNotSupported)
 		}
 	}
 
@@ -814,7 +827,7 @@ func compareValues(a, b interface{}, operator string) (bool, error) {
 		case "ne":
 			return boolA != boolB, nil
 		default:
-			return false, fmt.Errorf("operator %s not supported for boolean values", operator)
+			return false, fmt.Errorf("operator %s %w for boolean values", operator, ErrOperatorNotSupported)
 		}
 	}
 
@@ -838,11 +851,11 @@ func compareValues(a, b interface{}, operator string) (bool, error) {
 		}
 	}
 
-	return false, fmt.Errorf("cannot compare values of type %T and %T with operator %s", a, b, operator)
+	return false, fmt.Errorf("%w of type %T and %T with operator %s", ErrCannotCompareValues, a, b, operator)
 }
 
 // toFloat64 converts a value to float64 if possible
-func toFloat64(v interface{}) (float64, bool) {
+func toFloat64(v any) (float64, bool) {
 	switch val := v.(type) {
 	case int:
 		return float64(val), true
@@ -862,7 +875,7 @@ func toFloat64(v interface{}) (float64, bool) {
 // or an invalid reflect.Value and false if conversion is not possible.
 // This prevents panics when map values (e.g. float64 from JSON) don't
 // exactly match the struct field type (e.g. int).
-func coerceValue(val interface{}, targetType reflect.Type) (reflect.Value, bool) {
+func coerceValue(val any, targetType reflect.Type) (reflect.Value, bool) {
 	valType := reflect.TypeOf(val)
 
 	// Direct type match — no conversion needed
@@ -881,7 +894,7 @@ func coerceValue(val interface{}, targetType reflect.Type) (reflect.Value, bool)
 }
 
 // applySorting sorts items by the specified property or properties
-func applySorting(items []map[string]interface{}, orderBy string) {
+func applySorting(items []map[string]any, orderBy string) {
 	if orderBy == "" || len(items) == 0 {
 		return
 	}
@@ -957,7 +970,7 @@ func parseOrderByFields(orderBy string) []orderField {
 
 // compareValuesForOrder compares two values for sorting purposes
 // Returns -1 if a < b, 1 if a > b, 0 if equal
-func compareValuesForOrder(a, b interface{}, ascending bool) int {
+func compareValuesForOrder(a, b any, ascending bool) int {
 	// Handle nil values (nulls sort first)
 	if a == nil && b == nil {
 		return 0
@@ -1026,7 +1039,7 @@ func compareValuesForOrder(a, b interface{}, ascending bool) int {
 //   - Field-qualified: "displayName:alice" searches only displayName
 //   - Multiple terms (space-separated, implicit AND): "displayName:alice mail:saldeti"
 //   - Graph API style: "displayName:alice AND userType:Member"
-func applySearch(items []map[string]interface{}, search string) []map[string]interface{} {
+func applySearch(items []map[string]any, search string) []map[string]any {
 	if search == "" {
 		return items
 	}
@@ -1043,7 +1056,7 @@ func applySearch(items []map[string]interface{}, search string) []map[string]int
 	// Default fields searched when no field qualifier is given
 	defaultFields := []string{"displayName", "userPrincipalName", "mail", "mailNickname"}
 
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 	for _, item := range items {
 		allMatch := true
 		for _, term := range terms {
@@ -1151,7 +1164,7 @@ func splitSearchParts(s string) []string {
 }
 
 // matchesSearchTerm checks if an item matches a single search term
-func matchesSearchTerm(item map[string]interface{}, term searchTerm, defaultFields []string) bool {
+func matchesSearchTerm(item map[string]any, term searchTerm, defaultFields []string) bool {
 	fields := defaultFields
 	if term.field != "" {
 		fields = []string{term.field}
@@ -1175,8 +1188,8 @@ func matchesSearchTerm(item map[string]interface{}, term searchTerm, defaultFiel
 }
 
 // selectFields selects only the specified fields from a map
-func selectFields(m map[string]interface{}, fields []string) map[string]interface{} {
-	result := make(map[string]interface{})
+func selectFields(m map[string]any, fields []string) map[string]any {
+	result := make(map[string]any)
 	for _, field := range fields {
 		if val, ok := m[field]; ok {
 			result[field] = val
@@ -1185,6 +1198,12 @@ func selectFields(m map[string]interface{}, fields []string) map[string]interfac
 	// Always include 'id' per MS Graph API behavior
 	if val, ok := m["id"]; ok {
 		result["id"] = val
+	}
+	// Always preserve @odata.* annotations (e.g., @odata.type)
+	for k, v := range m {
+		if strings.HasPrefix(k, "@odata.") {
+			result[k] = v
+		}
 	}
 	return result
 }

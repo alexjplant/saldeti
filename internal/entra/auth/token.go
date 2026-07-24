@@ -3,13 +3,14 @@ package auth
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,30 +19,32 @@ import (
 	"github.com/saldeti/saldeti/internal/entra/store"
 )
 
+const refreshTokenTTL = 24 * time.Hour // Refresh token time-to-live
+
 var (
-	signingKey          []byte
-	refreshTokens       = make(map[string]refreshTokenClaims)
-	refreshTokensMutex  sync.RWMutex
+	signingKey         atomic.Pointer[[]byte]
+	refreshTokens      = make(map[string]refreshTokenClaims)
+	refreshTokensMutex sync.RWMutex
 )
 
 var knownScopes = map[string]bool{
-	"User.Read.All":        true,
-	"User.ReadWrite.All":   true,
-	"Group.Read.All":       true,
-	"Group.ReadWrite.All":  true,
-	"Directory.Read.All":   true,
-	"Directory.ReadWrite.All": true,
-	"Application.Read.All":                  true,
-	"Application.ReadWrite.All":             true,
-	"AppRoleAssignment.Read.All":            true,
-	"AppRoleAssignment.ReadWrite.All":       true,
-	"DelegatedPermissionGrant.Read.All":     true,
+	"User.Read.All":                          true,
+	"User.ReadWrite.All":                     true,
+	"Group.Read.All":                         true,
+	"Group.ReadWrite.All":                    true,
+	"Directory.Read.All":                     true,
+	"Directory.ReadWrite.All":                true,
+	"Application.Read.All":                   true,
+	"Application.ReadWrite.All":              true,
+	"AppRoleAssignment.Read.All":             true,
+	"AppRoleAssignment.ReadWrite.All":        true,
+	"DelegatedPermissionGrant.Read.All":      true,
 	"DelegatedPermissionGrant.ReadWrite.All": true,
-	"openid":               true,
-	"profile":              true,
-	"offline_access":       true,
-	"User.Read":            true,
-	"User.ReadWrite":       true,
+	"openid":                                 true,
+	"profile":                                true,
+	"offline_access":                         true,
+	"User.Read":                              true,
+	"User.ReadWrite":                         true,
 }
 
 type TokenClaims struct {
@@ -67,22 +70,21 @@ type refreshTokenClaims struct {
 
 // SetSigningKey sets the JWT signing key
 func SetSigningKey(key []byte) {
-	signingKey = key
-	// Generate a short hash of the key for logging
-	hash := sha256.Sum256(key)
-	shortHash := hex.EncodeToString(hash[:])[:16]
-	if key == nil || len(key) == 0 {
+	k := key
+	signingKey.Store(&k)
+	if len(k) == 0 {
 		log.Warn().Msg("JWT signing key is empty")
-	} else if len(key) < 32 {
-		log.Warn().Int("key_len", len(key)).Msg("JWT signing key is less than 32 bytes (insecure)")
+	} else if len(k) < 32 {
+		log.Warn().Int("key_len", len(k)).Msg("JWT signing key is less than 32 bytes (insecure)")
 	} else {
-		log.Info().Str("hash", shortHash).Msg("JWT signing key configured")
+		log.Info().Msg("JWT signing key configured")
 	}
 }
 
 func MintToken(tenantID, clientID, subject string, scopes []string, roles []string, lifetime time.Duration, displayName string, userPrincipalName string) (string, error) {
-	if signingKey == nil {
-		return "", errors.New("JWT signing key not configured")
+	key := signingKey.Load()
+	if key == nil || *key == nil {
+		return "", errors.New("jwt signing key not configured")
 	}
 	now := time.Now()
 	claims := TokenClaims{
@@ -105,7 +107,7 @@ func MintToken(tenantID, clientID, subject string, scopes []string, roles []stri
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(signingKey)
+	return token.SignedString(*key)
 }
 
 // FilterKnownScopes filters out unknown scopes (Entra-like behavior: silently filter)
@@ -130,28 +132,29 @@ func GenerateRefreshToken(tenantID, clientID, subject string, scopes []string, r
 	refreshTokensMutex.Lock()
 	defer refreshTokensMutex.Unlock()
 
-	// Store refresh token with 24h TTL
+	// Store refresh token with TTL
 	refreshTokens[tokenID] = refreshTokenClaims{
 		TenantID:  tenantID,
 		ClientID:  clientID,
 		Subject:   subject,
 		Scopes:    scopes,
 		Roles:     roles,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		ExpiresAt: time.Now().Add(refreshTokenTTL),
 	}
 
 	return tokenID, nil
 }
 
 func ValidateToken(tokenString string) (*TokenClaims, error) {
-	if signingKey == nil {
-		return nil, errors.New("JWT signing key not configured")
+	key := signingKey.Load()
+	if key == nil || *key == nil {
+		return nil, errors.New("jwt signing key not configured")
 	}
-	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return signingKey, nil
+		return *key, nil
 	})
 
 	if err != nil {
@@ -205,7 +208,7 @@ func handleClientCredentials(c *gin.Context, store store.Store, tenant string) {
 
 	// Validate client credentials
 	_, storedSecret, storedTenantID, err := store.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret || storedTenantID != tenant {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 || storedTenantID != tenant {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}
@@ -234,6 +237,14 @@ func handleClientCredentials(c *gin.Context, store store.Store, tenant string) {
 	writeTokenResponse(c, token, time.Hour)
 }
 
+// handleAuthorizationCode implements a simplified authorization code flow for the
+// simulator. In a real OAuth2/OIDC implementation, the authorization code would be
+// an opaque string issued by an authorization endpoint after user consent, stored
+// server-side, and exchanged for tokens exactly once. Here, the "code" parameter is
+// treated directly as a user principal name (UPN) or user ID to look up the target
+// user. This avoids the need for a separate authorize endpoint, code storage, and
+// PKCE/state validation while still exercising the token minting and refresh token
+// logic that SDKs rely on during testing.
 func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
 	code := c.Request.FormValue("code")
 	clientID := c.Request.FormValue("client_id")
@@ -248,7 +259,7 @@ func handleAuthorizationCode(c *gin.Context, store store.Store, tenant string) {
 
 	// Validate client exists and secret matches
 	_, storedSecret, clientTenantID, err := store.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret || clientTenantID != tenant {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 || clientTenantID != tenant {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}
@@ -326,12 +337,11 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 	// Filter unknown scopes (Entra-like behavior: silently filter)
 	scopes = FilterKnownScopes(scopes)
 
-	// Look up and validate refresh token
+	// Look up and validate refresh token under lock, then release before calling GenerateRefreshToken
 	refreshTokensMutex.Lock()
-	defer refreshTokensMutex.Unlock()
-
 	claims, exists := refreshTokens[refreshToken]
 	if !exists {
+		refreshTokensMutex.Unlock()
 		writeTokenError(c, "invalid_grant", "Invalid refresh token")
 		return
 	}
@@ -339,12 +349,14 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 	// Validate token hasn't expired
 	if time.Now().After(claims.ExpiresAt) {
 		delete(refreshTokens, refreshToken)
+		refreshTokensMutex.Unlock()
 		writeTokenError(c, "invalid_grant", "Refresh token has expired")
 		return
 	}
 
 	// Validate client matches
 	if claims.ClientID != clientID || claims.TenantID != tenant {
+		refreshTokensMutex.Unlock()
 		writeTokenError(c, "invalid_grant", "Refresh token client mismatch")
 		return
 	}
@@ -357,15 +369,16 @@ func handleRefreshToken(c *gin.Context, store store.Store, tenant string) {
 
 	// Refresh token rotation: invalidate old refresh token
 	delete(refreshTokens, refreshToken)
+	refreshTokensMutex.Unlock()
 
-	// Mint new access token
+	// Mint new access token (no lock needed)
 	token, err := MintToken(claims.TenantID, claims.ClientID, claims.Subject, finalScopes, claims.Roles, time.Hour, "", "")
 	if err != nil {
 		writeTokenError(c, "server_error", "Failed to mint token")
 		return
 	}
 
-	// Generate new refresh token
+	// Generate new refresh token (acquires its own lock internally)
 	newRefreshToken, err := GenerateRefreshToken(claims.TenantID, claims.ClientID, claims.Subject, finalScopes, claims.Roles)
 	if err != nil {
 		writeTokenError(c, "server_error", "Failed to generate refresh token")

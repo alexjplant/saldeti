@@ -25,8 +25,8 @@ func listMobileDevicesHandler(st store.Store) gin.HandlerFunc {
 			devices = []model.MobileDevice{}
 		}
 		resp := gin.H{
-			"kind":  "admin#directory#mobiledevices",
-			"etag":  "\"placeholder\"",
+			"kind":          "admin#directory#mobiledevices",
+			"etag":          "\"placeholder\"",
 			"mobiledevices": devices,
 		}
 		if nextPageToken != "" {

@@ -17,20 +17,20 @@ import (
 )
 
 var (
-	ErrUserNotFound     = errors.New("user not found")
-	ErrClientNotFound   = errors.New("client not found")
-	ErrDuplicateUPN     = errors.New("user with same UPN already exists")
-	ErrDuplicateClient  = errors.New("client already registered")
-	ErrGroupNotFound    = errors.New("group not found")
-	ErrDuplicateGroup   = errors.New("group already exists")
-	ErrAlreadyMember    = errors.New("object is already a member of the group")
-	ErrNotMember        = errors.New("object is not a member of the group")
-	ErrAlreadyOwner     = errors.New("object is already an owner of the group")
-	ErrNotOwner         = errors.New("object is not an owner of the group")
-	ErrObjectNotFound   = errors.New("object not found")
-	ErrInvalidObjType   = errors.New("invalid object type")
-	ErrDisplayNameRequired = errors.New("displayName is required")
-	ErrManagerNotFound   = errors.New("manager not found")
+	ErrUserNotFound             = errors.New("user not found")
+	ErrClientNotFound           = errors.New("client not found")
+	ErrDuplicateUPN             = errors.New("user with same UPN already exists")
+	ErrDuplicateClient          = errors.New("client already registered")
+	ErrGroupNotFound            = errors.New("group not found")
+	ErrDuplicateGroup           = errors.New("group already exists")
+	ErrAlreadyMember            = errors.New("object is already a member of the group")
+	ErrNotMember                = errors.New("object is not a member of the group")
+	ErrAlreadyOwner             = errors.New("object is already an owner of the group")
+	ErrNotOwner                 = errors.New("object is not an owner of the group")
+	ErrObjectNotFound           = errors.New("object not found")
+	ErrInvalidObjType           = errors.New("invalid object type")
+	ErrDisplayNameRequired      = errors.New("displayName is required")
+	ErrManagerNotFound          = errors.New("manager not found")
 	ErrApplicationNotFound      = errors.New("application not found")
 	ErrDuplicateAppID           = errors.New("application with same appId already exists")
 	ErrServicePrincipalNotFound = errors.New("service principal not found")
@@ -44,29 +44,30 @@ var (
 	ErrAlreadySPOwner           = errors.New("object is already an owner of the service principal")
 	ErrNotSPOwner               = errors.New("object is not an owner of the service principal")
 	ErrAppRoleNotFound          = errors.New("app role not found on resource service principal")
-	ErrSelfReference       = errors.New("a group cannot add itself as a member")
+	ErrSelfReference            = errors.New("a group cannot add itself as a member")
 )
+
 type memoryStore struct {
-	mu                 sync.RWMutex
-	users              map[string]model.User
-	clients            map[string]clientEntry
-	groups             map[string]model.Group
-	servicePrincipals  map[string]model.ServicePrincipal
-	members            map[string]map[string]string // groupID → {objectID → objectType}
-	owners             map[string]map[string]string // groupID → {objectID → objectType}
-	managers           map[string]string            // userID → managerID
-	deletedUsers       map[string]time.Time         // ID → deletedAt
-	deletedGroups      map[string]time.Time         // ID → deletedAt
-	applications       map[string]model.Application
-	appOwners          map[string]map[string]string // appObjID → {objectID → objectType}
-	spOwners           map[string]map[string]string // spObjID → {objectID → objectType}
-	appRoleAssignments map[string]model.AppRoleAssignment
+	mu                     sync.RWMutex
+	users                  map[string]model.User
+	clients                map[string]clientEntry
+	groups                 map[string]model.Group
+	servicePrincipals      map[string]model.ServicePrincipal
+	members                map[string]map[string]string // groupID → {objectID → objectType}
+	owners                 map[string]map[string]string // groupID → {objectID → objectType}
+	managers               map[string]string            // userID → managerID
+	deletedUsers           map[string]time.Time         // ID → deletedAt
+	deletedGroups          map[string]time.Time         // ID → deletedAt
+	applications           map[string]model.Application
+	appOwners              map[string]map[string]string // appObjID → {objectID → objectType}
+	spOwners               map[string]map[string]string // spObjID → {objectID → objectType}
+	appRoleAssignments     map[string]model.AppRoleAssignment
 	oauth2PermissionGrants map[string]model.OAuth2PermissionGrant
-	spMemberOf         map[string]map[string]string // spObjID → {groupID → objectType}
-	appExtensions      map[string]map[string]model.ExtensionProperty
-	deletedApplications map[string]time.Time
-	deletedSPs         map[string]time.Time
-	subscribedSkus      []model.SubscribedSku
+	spMemberOf             map[string]map[string]string // spObjID → {groupID → objectType}
+	appExtensions          map[string]map[string]model.ExtensionProperty
+	deletedApplications    map[string]time.Time
+	deletedSPs             map[string]time.Time
+	subscribedSkus         []model.SubscribedSku
 }
 
 type clientEntry struct {
@@ -77,28 +78,38 @@ type clientEntry struct {
 
 func NewMemoryStore() Store {
 	return &memoryStore{
-		users:                 make(map[string]model.User),
-		clients:               make(map[string]clientEntry),
-		groups:                make(map[string]model.Group),
-		servicePrincipals:     make(map[string]model.ServicePrincipal),
-		members:               make(map[string]map[string]string),
-		owners:                make(map[string]map[string]string),
-		managers:              make(map[string]string),
-		deletedUsers:          make(map[string]time.Time),
-		deletedGroups:         make(map[string]time.Time),
-		applications:          make(map[string]model.Application),
-		appOwners:             make(map[string]map[string]string),
-		spOwners:              make(map[string]map[string]string),
-		appRoleAssignments:    make(map[string]model.AppRoleAssignment),
+		users:                  make(map[string]model.User),
+		clients:                make(map[string]clientEntry),
+		groups:                 make(map[string]model.Group),
+		servicePrincipals:      make(map[string]model.ServicePrincipal),
+		members:                make(map[string]map[string]string),
+		owners:                 make(map[string]map[string]string),
+		managers:               make(map[string]string),
+		deletedUsers:           make(map[string]time.Time),
+		deletedGroups:          make(map[string]time.Time),
+		applications:           make(map[string]model.Application),
+		appOwners:              make(map[string]map[string]string),
+		spOwners:               make(map[string]map[string]string),
+		appRoleAssignments:     make(map[string]model.AppRoleAssignment),
 		oauth2PermissionGrants: make(map[string]model.OAuth2PermissionGrant),
-		spMemberOf:            make(map[string]map[string]string),
-		appExtensions:         make(map[string]map[string]model.ExtensionProperty),
-		deletedApplications:   make(map[string]time.Time),
-		deletedSPs:            make(map[string]time.Time),
-		subscribedSkus:        model.DefaultSubscribedSkus(),
+		spMemberOf:             make(map[string]map[string]string),
+		appExtensions:          make(map[string]map[string]model.ExtensionProperty),
+		deletedApplications:    make(map[string]time.Time),
+		deletedSPs:             make(map[string]time.Time),
+		subscribedSkus:         model.DefaultSubscribedSkus(),
 	}
 }
+
+// checkContext returns the context's error if it has been cancelled or expired.
+// All public methods call this at entry to honour context cancellation.
+func checkContext(ctx context.Context) error {
+	return ctx.Err()
+}
+
 func (s *memoryStore) GetUser(ctx context.Context, id string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -110,6 +121,9 @@ func (s *memoryStore) GetUser(ctx context.Context, id string) (*model.User, erro
 }
 
 func (s *memoryStore) GetUserByUPN(ctx context.Context, upn string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -122,6 +136,9 @@ func (s *memoryStore) GetUserByUPN(ctx context.Context, upn string) (*model.User
 }
 
 func (s *memoryStore) CreateUser(ctx context.Context, user model.User) (model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.User{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -161,6 +178,9 @@ func (s *memoryStore) CreateUser(ctx context.Context, user model.User) (model.Us
 }
 
 func (s *memoryStore) GetClient(ctx context.Context, clientID string) (string, string, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return "", "", "", err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -172,6 +192,9 @@ func (s *memoryStore) GetClient(ctx context.Context, clientID string) (string, s
 }
 
 func (s *memoryStore) RegisterClient(ctx context.Context, clientID, clientSecret, tenantID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -189,12 +212,12 @@ func (s *memoryStore) RegisterClient(ctx context.Context, clientID, clientSecret
 	spID := uuid.New().String()
 	accountEnabled := true
 	s.servicePrincipals[spID] = model.ServicePrincipal{
-		ID:                     spID,
-		AppID:                  clientID,
-		DisplayName:            "Service Principal for " + clientID,
-		ODataType:              "#microsoft.graph.servicePrincipal",
-		AccountEnabled:         &accountEnabled,
-		ServicePrincipalNames:  []string{clientID},
+		ID:                    spID,
+		AppID:                 clientID,
+		DisplayName:           "Service Principal for " + clientID,
+		ODataType:             "#microsoft.graph.servicePrincipal",
+		AccountEnabled:        &accountEnabled,
+		ServicePrincipalNames: []string{clientID},
 		AppOwnerOrganizationID: func() string {
 			if _, err := uuid.Parse(tenantID); err == nil {
 				return tenantID
@@ -210,6 +233,9 @@ func (s *memoryStore) RegisterClient(ctx context.Context, clientID, clientSecret
 }
 
 func (s *memoryStore) ListClients(ctx context.Context) ([]Client, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -225,6 +251,9 @@ func (s *memoryStore) ListClients(ctx context.Context) ([]Client, error) {
 }
 
 func (s *memoryStore) ListUsers(ctx context.Context, opts model.ListOptions) ([]model.User, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -243,7 +272,10 @@ func (s *memoryStore) ListUsers(ctx context.Context, opts model.ListOptions) ([]
 	return filteredUsers, totalCount, nil
 }
 
-func (s *memoryStore) UpdateUser(ctx context.Context, id string, patch map[string]interface{}) (*model.User, error) {
+func (s *memoryStore) UpdateUser(ctx context.Context, id string, patch map[string]any) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -266,6 +298,9 @@ func (s *memoryStore) UpdateUser(ctx context.Context, id string, patch map[strin
 }
 
 func (s *memoryStore) DeleteUser(ctx context.Context, id string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -326,7 +361,7 @@ func (s *memoryStore) DeleteUser(ctx context.Context, id string) error {
 }
 
 // applyPatch applies a patch map to a struct using generics
-func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
+func applyPatch[T any](obj T, patch map[string]any) (T, error) {
 	// Use reflection to update fields
 	v := reflect.ValueOf(&obj).Elem()
 	t := reflect.TypeOf(obj)
@@ -345,7 +380,7 @@ func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
 				fieldValue := v.Field(i)
 
 				// Handle pointer fields
-				if fieldValue.Kind() == reflect.Ptr {
+				if fieldValue.Kind() == reflect.Pointer {
 					if patchValue == nil {
 						// Set pointer to nil
 						fieldValue.Set(reflect.Zero(fieldValue.Type()))
@@ -366,7 +401,7 @@ func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
 					}
 				} else if fieldValue.Kind() == reflect.Slice {
 					// Handle slice fields (GroupTypes, ProxyAddresses)
-					if sliceValue, ok := patchValue.([]interface{}); ok {
+					if sliceValue, ok := patchValue.([]any); ok {
 						// Convert []interface{} to appropriate slice type
 						sliceType := fieldValue.Type()
 						elemType := sliceType.Elem()
@@ -398,7 +433,7 @@ func applyPatch[T any](obj T, patch map[string]interface{}) (T, error) {
 }
 
 // convertValue converts a patch value to the target type
-func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, error) {
+func convertValue(value any, targetType reflect.Type) (reflect.Value, error) {
 	// Guard against nil values (JSON null)
 	if value == nil {
 		return reflect.Zero(targetType), nil
@@ -406,9 +441,9 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 	sourceValue := reflect.ValueOf(value)
 	sourceType := sourceValue.Type()
 	// Handle map[string]interface{} → struct conversion via JSON round-trip
-	if mapVal, ok := value.(map[string]interface{}); ok {
+	if mapVal, ok := value.(map[string]any); ok {
 		resolvedTarget := targetType
-		if resolvedTarget.Kind() == reflect.Ptr {
+		if resolvedTarget.Kind() == reflect.Pointer {
 			resolvedTarget = resolvedTarget.Elem()
 		}
 		if resolvedTarget.Kind() == reflect.Struct {
@@ -420,7 +455,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 			if err := json.Unmarshal(jsonBytes, result); err != nil {
 				return reflect.Value{}, fmt.Errorf("cannot convert map to %s: %w", resolvedTarget.Name(), err)
 			}
-			if targetType.Kind() != reflect.Ptr {
+			if targetType.Kind() != reflect.Pointer {
 				return reflect.ValueOf(result).Elem(), nil
 			}
 			return reflect.ValueOf(result), nil
@@ -428,9 +463,9 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 	}
 
 	// Handle []interface{} → slice conversion via JSON round-trip
-	if sliceVal, ok := value.([]interface{}); ok {
+	if sliceVal, ok := value.([]any); ok {
 		resolvedTarget := targetType
-		if resolvedTarget.Kind() == reflect.Ptr {
+		if resolvedTarget.Kind() == reflect.Pointer {
 			resolvedTarget = resolvedTarget.Elem()
 		}
 		if resolvedTarget.Kind() == reflect.Slice {
@@ -456,7 +491,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		t, err := time.Parse(time.RFC3339, strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid time format: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid time format: %w", err)
 		}
 		return reflect.ValueOf(t), nil
 	}
@@ -466,7 +501,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		t, err := time.Parse(time.RFC3339, strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid time format: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid time format: %w", err)
 		}
 		return reflect.ValueOf(&t), nil
 	}
@@ -476,7 +511,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		boolValue, err := strconv.ParseBool(strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid boolean value: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid boolean value: %w", err)
 		}
 		return reflect.ValueOf(boolValue), nil
 	}
@@ -486,7 +521,7 @@ func convertValue(value interface{}, targetType reflect.Type) (reflect.Value, er
 		strValue := value.(string)
 		boolValue, err := strconv.ParseBool(strValue)
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid boolean value: %v", err)
+			return reflect.Value{}, fmt.Errorf("invalid boolean value: %w", err)
 		}
 		return reflect.ValueOf(&boolValue), nil
 	}
@@ -512,9 +547,9 @@ func isNumericType(t reflect.Type) bool {
 }
 
 // convertNumericValue converts between numeric types
-func convertNumericValue(value interface{}, targetType reflect.Type) (reflect.Value, error) {
+func convertNumericValue(value any, targetType reflect.Type) (reflect.Value, error) {
 	floatValue := 0.0
-	
+
 	switch v := value.(type) {
 	case int:
 		floatValue = float64(v)
@@ -544,6 +579,9 @@ func convertNumericValue(value interface{}, targetType reflect.Type) (reflect.Va
 
 // Group methods
 func (s *memoryStore) ListGroups(ctx context.Context, opts model.ListOptions) ([]model.Group, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -563,6 +601,9 @@ func (s *memoryStore) ListGroups(ctx context.Context, opts model.ListOptions) ([
 }
 
 func (s *memoryStore) GetGroup(ctx context.Context, id string) (*model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -574,6 +615,9 @@ func (s *memoryStore) GetGroup(ctx context.Context, id string) (*model.Group, er
 }
 
 func (s *memoryStore) CreateGroup(ctx context.Context, group model.Group) (model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Group{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -665,7 +709,10 @@ func (s *memoryStore) CreateGroup(ctx context.Context, group model.Group) (model
 	return group, nil
 }
 
-func (s *memoryStore) UpdateGroup(ctx context.Context, id string, patch map[string]interface{}) (*model.Group, error) {
+func (s *memoryStore) UpdateGroup(ctx context.Context, id string, patch map[string]any) (*model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -688,6 +735,9 @@ func (s *memoryStore) UpdateGroup(ctx context.Context, id string, patch map[stri
 }
 
 func (s *memoryStore) DeleteGroup(ctx context.Context, id string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -744,6 +794,9 @@ func (s *memoryStore) DeleteGroup(ctx context.Context, id string) error {
 
 // Membership methods
 func (s *memoryStore) AddMember(ctx context.Context, groupID, objectID, objectType string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -758,19 +811,20 @@ func (s *memoryStore) AddMember(ctx context.Context, groupID, objectID, objectTy
 	}
 
 	// Check if object exists
-	if objectType == "user" {
+	switch objectType {
+	case "user":
 		if _, exists := s.users[objectID]; !exists {
 			return ErrUserNotFound
 		}
-	} else if objectType == "group" {
+	case "group":
 		if _, exists := s.groups[objectID]; !exists {
 			return ErrGroupNotFound
 		}
-	} else if objectType == "servicePrincipal" {
+	case "servicePrincipal":
 		if _, exists := s.servicePrincipals[objectID]; !exists {
 			return ErrObjectNotFound
 		}
-	} else {
+	default:
 		return ErrInvalidObjType
 	}
 
@@ -794,6 +848,9 @@ func (s *memoryStore) AddMember(ctx context.Context, groupID, objectID, objectTy
 }
 
 func (s *memoryStore) RemoveMember(ctx context.Context, groupID, objectID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -822,6 +879,9 @@ func (s *memoryStore) RemoveMember(ctx context.Context, groupID, objectID string
 }
 
 func (s *memoryStore) ListMembers(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -877,6 +937,9 @@ func (s *memoryStore) ListMembers(ctx context.Context, groupID string, opts mode
 }
 
 func (s *memoryStore) ListTransitiveMembers(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -953,6 +1016,9 @@ func (s *memoryStore) ListTransitiveMembers(ctx context.Context, groupID string,
 }
 
 func (s *memoryStore) AddOwner(ctx context.Context, groupID, objectID, objectType string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -962,19 +1028,20 @@ func (s *memoryStore) AddOwner(ctx context.Context, groupID, objectID, objectTyp
 	}
 
 	// Check if object exists
-	if objectType == "user" {
+	switch objectType {
+	case "user":
 		if _, exists := s.users[objectID]; !exists {
 			return ErrUserNotFound
 		}
-	} else if objectType == "group" {
+	case "group":
 		if _, exists := s.groups[objectID]; !exists {
 			return ErrGroupNotFound
 		}
-	} else if objectType == "servicePrincipal" {
+	case "servicePrincipal":
 		if _, exists := s.servicePrincipals[objectID]; !exists {
 			return ErrObjectNotFound
 		}
-	} else {
+	default:
 		return ErrInvalidObjType
 	}
 
@@ -998,6 +1065,9 @@ func (s *memoryStore) AddOwner(ctx context.Context, groupID, objectID, objectTyp
 }
 
 func (s *memoryStore) RemoveOwner(ctx context.Context, groupID, objectID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1026,6 +1096,9 @@ func (s *memoryStore) RemoveOwner(ctx context.Context, groupID, objectID string)
 }
 
 func (s *memoryStore) ListOwners(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1081,6 +1154,9 @@ func (s *memoryStore) ListOwners(ctx context.Context, groupID string, opts model
 }
 
 func (s *memoryStore) ListGroupMemberOf(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1115,6 +1191,9 @@ func (s *memoryStore) ListGroupMemberOf(ctx context.Context, groupID string, opt
 }
 
 func (s *memoryStore) ListGroupTransitiveMemberOf(ctx context.Context, groupID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1145,7 +1224,7 @@ func (s *memoryStore) ListGroupTransitiveMemberOf(ctx context.Context, groupID s
 				if visited[gid] {
 					continue
 				}
-				
+
 				// This group (gid) contains our current group as a member
 				if group, exists := s.groups[gid]; exists {
 					obj := model.DirectoryObject{
@@ -1171,6 +1250,9 @@ func (s *memoryStore) ListGroupTransitiveMemberOf(ctx context.Context, groupID s
 }
 
 func (s *memoryStore) CheckMemberGroups(ctx context.Context, objectID string, groupIDs []string) ([]string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1187,13 +1269,13 @@ func (s *memoryStore) CheckMemberGroups(ctx context.Context, objectID string, gr
 	}
 
 	result := make([]string, 0)
-	
+
 	// For each group ID in the input list, check if object is a transitive member
 	for _, groupID := range groupIDs {
 		if _, exists := s.groups[groupID]; !exists {
 			continue // Skip non-existent groups
 		}
-		
+
 		// Check if object is a transitive member of this group
 		if s.isTransitiveMember(objectID, objectType, groupID, make(map[string]bool)) {
 			result = append(result, groupID)
@@ -1204,6 +1286,9 @@ func (s *memoryStore) CheckMemberGroups(ctx context.Context, objectID string, gr
 }
 
 func (s *memoryStore) GetMemberGroups(ctx context.Context, objectID string, securityEnabledOnly bool) ([]string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1221,14 +1306,14 @@ func (s *memoryStore) GetMemberGroups(ctx context.Context, objectID string, secu
 
 	// Find all groups that contain this object as a transitive member
 	result := make([]string, 0)
-	
+
 	// Use BFS starting from all groups
 	for groupID, group := range s.groups {
 		// Skip if securityEnabledOnly is true and group is not security enabled
 		if securityEnabledOnly && (group.SecurityEnabled == nil || !*group.SecurityEnabled) {
 			continue
 		}
-		
+
 		// Check if object is a transitive member of this group
 		if s.isTransitiveMember(objectID, objectType, groupID, make(map[string]bool)) {
 			result = append(result, groupID)
@@ -1270,6 +1355,9 @@ func (s *memoryStore) isTransitiveMember(objectID, objectType, groupID string, v
 }
 
 func (s *memoryStore) ResolveObjectType(ctx context.Context, objectID string) (string, error) {
+	if err := checkContext(ctx); err != nil {
+		return "", err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.resolveObjectTypeUnsafe(objectID)
@@ -1298,6 +1386,9 @@ func (s *memoryStore) resolveObjectTypeUnsafe(objectID string) (string, error) {
 
 // GetManager returns the manager of a user
 func (s *memoryStore) GetManager(ctx context.Context, userID string) (*model.DirectoryObject, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1328,6 +1419,9 @@ func (s *memoryStore) GetManager(ctx context.Context, userID string) (*model.Dir
 
 // SetManager sets the manager for a user
 func (s *memoryStore) SetManager(ctx context.Context, userID, managerID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1348,6 +1442,9 @@ func (s *memoryStore) SetManager(ctx context.Context, userID, managerID string) 
 
 // RemoveManager removes the manager for a user
 func (s *memoryStore) RemoveManager(ctx context.Context, userID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1363,6 +1460,9 @@ func (s *memoryStore) RemoveManager(ctx context.Context, userID string) error {
 
 // ListDirectReports returns all users who have the given user as their manager
 func (s *memoryStore) ListDirectReports(ctx context.Context, userID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1396,6 +1496,9 @@ func (s *memoryStore) ListDirectReports(ctx context.Context, userID string, opts
 
 // ListUserMemberOf returns all groups the user is a direct member of
 func (s *memoryStore) ListUserMemberOf(ctx context.Context, userID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1429,6 +1532,9 @@ func (s *memoryStore) ListUserMemberOf(ctx context.Context, userID string, opts 
 
 // ListUserTransitiveMemberOf returns all groups the user is transitively a member of
 func (s *memoryStore) ListUserTransitiveMemberOf(ctx context.Context, userID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1485,11 +1591,14 @@ func (s *memoryStore) ListUserTransitiveMemberOf(ctx context.Context, userID str
 }
 
 // GetDirectoryObjects returns directory objects for the given IDs, optionally filtered by type
-func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, types []string) ([]map[string]interface{}, error) {
+func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, types []string) ([]map[string]any, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	result := make([]map[string]interface{}, 0, len(ids))
+	result := make([]map[string]any, 0, len(ids))
 
 	for _, id := range ids {
 		// Check if it's a user
@@ -1497,7 +1606,7 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 			if len(types) == 0 || contains(types, "user") {
 				userJSON, err := json.Marshal(user)
 				if err == nil {
-					var userMap map[string]interface{}
+					var userMap map[string]any
 					if err := json.Unmarshal(userJSON, &userMap); err == nil {
 						userMap["@odata.type"] = "#microsoft.graph.user"
 						result = append(result, userMap)
@@ -1512,7 +1621,7 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 			if len(types) == 0 || contains(types, "group") {
 				groupJSON, err := json.Marshal(group)
 				if err == nil {
-					var groupMap map[string]interface{}
+					var groupMap map[string]any
 					if err := json.Unmarshal(groupJSON, &groupMap); err == nil {
 						groupMap["@odata.type"] = "#microsoft.graph.group"
 						result = append(result, groupMap)
@@ -1527,7 +1636,7 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 			if len(types) == 0 || contains(types, "servicePrincipal") {
 				spJSON, err := json.Marshal(sp)
 				if err == nil {
-					var spMap map[string]interface{}
+					var spMap map[string]any
 					if err := json.Unmarshal(spJSON, &spMap); err == nil {
 						spMap["@odata.type"] = "#microsoft.graph.servicePrincipal"
 						result = append(result, spMap)
@@ -1544,7 +1653,10 @@ func (s *memoryStore) GetDirectoryObjects(ctx context.Context, ids []string, typ
 }
 
 // GetUsersDelta returns users changed since the delta token
-func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
+func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1561,7 +1673,7 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 	}
 
 	// Collect changed users (including deleted ones)
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 
 	// Get current users modified after the delta token
 	for _, user := range s.users {
@@ -1571,7 +1683,7 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 			if err != nil {
 				continue
 			}
-			var userMap map[string]interface{}
+			var userMap map[string]any
 			if err := json.Unmarshal(userJSON, &userMap); err != nil {
 				continue
 			}
@@ -1584,9 +1696,9 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 	for userID, deletedAt := range s.deletedUsers {
 		if deltaToken == "" || deletedAt.After(sinceTime) {
 			// Create a minimal representation of the deleted user
-			deletedUser := map[string]interface{}{
+			deletedUser := map[string]any{
 				"id": userID,
-				"@removed": map[string]interface{}{
+				"@removed": map[string]any{
 					"reason": "deleted",
 				},
 			}
@@ -1601,7 +1713,10 @@ func (s *memoryStore) GetUsersDelta(ctx context.Context, deltaToken string) ([]m
 }
 
 // GetGroupsDelta returns groups changed since the delta token
-func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
+func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1618,7 +1733,7 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 	}
 
 	// Collect changed groups (including deleted ones)
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 
 	// Get current groups modified after the delta token
 	for _, group := range s.groups {
@@ -1628,7 +1743,7 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 			if err != nil {
 				continue
 			}
-			var groupMap map[string]interface{}
+			var groupMap map[string]any
 			if err := json.Unmarshal(groupJSON, &groupMap); err != nil {
 				continue
 			}
@@ -1641,9 +1756,9 @@ func (s *memoryStore) GetGroupsDelta(ctx context.Context, deltaToken string) ([]
 	for groupID, deletedAt := range s.deletedGroups {
 		if deltaToken == "" || deletedAt.After(sinceTime) {
 			// Create a minimal representation of the deleted group
-			deletedGroup := map[string]interface{}{
+			deletedGroup := map[string]any{
 				"id": groupID,
-				"@removed": map[string]interface{}{
+				"@removed": map[string]any{
 					"reason": "deleted",
 				},
 			}
@@ -1669,6 +1784,9 @@ func contains(slice []string, item string) bool {
 
 // License methods
 func (s *memoryStore) ListSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1687,7 +1805,10 @@ func (s *memoryStore) ListSubscribedSkus(ctx context.Context) ([]model.Subscribe
 	return result, nil
 }
 
-func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []model.LicenseRemoval) (*model.User, error) {
+func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicenses []model.LicenseAssignment, removeLicenses []string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1705,8 +1826,8 @@ func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicen
 	// Track which SKUs are being removed (were present before)
 	removedSkuIds := make(map[string]bool)
 	for _, rem := range removeLicenses {
-		if _, existed := currentLicenses[rem.SkuID]; existed {
-			removedSkuIds[rem.SkuID] = true
+		if _, existed := currentLicenses[rem]; existed {
+			removedSkuIds[rem] = true
 		}
 	}
 
@@ -1715,12 +1836,12 @@ func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicen
 
 	// Remove licenses
 	for _, rem := range removeLicenses {
-		delete(currentLicenses, rem.SkuID)
+		delete(currentLicenses, rem)
 	}
 
 	// Add licenses (overwrite if already present)
 	for _, add := range addLicenses {
-		skuPartNumber, found := model.FindSkuBySkuID(add.SkuID)
+		_, found := model.FindSkuBySkuID(add.SkuID)
 		if !found {
 			return nil, fmt.Errorf("unknown skuId: %s", add.SkuID)
 		}
@@ -1734,7 +1855,6 @@ func (s *memoryStore) AssignLicense(ctx context.Context, userID string, addLicen
 		}
 		currentLicenses[add.SkuID] = model.AssignedLicense{
 			SkuID:         add.SkuID,
-			SkuPartNumber: skuPartNumber,
 			DisabledPlans: disabledPlans,
 		}
 	}

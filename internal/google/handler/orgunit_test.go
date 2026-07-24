@@ -27,7 +27,7 @@ func TestGoogleOrgUnitCRUD(t *testing.T) {
 	resp = doGoogleRequest(t, http.MethodGet, base+"/", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	orgUnits, ok := body["organizationUnits"].([]interface{})
+	orgUnits, ok := body["organizationUnits"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(orgUnits), 1)
 

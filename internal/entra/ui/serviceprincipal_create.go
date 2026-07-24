@@ -14,6 +14,12 @@ import (
 	"github.com/saldeti/saldeti/internal/entra/model"
 )
 
+// spAlreadyExistsMsg is the substring used to detect "already exists" errors
+// returned by the MS Graph SDK. errors.Is cannot be used here because the
+// error crosses an HTTP/SDK boundary — the SDK returns its own error type
+// wrapping the HTTP response body text, not the store's typed sentinel error.
+const spAlreadyExistsMsg = "already exists"
+
 func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == "GET" {
@@ -32,7 +38,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction":   "/ui/servicePrincipals/new",
 				"CancelURL":    "/ui/servicePrincipals",
 				"Applications": appRows,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName": "",
 					"AppId":       "",
 					"Notes":       "",
@@ -62,7 +68,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"CancelURL":    "/ui/servicePrincipals",
 				"Error":        "Display Name is required",
 				"Applications": appRows,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),
 					"Notes":       c.PostForm("notes"),
@@ -81,7 +87,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"CancelURL":    "/ui/servicePrincipals",
 				"Error":        "Application is required",
 				"Applications": appRows,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       "",
 					"Notes":       c.PostForm("notes"),
@@ -108,7 +114,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 			if tokenErr != nil {
 				err = fmt.Errorf("failed to get token for manual request: %w", tokenErr)
 			} else {
-				spPayload := map[string]interface{}{
+				spPayload := map[string]any{
 					"displayName": displayName,
 					"@odata.type": "#microsoft.graph.servicePrincipal",
 				}
@@ -130,15 +136,15 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 						resp, httpErr := httpClient.Do(req)
 						if httpErr != nil {
-							err = fmt.Errorf("HTTP request failed: %w", httpErr)
+							err = fmt.Errorf("http request failed: %w", httpErr)
 						} else {
-							defer resp.Body.Close()
+							defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 							if resp.StatusCode != http.StatusCreated {
 								body, _ := io.ReadAll(resp.Body)
 								err = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 							} else {
-								var result map[string]interface{}
+								var result map[string]any
 								if parseErr := json.NewDecoder(resp.Body).Decode(&result); parseErr != nil {
 									err = fmt.Errorf("failed to decode response: %w", parseErr)
 								} else {
@@ -159,7 +165,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 		// If SP already exists for this appId, look up and redirect to existing SP
 		if err != nil {
-			if strings.Contains(err.Error(), "already exists") {
+			if strings.Contains(err.Error(), spAlreadyExistsMsg) {
 				spResult, _ := h.client.ServicePrincipals().Get(c.Request.Context(), nil)
 				if spResult != nil {
 					for _, sp := range spResult.GetValue() {
@@ -183,7 +189,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"CancelURL":    "/ui/servicePrincipals",
 				"Error":        fmt.Sprintf("Failed to create service principal: %v", err),
 				"Applications": appRows,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),
 					"Notes":       c.PostForm("notes"),
@@ -200,7 +206,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"CancelURL":    "/ui/servicePrincipals",
 				"Error":        "Service principal was created but response was empty",
 				"Applications": appRows,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),
 					"Notes":       c.PostForm("notes"),
@@ -227,7 +233,7 @@ func SPCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"CancelURL":    "/ui/servicePrincipals",
 				"Error":        "Service principal was created but ID was not returned in response",
 				"Applications": appRows,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName": c.PostForm("displayName"),
 					"AppId":       c.PostForm("appId"),
 					"Notes":       c.PostForm("notes"),

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -300,25 +299,22 @@ func meHandler(st store.Store) gin.HandlerFunc {
 
 func openIDConfigurationHandler(c *gin.Context) {
 	tenantID := c.Param("tenant")
-	scheme := "https"
-	if c.Request.TLS == nil {
-		scheme = "http"
-	}
-	host := c.Request.Host
-	baseURL := fmt.Sprintf("%s://%s/%s", scheme, host, tenantID)
+	baseURL := getBaseURL(c) + "/" + tenantID
 
 	c.JSON(http.StatusOK, gin.H{
-		"issuer":                                baseURL,
-		"authorization_endpoint":                baseURL + "/oauth2/v2.0/authorize",
-		"token_endpoint":                         baseURL + "/oauth2/v2.0/token",
-		"jwks_uri":                              baseURL + "/discovery/v2.0/keys",
-		"response_types_supported":               []string{"code", "id_token", "token", "token id_token"},
-		"subject_types_supported":                []string{"pairwise"},
-		"id_token_signing_alg_values_supported":  []string{"HS256"},
-		"scopes_supported":                       []string{"openid", "profile", "email", "offline_access"},
-		"token_endpoint_auth_methods_supported":  []string{"client_secret_post", "private_key_jwt", "client_secret_basic"},
-		"claims_supported":                       []string{"sub", "aud", "exp", "iat", "iss", "auth_time", "acr", "amr", "email", "given_name", "family_name"},
-		"request_uri_parameter_supported":        false,
-		"request_parameter_supported":            false,
+		"issuer":                   baseURL,
+		"authorization_endpoint":   baseURL + "/oauth2/v2.0/authorize",
+		"token_endpoint":           baseURL + "/oauth2/v2.0/token",
+		"jwks_uri":                 baseURL + "/discovery/v2.0/keys",
+		"response_types_supported": []string{"code", "id_token", "token", "token id_token"},
+		"subject_types_supported":  []string{"pairwise"},
+		// Simulator uses HS256 (symmetric key); real Azure AD uses RS256 (asymmetric).
+		// This is expected for a local simulator.
+		"id_token_signing_alg_values_supported": []string{"HS256"},
+		"scopes_supported":                      []string{"openid", "profile", "email", "offline_access"},
+		"token_endpoint_auth_methods_supported": []string{"client_secret_post", "private_key_jwt", "client_secret_basic"},
+		"claims_supported":                      []string{"sub", "aud", "exp", "iat", "iss", "auth_time", "acr", "amr", "email", "given_name", "family_name"},
+		"request_uri_parameter_supported":       false,
+		"request_parameter_supported":           false,
 	})
 }

@@ -11,3 +11,20 @@ e2e/playwright-report/
 docs-site/node_modules/
 docs-site/.vitepress/dist/
 docs-site/.vitepress/cache/
+
+# Compiled binary
+/saldeti
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+
+# Build artifacts
+*.exe
+*.test
+*.out

@@ -3,42 +3,52 @@
 package ui_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/saldeti/saldeti/internal/entra/auth"
 	"github.com/saldeti/saldeti/internal/entra/model"
 	"github.com/saldeti/saldeti/internal/entra/store"
 )
 
-// assignLicenseToUser assigns a license to a user via the API
-func assignLicenseToUser(t *testing.T, ts *httptest.Server, st store.Store, userID, skuID string) {
-	ctx := context.Background()
+// assignLicenseToUser assigns a license to a user via the assignLicense API
+// endpoint (POST /v1.0/users/{id}/assignLicense). It returns the response
+// recorder so callers can assert on the HTTP response.
+func assignLicenseToUser(t *testing.T, ts *httptest.Server, userID, skuID string) *httptest.ResponseRecorder {
+	t.Helper()
 
-	// Create assignLicense request
-	assignReq := model.LicenseAssignmentRequest{
-		AddLicenses: []model.LicenseAssignment{
-			{
-				SkuID: skuID,
-			},
-		},
+	token, err := auth.MintToken("test-tenant", "test-client", "admin@example.com", []string{"User.ReadWrite.All"}, []string{"User"}, time.Hour, "", "")
+	if err != nil {
+		t.Fatalf("Failed to mint auth token: %v", err)
 	}
 
-	// Make POST request to assign license
+	assignReq := model.LicenseAssignmentRequest{
+		AddLicenses: []model.LicenseAssignment{
+			{SkuID: skuID},
+		},
+	}
+	bodyBytes, err := json.Marshal(assignReq)
+	if err != nil {
+		t.Fatalf("Failed to marshal assignLicense request: %v", err)
+	}
+
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/v1.0/users/"+userID+"/assignLicense", nil)
-	// TODO: Need to properly serialize the request body and set authentication
-	// For now, we'll skip this and rely on manual state updates
-	_ = w
-	_ = req
-	_ = assignReq
-	_ = ctx
-	_ = st
-	_ = ts
+	req, err := http.NewRequest("POST", "/v1.0/users/"+userID+"/assignLicense", bytes.NewReader(bodyBytes))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	ts.Config.Handler.ServeHTTP(w, req)
+	return w
 }
 
 // addUserLicense directly adds a license to a user in the store
@@ -88,11 +98,7 @@ func removeUserLicense(t *testing.T, st store.Store, userUPN, skuPartNumber stri
 	}
 
 	// Remove license using AssignLicense method
-	removeLicenses := []model.LicenseRemoval{
-		{
-			SkuID: skuID,
-		},
-	}
+	removeLicenses := []string{skuID}
 
 	_, err = st.AssignLicense(ctx, user.ID, nil, removeLicenses)
 	if err != nil {
@@ -278,9 +284,10 @@ func TestLicenseAddViaUI(t *testing.T) {
 		t.Fatalf("Failed to get updated user: %v", err)
 	}
 
+	intuneSkuID, _ := model.FindSkuByPartNumber("INTUNE_A")
 	found := false
 	for _, lic := range updatedUser.AssignedLicenses {
-		if lic.SkuPartNumber == "INTUNE_A" {
+		if lic.SkuID == intuneSkuID {
 			found = true
 			break
 		}
@@ -352,9 +359,10 @@ func TestLicenseRemoveViaUI(t *testing.T) {
 		t.Fatalf("Failed to get updated user: %v", err)
 	}
 
+	speE3SkuID, _ := model.FindSkuByPartNumber("SPE_E3")
 	found := false
 	for _, lic := range updatedUser.AssignedLicenses {
-		if lic.SkuPartNumber == "SPE_E3" {
+		if lic.SkuID == speE3SkuID {
 			found = true
 			break
 		}
@@ -396,7 +404,7 @@ func TestLicenseAddAvailableSkusExcludesAssigned(t *testing.T) {
 	assignedLicenses := admin.AssignedLicenses
 	hasSpeE5 := false
 	for _, lic := range assignedLicenses {
-		if lic.SkuPartNumber == "SPE_E5" {
+		if lic.SkuID == speE5GUID {
 			hasSpeE5 = true
 			t.Logf("Admin has SPE_E5 assigned (SKU ID: %s)", lic.SkuID)
 			break
@@ -411,23 +419,13 @@ func TestLicenseAddAvailableSkusExcludesAssigned(t *testing.T) {
 	// Check if SPE_E5 appears in the assigned licenses table
 	hasAssignedInUI := strings.Contains(body, "<td><strong>SPE_E5</strong></td>")
 	if !hasAssignedInUI {
-		t.Log("Admin's SPE_E5 license is not showing in the assigned licenses table")
-		// This is a known issue with the UI not rendering assigned licenses correctly
-		// The test will verify the filtering works if assigned licenses were properly rendered
+		t.Error("Admin's SPE_E5 license should be showing in the assigned licenses table")
 	}
 
-	// Check if there's an option with the SPE_E5 GUID in the dropdown
+	// Check that SPE_E5 is NOT in the available SKUs dropdown
 	pattern := `value="` + speE5GUID + `"`
 	if strings.Contains(body, pattern) {
-		if hasAssignedInUI {
-			t.Error("SPE_E5 is both assigned and available in dropdown - filtering not working")
-		} else {
-			// If assigned licenses are not showing in the UI, then the dropdown
-			// will incorrectly show all SKUs. This is a bug in the UI rendering,
-			// not the filtering logic.
-			t.Log("Note: SPE_E5 appears in dropdown, but assigned licenses are not showing in UI. " +
-				"This is likely a UI rendering issue, not a filtering issue.")
-		}
+		t.Error("SPE_E5 should not appear in the available SKUs dropdown since it is already assigned")
 	}
 
 	// Verify that the license section exists at all
@@ -456,9 +454,7 @@ func TestHtmxLicenseAdd(t *testing.T) {
 	formData.Set("skuId", skuID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+grace.ID+"/licenses/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+grace.ID+"/licenses/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// htmx request should return 200 with partial HTML, not 302 redirect
@@ -501,9 +497,7 @@ func TestHtmxLicenseRemove(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+bob.ID+"/licenses/"+skuID+"/remove", nil)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+bob.ID+"/licenses/"+skuID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -519,5 +513,51 @@ func TestHtmxLicenseRemove(t *testing.T) {
 	}
 	if !strings.Contains(body, "License removed successfully") {
 		t.Error("htmx response should contain flash message")
+	}
+}
+
+func TestAssignLicense(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, st := setupTestServer(t)
+
+	ctx := context.Background()
+	grace, err := st.GetUserByUPN(ctx, "grace.lee@saldeti.local")
+	if err != nil {
+		t.Fatalf("Failed to get Grace: %v", err)
+	}
+
+	skuID, found := model.FindSkuByPartNumber("INTUNE_A")
+	if !found {
+		t.Fatal("INTUNE_A SKU not found in catalog")
+	}
+
+	// Verify Grace has no INTUNE_A license initially
+	for _, lic := range grace.AssignedLicenses {
+		if lic.SkuID == skuID {
+			t.Fatal("Grace should not have INTUNE_A license initially")
+		}
+	}
+
+	// Call the assignLicense API endpoint
+	w := assignLicenseToUser(t, ts, grace.ID, skuID)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	// Verify the license was actually assigned in the store
+	updatedUser, err := st.GetUser(ctx, grace.ID)
+	if err != nil {
+		t.Fatalf("Failed to get updated user: %v", err)
+	}
+
+	found = false
+	for _, lic := range updatedUser.AssignedLicenses {
+		if lic.SkuID == skuID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("INTUNE_A license not found in user's assigned licenses after API call")
 	}
 }

@@ -29,16 +29,16 @@
       "org_unit_path": "/Engineering"
     },
     {
-      "primary_email": "charlie.brown@saldeti.com",
-      "given_name": "Charlie",
-      "family_name": "Brown",
+      "primary_email": "charles.brennan@saldeti.com",
+      "given_name": "Charles",
+      "family_name": "Brennan",
       "password": "Simulator123!",
       "org_unit_path": "/Marketing"
     },
     {
-      "primary_email": "diana.prince@saldeti.com",
+      "primary_email": "diana.palmer@saldeti.com",
       "given_name": "Diana",
-      "family_name": "Prince",
+      "family_name": "Palmer",
       "password": "Simulator123!",
       "org_unit_path": "/HR"
     },
@@ -47,7 +47,6 @@
       "given_name": "Eve",
       "family_name": "Wilson",
       "password": "Simulator123!",
-      "suspended": true,
       "org_unit_path": "/"
     },
     {
@@ -82,7 +81,7 @@
       "name": "Marketing Team",
       "description": "Marketing department group",
       "member_emails": [
-        "charlie.brown@saldeti.com",
+        "charles.brennan@saldeti.com",
         "grace.lee@saldeti.com"
       ]
     },
@@ -94,8 +93,8 @@
         "admin@saldeti.com",
         "alice.smith@saldeti.com",
         "bob.jones@saldeti.com",
-        "charlie.brown@saldeti.com",
-        "diana.prince@saldeti.com",
+        "charles.brennan@saldeti.com",
+        "diana.palmer@saldeti.com",
         "frank.miller@saldeti.com",
         "grace.lee@saldeti.com"
       ]
@@ -106,8 +105,27 @@
       "description": "Leadership team",
       "member_emails": [
         "admin@saldeti.com",
-        "diana.prince@saldeti.com"
+        "diana.palmer@saldeti.com"
       ]
+    }
+  ],
+  "group_settings": [
+    {
+      "group_email": "all-staff@saldeti.com",
+      "who_can_post_message": "ALL_MANAGERS_CAN_POST",
+      "who_can_join": "INVITED_CAN_JOIN",
+      "who_can_view_group": "ALL_IN_DOMAIN_CAN_VIEW",
+      "allow_external_members": false,
+      "is_archived": true,
+      "message_moderation_level": "MODERATE_NEW_MESSAGES",
+      "primary_language": "en"
+    },
+    {
+      "group_email": "engineering@saldeti.com",
+      "who_can_post_message": "ALL_MEMBERS_CAN_POST",
+      "who_can_moderate_content": "OWNERS_AND_MANAGERS",
+      "include_custom_footer": true,
+      "custom_footer_text": "Engineering Team - saldeti.com"
     }
   ],
   "org_units": [
@@ -155,7 +173,7 @@
   ],
   "role_assignments": [
     {
-      "assigned_to_email": "diana.prince@saldeti.com",
+      "assigned_to_email": "diana.palmer@saldeti.com",
       "role_id_or_name": "HelpdeskAdmin"
     },
     {
@@ -174,13 +192,14 @@
       "serial_number": "CHROME-001-ABC",
       "annotated_user": "alice.smith@saldeti.com",
       "org_unit_path": "/Engineering",
-      "notes": "Engineering Chromebook - Alice"
+      "notes": "Engineering Chromebook - Alice",
+      "status": "ACTIVE"
     },
     {
       "serial_number": "CHROME-002-DEF",
-      "annotated_user": "charlie.brown@saldeti.com",
+      "annotated_user": "charles.brennan@saldeti.com",
       "org_unit_path": "/Marketing",
-      "notes": "Marketing Chromebook - Charlie"
+      "notes": "Marketing Chromebook - Charles"
     },
     {
       "serial_number": "CHROME-003-GHI",

@@ -9,5 +9,5 @@ type OrgUnit struct {
 	OrgUnitId         string `json:"orgUnitId"`
 	ParentOrgUnitPath string `json:"parentOrgUnitPath,omitempty"`
 	ParentOrgUnitId   string `json:"parentOrgUnitId,omitempty"`
-	BlockInheritance  bool   `json:"blockInheritance,omitempty"`
+	BlockInheritance  bool   `json:"blockInheritance"`
 }

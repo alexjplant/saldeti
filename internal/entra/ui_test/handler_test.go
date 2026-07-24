@@ -19,11 +19,20 @@ import (
 	ui "github.com/saldeti/saldeti/internal/entra/ui"
 )
 
-func setupTestServer(t *testing.T) (*httptest.Server, store.Store) {
-	st := store.NewMemoryStore()
-	if err := seed.Seed(st); err != nil {
+func seedTestStore(t *testing.T, st store.Store) {
+	t.Helper()
+	cfg, err := seed.LoadFromFile("../../../examples/seed.json")
+	if err != nil {
+		t.Fatalf("Failed to load seed file: %v", err)
+	}
+	if err := seed.SeedFromConfig(st, cfg); err != nil {
 		t.Fatalf("Failed to seed data: %v", err)
 	}
+}
+
+func setupTestServer(t *testing.T) (*httptest.Server, store.Store) {
+	st := store.NewMemoryStore()
+	seedTestStore(t, st)
 
 	// Register admin client for UI first
 	ctx := context.Background()
@@ -42,7 +51,9 @@ func setupTestServer(t *testing.T) (*httptest.Server, store.Store) {
 
 	// Register UI routes with the HTTPS base URL
 	baseURL := ts.URL
-	ui.RegisterUIRoutes(engine, baseURL, adminClientID, adminClientSecret, adminTenantID)
+	if err := ui.RegisterUIRoutes(engine, baseURL, adminClientID, adminClientSecret, adminTenantID); err != nil {
+		t.Fatalf("Failed to register UI routes: %v", err)
+	}
 
 	t.Cleanup(func() { ts.Close() })
 	return ts, st
@@ -92,6 +103,16 @@ func csrfPost(t *testing.T, ts *httptest.Server, path string, data url.Values) *
 		Name:  "saldeti_csrf",
 		Value: token,
 	})
+	return req
+}
+
+// csrfHtmxPost creates a POST request with a valid CSRF token and cookie,
+// simulating a real htmx request (HX-Request: true). Use this for htmx tests
+// so they exercise the same CSRF validation path as browser htmx submissions.
+func csrfHtmxPost(t *testing.T, ts *httptest.Server, path string, data url.Values) *http.Request {
+	t.Helper()
+	req := csrfPost(t, ts, path, data)
+	req.Header.Set("HX-Request", "true")
 	return req
 }
 
@@ -202,5 +223,23 @@ func TestSetFlashInfo(t *testing.T) {
 
 	if flash.Level != ui.FlashInfo {
 		t.Errorf("Expected flash level %s, got %s", ui.FlashInfo, flash.Level)
+	}
+}
+
+// TestCSRFBlocksHtmxWithoutToken verifies the N13 fix: an htmx-style request
+// (HX-Request: true) that lacks a valid CSRF token/cookie must be rejected.
+func TestCSRFBlocksHtmxWithoutToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ts, _ := setupTestServer(t)
+
+	// Simulate a cross-site attacker: HX-Request: true but NO CSRF cookie and NO token.
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/ui/groups/anything/members/add", strings.NewReader("userId=fake"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	ts.Config.Handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Expected CSRF to block htmx request without token (status %d), got %d", http.StatusForbidden, w.Code)
 	}
 }

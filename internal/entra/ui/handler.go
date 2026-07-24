@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/gin-gonic/gin"
+	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
 var httpClient = &http.Client{
@@ -25,10 +25,10 @@ var httpClient = &http.Client{
 }
 
 type UIHandler struct {
-  client   *msgraphsdk.GraphServiceClient
-  cred     azcore.TokenCredential
-  baseURL  string
-  baseTmpl *template.Template
+	client   *msgraphsdk.GraphServiceClient
+	cred     azcore.TokenCredential
+	baseURL  string
+	baseTmpl *template.Template
 }
 
 func NewUIHandler(client *msgraphsdk.GraphServiceClient, cred azcore.TokenCredential, baseURL string, baseTmpl *template.Template) *UIHandler {
@@ -72,7 +72,7 @@ func (h *UIHandler) render(c *gin.Context, pageFile string, data gin.H) {
 		return
 	}
 
-		c.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+	c.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(c.Writer, "layout", data); err != nil {
 		http.Error(c.Writer, "Template execute error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -113,5 +113,5 @@ func (h *UIHandler) renderPartial(c *gin.Context, templateName string, data gin.
 
 	c.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	c.Writer.WriteHeader(http.StatusOK)
-	buf.WriteTo(c.Writer)
+	_, _ = buf.WriteTo(c.Writer)
 }

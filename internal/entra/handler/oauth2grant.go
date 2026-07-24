@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -22,12 +21,12 @@ func listGrantsHandler(st store.Store) gin.HandlerFunc {
 		// Parse OData options
 		opts := parseListOptions(c.Request.URL.Query())
 
-		// Validate $top <= 999
+		// Validate $top <= maxTopValue
 		if topStr := c.Request.URL.Query().Get("$top"); topStr != "" {
 			if top, err := strconv.Atoi(topStr); err == nil && top > 0 {
-				if top > 999 {
+				if top > maxTopValue {
 					writeError(c, http.StatusBadRequest, "Request_BadRequest",
-						fmt.Sprintf("$top value %d exceeds maximum of 999.", top))
+						fmt.Sprintf("$top value %d exceeds maximum of %d.", top, maxTopValue))
 					return
 				}
 			}
@@ -36,15 +35,8 @@ func listGrantsHandler(st store.Store) gin.HandlerFunc {
 		// Call store to list grants
 		grants, totalCount, err := st.ListOAuth2PermissionGrants(c.Request.Context(), opts)
 		if err != nil {
-			// Handle filter parse errors (same pattern as application handler)
-			errStr := err.Error()
-			if strings.Contains(errStr, "unable to parse filter expression") ||
-			   strings.Contains(errStr, "cannot compare values") ||
-			   strings.Contains(errStr, "operator not supported") ||
-			   strings.Contains(errStr, "function value must be string") ||
-			   strings.Contains(errStr, "unknown function") ||
-			   strings.Contains(errStr, "invalid filter node") {
-				writeError(c, http.StatusBadRequest, "InvalidRequest", errStr)
+			if isFilterError(err) {
+				writeError(c, http.StatusBadRequest, "InvalidRequest", err.Error())
 			} else {
 				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to list oauth2 permission grants")
 			}
@@ -186,7 +178,7 @@ func updateGrantHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Decode body as map[string]interface{}
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return

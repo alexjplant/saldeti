@@ -13,8 +13,8 @@ test.describe('Users', () => {
     await expect(page.locator('th', { hasText: 'Display Name' })).toBeVisible();
     await expect(page.locator('td', { hasText: 'Alice Smith' })).toBeVisible();
     await expect(page.locator('td', { hasText: 'Bob Jones' })).toBeVisible();
-    await expect(page.locator('td', { hasText: 'Charlie Brown' })).toBeVisible();
-    await expect(page.locator('td', { hasText: 'Diana Prince' })).toBeVisible();
+    await expect(page.locator('td', { hasText: 'Charles Brennan' })).toBeVisible();
+    await expect(page.locator('td', { hasText: 'Diana Palmer' })).toBeVisible();
   });
 
   test('search users', async ({ page }) => {

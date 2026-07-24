@@ -2,8 +2,8 @@ package store
 
 import (
 	"context"
-	"testing"
 	"fmt"
+	"testing"
 
 	"github.com/saldeti/saldeti/internal/google/model"
 	"github.com/stretchr/testify/assert"
@@ -82,11 +82,15 @@ func TestMemoryStore_UserCRUD(t *testing.T) {
 	assert.Equal(t, created.ID, gotNew.ID)
 
 	// Patch
-	patched, err := s.PatchUser(ctx, created.ID, map[string]interface{}{
-		"familyName": "Patched",
+	patched, err := s.PatchUser(ctx, created.ID, map[string]any{
+		"name": map[string]any{
+			"givenName":  "Alice",
+			"familyName": "Patched",
+		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "Patched", patched.FamilyName)
+	require.NotNil(t, patched.Name)
+	assert.Equal(t, "Patched", patched.Name.FamilyName)
 
 	// List
 	users, _, err := s.ListUsers(ctx, model.ListOptions{})
@@ -276,7 +280,7 @@ func TestMemoryStore_GroupCRUD(t *testing.T) {
 	assert.Equal(t, created.ID, gotNew.ID)
 
 	// Patch
-	patched, err := s.PatchGroup(ctx, created.ID, map[string]interface{}{
+	patched, err := s.PatchGroup(ctx, created.ID, map[string]any{
 		"description": "Patched description",
 	})
 	require.NoError(t, err)
@@ -420,7 +424,7 @@ func TestMemoryStore_OrgUnitCRUD(t *testing.T) {
 	assert.Equal(t, "Engineering Updated", gotNew.Name)
 
 	// Patch
-	patched, err := s.PatchOrgUnit(ctx, customerID, "/eng-updated", map[string]interface{}{
+	patched, err := s.PatchOrgUnit(ctx, customerID, "/eng-updated", map[string]any{
 		"name": "Patched OU",
 	})
 	require.NoError(t, err)
@@ -477,7 +481,7 @@ func TestMemoryStore_RoleCRUD(t *testing.T) {
 	assert.Equal(t, "UpdatedRole", updated.RoleName)
 
 	// Patch
-	patched, err := s.PatchRole(ctx, customerID, created.RoleId, map[string]interface{}{
+	patched, err := s.PatchRole(ctx, customerID, created.RoleId, map[string]any{
 		"roleDescription": "Patched description",
 	})
 	require.NoError(t, err)
@@ -639,4 +643,27 @@ func TestMemoryStore_Pagination(t *testing.T) {
 	// Total across all pages
 	total := len(page1) + len(page2) + len(page3)
 	assert.Equal(t, 25, total)
+}
+
+func TestMemoryStore_PatchUserPreservesJsonIgnoreFields(t *testing.T) {
+	ctx := context.Background()
+	s := NewMemoryStore()
+
+	created, err := s.CreateUser(ctx, model.User{
+		PrimaryEmail: "bob@example.com",
+		GivenName:    "Bob",
+		FamilyName:   "Jones",
+		DisplayName:  "Bob Jones",
+	})
+	require.NoError(t, err)
+
+	// Patch an unrelated field; the json:"-" name fields must survive the round-trip.
+	patched, err := s.PatchUser(ctx, created.ID, map[string]any{
+		"orgUnitPath": "/Engineering",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "Bob", patched.GivenName, `GivenName (json:"-") must survive patch`)
+	assert.Equal(t, "Jones", patched.FamilyName, `FamilyName (json:"-") must survive patch`)
+	assert.Equal(t, "Bob Jones", patched.DisplayName, `DisplayName (json:"-") must survive patch`)
+	assert.Equal(t, "/Engineering", patched.OrgUnitPath)
 }

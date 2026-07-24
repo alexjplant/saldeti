@@ -2,6 +2,21 @@
 
 A local API simulator for Microsoft Entra ID (Azure AD) and Google Workspace. saldeti mimics the Microsoft Graph API v1.0 and Google Workspace Admin SDK endpoints so you can develop and test directory-integrated applications without a real cloud tenant.
 
+## Features
+
+saldeti is a local simulator for **Microsoft Entra ID (Azure AD)** and **Google Workspace**. It stands up an HTTPS server that mimics the relevant directory APIs so you can develop and test against it entirely on your own machine.
+
+Key capabilities:
+
+- **Realistic API simulation** of Microsoft Graph v1.0 and Google Admin SDK directory endpoints.
+- **JSON seed files** for defining the initial state of users, groups, and other directory objects.
+- **Admin web UI** for browsing and managing simulated directory objects (`/ui` in Entra mode, `/google-ui/` in Google mode).
+- **Mutually exclusive Entra/Google modes** selected with a single `-mode entra|google` flag.
+- **Store dump on shutdown** (`-dump`) so changes made during a run can be persisted and reloaded.
+- **Self-signed TLS with no external dependencies** — no cloud account, SDK, or network access required.
+
+Use saldeti to develop and test directory-integrated applications without provisioning a real cloud tenant, and to run integration tests in CI without standing up infrastructure.
+
 ## Documentation
 
 Full documentation is available at [alexjplant.github.io](https://alexjplant.github.io/saldeti/).
@@ -13,6 +28,8 @@ Full documentation is available at [alexjplant.github.io](https://alexjplant.git
 
 ## Quick Start
 
+**Prerequisite:** Install [mise](https://mise.jdx.dev/getting-started.html) first, which manages the Go toolchain and provides task automation.
+
 ```bash
 # Build
 mise run build
@@ -20,21 +37,26 @@ mise run build
 # Run with Entra ID simulator (default)
 ./bin/saldeti -port 9443
 
-# Run with both Entra ID and Google Workspace simulators
-./bin/saldeti -port 9443 --google
+# Run with the Google Workspace simulator (use -mode google; entra is the default and the two modes are mutually exclusive)
+./bin/saldeti -port 9443 -mode google
 
 # Run with seed data and persist changes on shutdown
 ./bin/saldeti -port 9443 -seed examples/seed.json -dump snapshot.json
 
+# Run with Google Workspace seed data and persist changes on shutdown
+./bin/saldeti -port 9443 -mode google -seed examples/google-seed.json -dump snapshot.json
+
 # Get a token (credentials are logged at startup)
-curl -X POST http://localhost:9443/<tenant-id>/oauth2/v2.0/token \
+curl -X POST https://localhost:9443/<tenant-id>/oauth2/v2.0/token \
   -d "grant_type=client_credentials" \
   -d "client_id=<admin-client-id>" \
   -d "client_secret=<admin-client-secret>" \
   -d "scope=User.Read.All Group.Read.All"
 ```
 
-Management UI available at `/ui` (Entra) or `/google-ui/` (Google) after starting the server.
+Each mode uses its own distinct seed schema: Entra ID uses `examples/seed.json` (schema: `schema/seed.schema.json`) and Google Workspace uses `examples/google-seed.json` (schema: `schema/google-seed.schema.json`). See [Seed Files](https://alexjplant.github.io/saldeti/seed-files) for the file format.
+
+Management UI available at `/ui` (entra mode, default) or `/google-ui/` (google mode) after starting the server.
 
 ## Development
 
@@ -59,6 +81,14 @@ Very yes. GLM-5.1 for orchestration and planning, GLM-4.7 for implementation, Ge
 **...but why?**  
 Because I wanted it and would rather spend time learning about LLMs and coding harnesses than manually replicating a Microsoft Azure product.
 
+## Disclaimer
+
+Saldeti is an independent, open-source project and is **not affiliated with, endorsed by, sponsored by, or officially connected to** Microsoft Corporation, Google LLC, or Alphabet Inc.
+
+"Microsoft Entra ID", "Azure Active Directory", "Microsoft Graph", and related marks are trademarks of Microsoft Corporation. "Google Workspace", "Google Cloud", "Admin SDK", and related marks are trademarks of Google LLC. All product names, logos, and brands are property of their respective owners.
+
+Saldeti simulates these APIs for local development and testing purposes only. It does not connect to, replicate, or access any real Microsoft or Google cloud services.
+
 ## License
 
-[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). Use it, improve it, don't make money on it.
+[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). Use it, modify it, ship it — just keep the source open.

@@ -1,51 +1,50 @@
 package model
 
 type User struct {
-	Kind                      string                 `json:"kind"`
-	ID                        string                 `json:"id"`
-	Etag                      string                 `json:"etag,omitempty"`
-	PrimaryEmail              string                 `json:"primaryEmail"`
-	Name                      *UserName              `json:"name,omitempty"`
-	GivenName                 string                 `json:"givenName,omitempty"`
-	FamilyName                string                 `json:"familyName,omitempty"`
-	DisplayName               string                 `json:"displayName,omitempty"`
-	IsAdmin                   bool                   `json:"isAdmin,omitempty"`
-	IsDelegatedAdmin          bool                   `json:"isDelegatedAdmin,omitempty"`
-	IsMailboxSetup            bool                   `json:"isMailboxSetup,omitempty"`
-	Emails                    []UserEmail            `json:"emails,omitempty"`
-	Aliases                   []string               `json:"aliases,omitempty"`
-	NonEditableAliases        []string               `json:"nonEditableAliases,omitempty"`
-	CustomerID                string                 `json:"customerId,omitempty"`
-	OrgUnitPath               string                 `json:"orgUnitPath,omitempty"`
-	OrgUnitId                 string                 `json:"orgUnitId,omitempty"`
-	ThumbnailPhotoUrl         string                 `json:"thumbnailPhotoUrl,omitempty"`
-	ThumbnailPhotoEtag        string                 `json:"thumbnailPhotoEtag,omitempty"`
-	Photos                    []UserPhoto            `json:"photos,omitempty"`
-	Addresses                 []interface{}          `json:"addresses,omitempty"`
-	Relations                 []interface{}          `json:"relations,omitempty"`
-	ExternalIds               []interface{}          `json:"externalIds,omitempty"`
-	Organizations             []interface{}          `json:"organizations,omitempty"`
-	Telephones                []interface{}          `json:"telephones,omitempty"`
-	Suspended                 bool                   `json:"suspended,omitempty"`
-	SuspensionReason          string                 `json:"suspensionReason,omitempty"`
-	Archived                  bool                   `json:"archived,omitempty"`
-	ChangePasswordAtNextLogin bool                   `json:"changePasswordAtNextLogin,omitempty"`
-	IPWhitelisted             bool                   `json:"ipWhitelisted,omitempty"`
-	IncludeInGlobalAddressList bool                  `json:"includeInGlobalAddressList,omitempty"`
-	RecoveryEmail             string                 `json:"recoveryEmail,omitempty"`
-	RecoveryPhone             string                 `json:"recoveryPhone,omitempty"`
-	LastLoginTime             string                 `json:"lastLoginTime,omitempty"`
-	CreationTime              string                 `json:"creationTime,omitempty"`
-	DeletionTime              string                 `json:"deletionTime,omitempty"`
-	IsEnforcedIn2Sv           bool                   `json:"isEnforcedIn2Sv,omitempty"`
-	IsEnrolledIn2Sv           bool                   `json:"isEnrolledIn2Sv,omitempty"`
-	Is2svEnrolled             bool                   `json:"is2svEnrolled,omitempty"`
-	CustomSchemas             map[string]interface{} `json:"customSchemas,omitempty"`
-	Languages                 []interface{}          `json:"languages,omitempty"`
-	SSHPublicKeys             []interface{}          `json:"sshPublicKeys,omitempty"`
-	Websites                  []interface{}          `json:"websites,omitempty"`
-	Keywords                  []interface{}          `json:"keywords,omitempty"`
-	Locations                 []UserLocation         `json:"locations,omitempty"`
+	Kind                       string         `json:"kind"`
+	ID                         string         `json:"id"`
+	Etag                       string         `json:"etag,omitempty"`
+	PrimaryEmail               string         `json:"primaryEmail"`
+	Name                       *UserName      `json:"name,omitempty"`
+	GivenName                  string         `json:"-"`
+	FamilyName                 string         `json:"-"`
+	DisplayName                string         `json:"-"`
+	IsAdmin                    bool           `json:"isAdmin"`
+	IsDelegatedAdmin           bool           `json:"isDelegatedAdmin"`
+	IsMailboxSetup             bool           `json:"isMailboxSetup"`
+	Emails                     []UserEmail    `json:"emails,omitempty"`
+	Aliases                    []string       `json:"aliases,omitempty"`
+	NonEditableAliases         []string       `json:"nonEditableAliases,omitempty"`
+	CustomerID                 string         `json:"customerId,omitempty"`
+	OrgUnitPath                string         `json:"orgUnitPath,omitempty"`
+	OrgUnitId                  string         `json:"orgUnitId,omitempty"`
+	ThumbnailPhotoUrl          string         `json:"thumbnailPhotoUrl,omitempty"`
+	ThumbnailPhotoEtag         string         `json:"thumbnailPhotoEtag,omitempty"`
+	Photos                     []UserPhoto    `json:"photos,omitempty"`
+	Addresses                  []any          `json:"addresses,omitempty"`
+	Relations                  []any          `json:"relations,omitempty"`
+	ExternalIds                []any          `json:"externalIds,omitempty"`
+	Organizations              []any          `json:"organizations,omitempty"`
+	Telephones                 []any          `json:"telephones,omitempty"`
+	Suspended                  bool           `json:"suspended"`
+	SuspensionReason           string         `json:"suspensionReason,omitempty"`
+	Archived                   bool           `json:"archived"`
+	ChangePasswordAtNextLogin  bool           `json:"changePasswordAtNextLogin"`
+	IPWhitelisted              bool           `json:"ipWhitelisted"`
+	IncludeInGlobalAddressList bool           `json:"includeInGlobalAddressList"`
+	RecoveryEmail              string         `json:"recoveryEmail,omitempty"`
+	RecoveryPhone              string         `json:"recoveryPhone,omitempty"`
+	LastLoginTime              string         `json:"lastLoginTime,omitempty"`
+	CreationTime               string         `json:"creationTime,omitempty"`
+	DeletionTime               string         `json:"deletionTime,omitempty"`
+	IsEnforcedIn2Sv            bool           `json:"isEnforcedIn2Sv"`
+	IsEnrolledIn2Sv            bool           `json:"isEnrolledIn2Sv"`
+	CustomSchemas              map[string]any `json:"customSchemas,omitempty"`
+	Languages                  []any          `json:"languages,omitempty"`
+	SSHPublicKeys              []any          `json:"sshPublicKeys,omitempty"`
+	Websites                   []any          `json:"websites,omitempty"`
+	Keywords                   []any          `json:"keywords,omitempty"`
+	Locations                  []UserLocation `json:"locations,omitempty"`
 }
 
 type UserName struct {
@@ -55,10 +54,10 @@ type UserName struct {
 }
 
 type UserEmail struct {
-	Address   string `json:"address,omitempty"`
+	Address    string `json:"address,omitempty"`
 	CustomType string `json:"customType,omitempty"`
-	Primary   bool   `json:"primary,omitempty"`
-	Type      string `json:"type,omitempty"`
+	Primary    bool   `json:"primary"`
+	Type       string `json:"type,omitempty"`
 }
 
 type UserPhoto struct {
@@ -72,13 +71,13 @@ type UserPhoto struct {
 }
 
 type UserLocation struct {
-	Area          string `json:"area,omitempty"`
-	BuildingId    string `json:"buildingId,omitempty"`
-	CustomType    string `json:"customType,omitempty"`
-	DeskCode      string `json:"deskCode,omitempty"`
-	FloorName     string `json:"floorName,omitempty"`
-	FloorSection  string `json:"floorSection,omitempty"`
-	Type          string `json:"type,omitempty"`
+	Area         string `json:"area,omitempty"`
+	BuildingId   string `json:"buildingId,omitempty"`
+	CustomType   string `json:"customType,omitempty"`
+	DeskCode     string `json:"deskCode,omitempty"`
+	FloorName    string `json:"floorName,omitempty"`
+	FloorSection string `json:"floorSection,omitempty"`
+	Type         string `json:"type,omitempty"`
 }
 
 type UserAlias struct {

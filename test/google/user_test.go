@@ -1,4 +1,4 @@
-//go:build google
+//go:build e2e && google
 
 package google_e2e
 
@@ -62,7 +62,7 @@ func TestGoogleUser_List(t *testing.T) {
 	resp = googleRequest(t, client, http.MethodGet, base+"/users", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body := readBody(t, resp)
-	users, ok := body["users"].([]interface{})
+	users, ok := body["users"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(users), 1)
 }
@@ -101,8 +101,10 @@ func TestGoogleUser_Patch(t *testing.T) {
 	require.NotEmpty(t, userID)
 
 	// Patch user
-	resp = googleRequest(t, client, http.MethodPatch, base+"/users/"+userID, token, `{"givenName":"Patched"}`)
+	resp = googleRequest(t, client, http.MethodPatch, base+"/users/"+userID, token, `{"name":{"givenName":"Patched","familyName":"User"}}`)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	assert.Equal(t, "Patched", body["givenName"])
+	nameObj, ok := body["name"].(map[string]any)
+	require.True(t, ok, "expected name object in response")
+	assert.Equal(t, "Patched", nameObj["givenName"])
 }

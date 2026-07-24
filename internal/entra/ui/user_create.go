@@ -21,18 +21,18 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     false,
 				"FormAction": "/ui/users/new",
 				"CancelURL":  "/ui/users",
-				"Form": map[string]interface{}{
-					"DisplayName":        "",
-					"UserPrincipalName":  "",
-					"GivenName":          "",
-					"Surname":            "",
-					"Mail":               "",
-					"MailNickname":       "",
-					"JobTitle":           "",
-					"Department":         "",
-					"OfficeLocation":     "",
-					"MobilePhone":        "",
-					"AccountEnabled":     true,
+				"Form": map[string]any{
+					"DisplayName":       "",
+					"UserPrincipalName": "",
+					"GivenName":         "",
+					"Surname":           "",
+					"Mail":              "",
+					"MailNickname":      "",
+					"JobTitle":          "",
+					"Department":        "",
+					"OfficeLocation":    "",
+					"MobilePhone":       "",
+					"AccountEnabled":    true,
 				},
 			})
 			return
@@ -47,7 +47,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/users/new",
 				"CancelURL":  "/ui/users",
 				"Error":      "Display Name and User Principal Name are required",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":       c.PostForm("displayName"),
 					"UserPrincipalName": c.PostForm("userPrincipalName"),
 					"GivenName":         c.PostForm("givenName"),
@@ -99,7 +99,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 		// Try SDK Post first
 		created, err := h.client.Users().Post(c.Request.Context(), newUser, nil)
-		
+
 		// If SDK returns nil object without error, try manual HTTP request
 		if created == nil && err == nil {
 			// Manually make the HTTP request
@@ -108,11 +108,11 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				err = fmt.Errorf("failed to get token for manual request: %w", tokenErr)
 			} else {
 				// Manually construct the JSON payload
-				userPayload := map[string]interface{}{
+				userPayload := map[string]any{
 					"displayName":       displayName,
 					"userPrincipalName": upn,
-					"accountEnabled":   accountEnabled,
-					"@odata.type":      "#microsoft.graph.user",
+					"accountEnabled":    accountEnabled,
+					"@odata.type":       "#microsoft.graph.user",
 				}
 				if givenName := c.PostForm("givenName"); givenName != "" {
 					userPayload["givenName"] = givenName
@@ -138,7 +138,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				if mobilePhone := c.PostForm("mobilePhone"); mobilePhone != "" {
 					userPayload["mobilePhone"] = mobilePhone
 				}
-				
+
 				// Serialize to JSON
 				userJSON, marshalErr := json.Marshal(userPayload)
 				if marshalErr != nil {
@@ -151,20 +151,20 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 					} else {
 						req.Header.Set("Authorization", "Bearer "+token.Token)
 						req.Header.Set("Content-Type", "application/json")
-						
+
 						// Make request
 						resp, httpErr := httpClient.Do(req)
 						if httpErr != nil {
-							err = fmt.Errorf("HTTP request failed: %w", httpErr)
+							err = fmt.Errorf("http request failed: %w", httpErr)
 						} else {
-							defer resp.Body.Close()
-							
+							defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
+
 							if resp.StatusCode != http.StatusCreated {
 								body, _ := io.ReadAll(resp.Body)
 								err = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 							} else {
 								// Parse response to get ID
-								var result map[string]interface{}
+								var result map[string]any
 								if parseErr := json.NewDecoder(resp.Body).Decode(&result); parseErr != nil {
 									err = fmt.Errorf("failed to decode response: %w", parseErr)
 								} else {
@@ -193,7 +193,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/users/new",
 				"CancelURL":  "/ui/users",
 				"Error":      "Failed to create user. Please try again.",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":       c.PostForm("displayName"),
 					"UserPrincipalName": c.PostForm("userPrincipalName"),
 					"GivenName":         c.PostForm("givenName"),
@@ -218,7 +218,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/users/new",
 				"CancelURL":  "/ui/users",
 				"Error":      "User was created but response was empty",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":       c.PostForm("displayName"),
 					"UserPrincipalName": c.PostForm("userPrincipalName"),
 					"GivenName":         c.PostForm("givenName"),
@@ -252,7 +252,7 @@ func UserCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/users/new",
 				"CancelURL":  "/ui/users",
 				"Error":      "User was created but ID was not returned in response",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":       c.PostForm("displayName"),
 					"UserPrincipalName": c.PostForm("userPrincipalName"),
 					"GivenName":         c.PostForm("givenName"),

@@ -46,7 +46,7 @@ func TestCreateApplication(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/v1.0/applications/")
 
-	var appResp map[string]interface{}
+	var appResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &appResp)
@@ -88,7 +88,7 @@ func TestGetApplication(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var appResp map[string]interface{}
+	var appResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &appResp)
@@ -130,7 +130,7 @@ func TestGetApplicationByAppID(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var appResp map[string]interface{}
+	var appResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &appResp)
@@ -201,16 +201,16 @@ func TestGetApplicationByAppIDExpandOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var appResp map[string]interface{}
+	var appResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &appResp)
 	require.NoError(t, err)
 
-	owners, ok := appResp["owners"].([]interface{})
+	owners, ok := appResp["owners"].([]any)
 	require.True(t, ok, "Application response should have owners key when expanded")
 	assert.Len(t, owners, 1)
-	owner := owners[0].(map[string]interface{})
+	owner := owners[0].(map[string]any)
 	assert.Equal(t, createdUser.ID, owner["id"])
 	assert.Contains(t, owner, "@odata.type")
 }
@@ -255,16 +255,16 @@ func TestGetApplicationByAppIDExpandOwnersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var appResp map[string]interface{}
+	var appResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &appResp)
 	require.NoError(t, err)
 
-	owners, ok := appResp["owners"].([]interface{})
+	owners, ok := appResp["owners"].([]any)
 	require.True(t, ok, "Application response should have owners key when expanded")
 	assert.Len(t, owners, 1)
-	owner := owners[0].(map[string]interface{})
+	owner := owners[0].(map[string]any)
 	assert.Contains(t, owner, "id")
 	assert.Contains(t, owner, "displayName")
 	assert.Contains(t, owner, "@odata.type")
@@ -301,14 +301,14 @@ func TestListApplications(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://graph.microsoft.com/v1.0/$metadata#applications", listResp["@odata.context"])
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.Equal(t, 3, len(value))
 }
 
@@ -345,7 +345,7 @@ func TestUpdateApplication(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var appResp map[string]interface{}
+	var appResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &appResp)
@@ -427,7 +427,7 @@ func TestAddPassword(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var pwdResp map[string]interface{}
+	var pwdResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &pwdResp)
@@ -468,7 +468,7 @@ func TestRemovePassword(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	var pwdResp map[string]interface{}
+	var pwdResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &pwdResp)
@@ -523,7 +523,7 @@ func TestAddKey(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var keyResp map[string]interface{}
+	var keyResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &keyResp)
@@ -562,7 +562,7 @@ func TestRemoveKey(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	var keyResp map[string]interface{}
+	var keyResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &keyResp)
@@ -625,22 +625,22 @@ func TestListApplicationsExpandOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	apps := listResp["value"].([]interface{})
+	apps := listResp["value"].([]any)
 	foundApp := false
 	for _, a := range apps {
-		appMap := a.(map[string]interface{})
+		appMap := a.(map[string]any)
 		if appMap["displayName"] == "Test App" {
 			foundApp = true
-			owners, ok := appMap["owners"].([]interface{})
+			owners, ok := appMap["owners"].([]any)
 			require.True(t, ok, "application should have owners key when expanded")
 			assert.Len(t, owners, 1)
-			owner := owners[0].(map[string]interface{})
+			owner := owners[0].(map[string]any)
 			assert.Equal(t, createdUser.ID, owner["id"])
 			assert.Contains(t, owner, "@odata.type")
 			break
@@ -689,20 +689,20 @@ func TestListApplicationsExpandOwnersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	apps := listResp["value"].([]interface{})
+	apps := listResp["value"].([]any)
 	for _, a := range apps {
-		appMap := a.(map[string]interface{})
+		appMap := a.(map[string]any)
 		if appMap["displayName"] == "Test App" {
-			owners, ok := appMap["owners"].([]interface{})
+			owners, ok := appMap["owners"].([]any)
 			require.True(t, ok)
 			assert.Len(t, owners, 1)
-			owner := owners[0].(map[string]interface{})
+			owner := owners[0].(map[string]any)
 			assert.Contains(t, owner, "id")
 			assert.Contains(t, owner, "displayName")
 			assert.Contains(t, owner, "@odata.type")
@@ -752,16 +752,16 @@ func TestGetApplicationExpandOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var appResp map[string]interface{}
+	var appResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &appResp)
 	require.NoError(t, err)
 
-	owners, ok := appResp["owners"].([]interface{})
+	owners, ok := appResp["owners"].([]any)
 	require.True(t, ok, "application response should have owners key when expanded")
 	assert.Len(t, owners, 1)
-	owner := owners[0].(map[string]interface{})
+	owner := owners[0].(map[string]any)
 	assert.Equal(t, createdUser.ID, owner["id"])
 	assert.Contains(t, owner, "@odata.type")
 }
@@ -809,13 +809,13 @@ func TestListApplicationOwners(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.Equal(t, 1, len(value))
 }
 
@@ -936,7 +936,7 @@ func TestApplicationsDelta(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var deltaResp map[string]interface{}
+	var deltaResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &deltaResp)
@@ -946,7 +946,7 @@ func TestApplicationsDelta(t *testing.T) {
 	assert.Contains(t, deltaResp, "@odata.deltaLink")
 	assert.Contains(t, deltaResp, "value")
 
-	value := deltaResp["value"].([]interface{})
+	value := deltaResp["value"].([]any)
 	assert.GreaterOrEqual(t, len(value), 1)
 }
 
@@ -987,14 +987,14 @@ func TestListExtensionProperties(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://graph.microsoft.com/v1.0/$metadata#extensionProperties", listResp["@odata.context"])
-	value := listResp["value"].([]interface{})
+	value := listResp["value"].([]any)
 	assert.Equal(t, 1, len(value))
 }
 

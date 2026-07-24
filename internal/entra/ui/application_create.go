@@ -20,7 +20,7 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     false,
 				"FormAction": "/ui/applications/new",
 				"CancelURL":  "/ui/applications",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    "",
 					"Description":    "",
 					"SignInAudience": "AzureADandPersonalMicrosoftAccount",
@@ -40,7 +40,7 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/applications/new",
 				"CancelURL":  "/ui/applications",
 				"Error":      "Display Name is required",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    c.PostForm("displayName"),
 					"Description":    c.PostForm("description"),
 					"SignInAudience": c.PostForm("signInAudience"),
@@ -69,9 +69,9 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 			if tokenErr != nil {
 				err = fmt.Errorf("failed to get token for manual request: %w", tokenErr)
 			} else {
-				appPayload := map[string]interface{}{
-					"displayName":    displayName,
-					"@odata.type":    "#microsoft.graph.application",
+				appPayload := map[string]any{
+					"displayName": displayName,
+					"@odata.type": "#microsoft.graph.application",
 				}
 				if description := c.PostForm("description"); description != "" {
 					appPayload["description"] = description
@@ -93,15 +93,15 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 
 						resp, httpErr := httpClient.Do(req)
 						if httpErr != nil {
-							err = fmt.Errorf("HTTP request failed: %w", httpErr)
+							err = fmt.Errorf("http request failed: %w", httpErr)
 						} else {
-							defer resp.Body.Close()
+							defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 							if resp.StatusCode != http.StatusCreated {
 								body, _ := io.ReadAll(resp.Body)
 								err = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 							} else {
-								var result map[string]interface{}
+								var result map[string]any
 								if parseErr := json.NewDecoder(resp.Body).Decode(&result); parseErr != nil {
 									err = fmt.Errorf("failed to decode response: %w", parseErr)
 								} else {
@@ -127,7 +127,7 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/applications/new",
 				"CancelURL":  "/ui/applications",
 				"Error":      fmt.Sprintf("Failed to create application: %v", err),
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    c.PostForm("displayName"),
 					"Description":    c.PostForm("description"),
 					"SignInAudience": c.PostForm("signInAudience"),
@@ -143,7 +143,7 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/applications/new",
 				"CancelURL":  "/ui/applications",
 				"Error":      "Application was created but response was empty",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    c.PostForm("displayName"),
 					"Description":    c.PostForm("description"),
 					"SignInAudience": c.PostForm("signInAudience"),
@@ -169,7 +169,7 @@ func ApplicationCreateHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/applications/new",
 				"CancelURL":  "/ui/applications",
 				"Error":      "Application was created but ID was not returned in response",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    c.PostForm("displayName"),
 					"Description":    c.PostForm("description"),
 					"SignInAudience": c.PostForm("signInAudience"),

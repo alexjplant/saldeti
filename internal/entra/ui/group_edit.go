@@ -52,7 +52,7 @@ func GroupEditHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     true,
 				"FormAction": "/ui/groups/" + groupID + "/edit",
 				"CancelURL":  "/ui/groups/" + groupID,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":     strVal(sdkGroup.GetDisplayName()),
 					"Description":     strVal(sdkGroup.GetDescription()),
 					"MailNickname":    strVal(sdkGroup.GetMailNickname()),
@@ -107,7 +107,7 @@ func GroupEditHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/groups/" + groupID + "/edit",
 				"CancelURL":  "/ui/groups/" + groupID,
 				"Error":      fmt.Sprintf("Failed to update group: %v", err),
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":     c.PostForm("displayName"),
 					"Description":     c.PostForm("description"),
 					"MailNickname":    c.PostForm("mailNickname"),

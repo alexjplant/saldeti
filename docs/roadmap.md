@@ -1,5 +1,7 @@
 # Entra Graph API Simulator — Tiered Implementation Plan
 
+> **Disclaimer:** Saldeti is an independent project and is not affiliated with, endorsed by, or sponsored by Microsoft Corporation or Google LLC. All product names and trademarks are property of their respective owners.
+
 > **Base URL:** `https://graph.microsoft.com/v1.0`  
 > **Auth:** OAuth 2.0 (client_credentials, authorization_code, on_behalf_of)  
 > **Common query params:** `$filter`, `$select`, `$expand`, `$top`, `$orderby`, `$count`, `$skip`

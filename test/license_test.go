@@ -19,7 +19,6 @@ import (
 // E2E Tests: License Management
 // ============================================================================
 
-
 // TestListSubscribedSkus tests GET /v1.0/subscribedSkus endpoint
 func TestListSubscribedSkus(t *testing.T) {
 	tss := setupTestServer(t)
@@ -37,7 +36,7 @@ func TestListSubscribedSkus(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK for subscribedSkus")
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert @odata.context contains "subscribedSkus"
@@ -46,7 +45,7 @@ func TestListSubscribedSkus(t *testing.T) {
 	assert.Contains(t, context, "subscribedSkus", "Expected @odata.context to contain 'subscribedSkus'")
 
 	// Assert value is an array
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Expected value to be an array")
 
 	// Assert at least 10 items
@@ -54,7 +53,7 @@ func TestListSubscribedSkus(t *testing.T) {
 
 	// Assert each item has required fields
 	for i, sku := range value {
-		skuMap, ok := sku.(map[string]interface{})
+		skuMap, ok := sku.(map[string]any)
 		require.True(t, ok, "Expected SKU item %d to be an object", i)
 
 		// Check skuId
@@ -74,7 +73,7 @@ func TestListSubscribedSkus(t *testing.T) {
 	foundEnterprisePack := false
 	foundSpeE3 := false
 	for _, sku := range value {
-		skuMap := sku.(map[string]interface{})
+		skuMap := sku.(map[string]any)
 		if skuPartNumber, ok := skuMap["skuPartNumber"].(string); ok {
 			if skuPartNumber == "ENTERPRISEPACK" {
 				foundEnterprisePack = true
@@ -104,11 +103,11 @@ func TestAssignLicense(t *testing.T) {
 
 	// Assign ENTERPRISEPACK license
 	enterpriseSkuId := "6fd2c87f-b296-42f0-b197-1e91e994b900"
-	assignReq := map[string]interface{}{
-		"addLicenses": []map[string]interface{}{
+	assignReq := map[string]any{
+		"addLicenses": []map[string]any{
 			{"skuId": enterpriseSkuId},
 		},
-		"removeLicenses": []interface{}{},
+		"removeLicenses": []any{},
 	}
 
 	assignBody, _ := json.Marshal(assignReq)
@@ -123,23 +122,20 @@ func TestAssignLicense(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK from assignLicense")
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert assignedLicenses contains ENTERPRISEPACK entry
-	assignedLicenses, ok := result["assignedLicenses"].([]interface{})
+	assignedLicenses, ok := result["assignedLicenses"].([]any)
 	require.True(t, ok, "Expected assignedLicenses in response")
 	assert.NotEmpty(t, assignedLicenses, "Expected at least one assigned license")
 
 	// Verify the assigned license has the correct SKU
 	foundLicense := false
 	for _, lic := range assignedLicenses {
-		licMap := lic.(map[string]interface{})
+		licMap := lic.(map[string]any)
 		if skuId, ok := licMap["skuId"].(string); ok && skuId == enterpriseSkuId {
 			foundLicense = true
-			if skuPartNumber, ok := licMap["skuPartNumber"].(string); ok {
-				assert.Equal(t, "ENTERPRISEPACK", skuPartNumber, "Expected skuPartNumber to be ENTERPRISEPACK")
-			}
 		}
 	}
 	assert.True(t, foundLicense, "Expected to find ENTERPRISEPACK license in assignedLicenses")
@@ -152,22 +148,19 @@ func TestAssignLicense(t *testing.T) {
 	defer getResp.Body.Close()
 
 	getBody, _ := io.ReadAll(getResp.Body)
-	var getUser map[string]interface{}
+	var getUser map[string]any
 	require.NoError(t, json.Unmarshal(getBody, &getUser))
 
-	getAssignedLicenses, ok := getUser["assignedLicenses"].([]interface{})
+	getAssignedLicenses, ok := getUser["assignedLicenses"].([]any)
 	require.True(t, ok, "Expected assignedLicenses in GET user response")
 	assert.NotEmpty(t, getAssignedLicenses, "Expected license to be persisted")
 
 	// Verify the persisted license
 	foundPersistedLicense := false
 	for _, lic := range getAssignedLicenses {
-		licMap := lic.(map[string]interface{})
+		licMap := lic.(map[string]any)
 		if skuId, ok := licMap["skuId"].(string); ok && skuId == enterpriseSkuId {
 			foundPersistedLicense = true
-			if skuPartNumber, ok := licMap["skuPartNumber"].(string); ok {
-				assert.Equal(t, "ENTERPRISEPACK", skuPartNumber, "Expected persisted skuPartNumber to be ENTERPRISEPACK")
-			}
 		}
 	}
 	assert.True(t, foundPersistedLicense, "Expected to find ENTERPRISEPACK license in persisted user")
@@ -188,14 +181,14 @@ func TestAssignLicenseWithDisabledPlans(t *testing.T) {
 	// Assign ENTERPRISEPACK license with disabled plans
 	enterpriseSkuId := "6fd2c87f-b296-42f0-b197-1e91e994b900"
 	disabledPlans := []string{"Exchange Online", "SharePoint Online"}
-	assignReq := map[string]interface{}{
-		"addLicenses": []map[string]interface{}{
+	assignReq := map[string]any{
+		"addLicenses": []map[string]any{
 			{
 				"skuId":         enterpriseSkuId,
 				"disabledPlans": disabledPlans,
 			},
 		},
-		"removeLicenses": []interface{}{},
+		"removeLicenses": []any{},
 	}
 
 	assignBody, _ := json.Marshal(assignReq)
@@ -210,21 +203,21 @@ func TestAssignLicenseWithDisabledPlans(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK from assignLicense with disabled plans")
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Assert assignedLicenses contains the license with disabled plans
-	assignedLicenses, ok := result["assignedLicenses"].([]interface{})
+	assignedLicenses, ok := result["assignedLicenses"].([]any)
 	require.True(t, ok)
 	assert.NotEmpty(t, assignedLicenses)
 
 	// Verify the disabled plans are preserved
 	foundLicense := false
 	for _, lic := range assignedLicenses {
-		licMap := lic.(map[string]interface{})
+		licMap := lic.(map[string]any)
 		if skuId, ok := licMap["skuId"].(string); ok && skuId == enterpriseSkuId {
 			foundLicense = true
-			if licDisabledPlans, ok := licMap["disabledPlans"].([]interface{}); ok {
+			if licDisabledPlans, ok := licMap["disabledPlans"].([]any); ok {
 				// Verify disabled plans match
 				assert.Equal(t, len(disabledPlans), len(licDisabledPlans), "Expected disabled plans count to match")
 				for _, dp := range licDisabledPlans {
@@ -248,14 +241,14 @@ func TestRemoveLicense(t *testing.T) {
 
 	// Create a user with ENTERPRISEPACK license
 	enterpriseSkuId := "6fd2c87f-b296-42f0-b197-1e91e994b900"
-	userWithLicense := map[string]interface{}{
+	userWithLicense := map[string]any{
 		"displayName":       "Remove License User",
 		"userPrincipalName": "removelicense@saldeti.local",
 		"mail":              "removelicense@saldeti.local",
 		"accountEnabled":    true,
 		"userType":          "Member",
-		"assignedLicenses": []map[string]interface{}{
-			{"skuId": enterpriseSkuId, "skuPartNumber": "ENTERPRISEPACK"},
+		"assignedLicenses": []map[string]any{
+			{"skuId": enterpriseSkuId},
 		},
 	}
 	createdUser := createUserViaHTTP(t, tss, token, userWithLicense)
@@ -270,15 +263,15 @@ func TestRemoveLicense(t *testing.T) {
 	defer getResp.Body.Close()
 
 	getBody, _ := io.ReadAll(getResp.Body)
-	var getUser map[string]interface{}
+	var getUser map[string]any
 	require.NoError(t, json.Unmarshal(getBody, &getUser))
-	initialLicenses := getUser["assignedLicenses"].([]interface{})
+	initialLicenses := getUser["assignedLicenses"].([]any)
 	assert.NotEmpty(t, initialLicenses, "Expected initial license to be present")
 
 	// Remove the license
-	removeReq := map[string]interface{}{
-		"addLicenses":    []interface{}{},
-		"removeLicenses": []map[string]interface{}{{"skuId": enterpriseSkuId}},
+	removeReq := map[string]any{
+		"addLicenses":    []any{},
+		"removeLicenses": []string{enterpriseSkuId},
 	}
 
 	removeBody, _ := json.Marshal(removeReq)
@@ -293,13 +286,13 @@ func TestRemoveLicense(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK from assignLicense removing license")
 
 	respBody, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(respBody, &result))
 
 	// Verify license is removed from response (assignedLicenses should be nil or empty)
 	finalLicenses, ok := result["assignedLicenses"]
 	if ok && finalLicenses != nil {
-		finalLicensesSlice, ok := finalLicenses.([]interface{})
+		finalLicensesSlice, ok := finalLicenses.([]any)
 		if !ok {
 			t.Logf("assignedLicenses is not a slice: %T", finalLicenses)
 		} else {
@@ -316,12 +309,12 @@ func TestRemoveLicense(t *testing.T) {
 	defer getResp2.Body.Close()
 
 	getBody2, _ := io.ReadAll(getResp2.Body)
-	var getUser2 map[string]interface{}
+	var getUser2 map[string]any
 	require.NoError(t, json.Unmarshal(getBody2, &getUser2))
 
 	persistedLicenses := getUser2["assignedLicenses"]
 	if persistedLicenses != nil {
-		persistedLicensesSlice, ok := persistedLicenses.([]interface{})
+		persistedLicensesSlice, ok := persistedLicenses.([]any)
 		if ok {
 			assert.Empty(t, persistedLicensesSlice, "Expected no licenses in persisted user after removal")
 		}
@@ -344,12 +337,12 @@ func TestAssignLicenseMultiple(t *testing.T) {
 	// Assign EMS + ENTERPRISEPACK licenses
 	emsSkuId := "efccb6f7-5641-4e0e-bd10-b4976e1bf68e"
 	enterpriseSkuId := "6fd2c87f-b296-42f0-b197-1e91e994b900"
-	assignReq := map[string]interface{}{
-		"addLicenses": []map[string]interface{}{
+	assignReq := map[string]any{
+		"addLicenses": []map[string]any{
 			{"skuId": emsSkuId},
 			{"skuId": enterpriseSkuId},
 		},
-		"removeLicenses": []interface{}{},
+		"removeLicenses": []any{},
 	}
 
 	assignBody, _ := json.Marshal(assignReq)
@@ -364,18 +357,18 @@ func TestAssignLicenseMultiple(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK from assignLicense with multiple licenses")
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 
 	// Verify both licenses are present
-	assignedLicenses, ok := result["assignedLicenses"].([]interface{})
+	assignedLicenses, ok := result["assignedLicenses"].([]any)
 	require.True(t, ok)
 	assert.Len(t, assignedLicenses, 2, "Expected 2 assigned licenses")
 
 	foundEms := false
 	foundEnterprise := false
 	for _, lic := range assignedLicenses {
-		licMap := lic.(map[string]interface{})
+		licMap := lic.(map[string]any)
 		if skuId, ok := licMap["skuId"].(string); ok {
 			if skuId == emsSkuId {
 				foundEms = true
@@ -389,9 +382,9 @@ func TestAssignLicenseMultiple(t *testing.T) {
 	assert.True(t, foundEnterprise, "Expected ENTERPRISEPACK license to be present")
 
 	// Remove EMS license, keep ENTERPRISEPACK
-	removeReq := map[string]interface{}{
-		"addLicenses":    []interface{}{},
-		"removeLicenses": []map[string]interface{}{{"skuId": emsSkuId}},
+	removeReq := map[string]any{
+		"addLicenses":    []any{},
+		"removeLicenses": []string{emsSkuId},
 	}
 
 	removeBody, _ := json.Marshal(removeReq)
@@ -406,17 +399,17 @@ func TestAssignLicenseMultiple(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp2.StatusCode, "Expected 200 OK from assignLicense removing EMS")
 
 	body2, _ := io.ReadAll(resp2.Body)
-	var result2 map[string]interface{}
+	var result2 map[string]any
 	require.NoError(t, json.Unmarshal(body2, &result2))
 
 	// Verify only ENTERPRISEPACK remains
-	finalLicenses, ok := result2["assignedLicenses"].([]interface{})
+	finalLicenses, ok := result2["assignedLicenses"].([]any)
 	require.True(t, ok)
 	assert.Len(t, finalLicenses, 1, "Expected 1 assigned license after removing EMS")
 
 	foundOnlyEnterprise := false
 	for _, lic := range finalLicenses {
-		licMap := lic.(map[string]interface{})
+		licMap := lic.(map[string]any)
 		if skuId, ok := licMap["skuId"].(string); ok && skuId == enterpriseSkuId {
 			foundOnlyEnterprise = true
 		}
@@ -438,11 +431,11 @@ func TestAssignLicenseDuplicate(t *testing.T) {
 
 	// Assign ENTERPRISEPACK license first time
 	enterpriseSkuId := "6fd2c87f-b296-42f0-b197-1e91e994b900"
-	assignReq1 := map[string]interface{}{
-		"addLicenses": []map[string]interface{}{
+	assignReq1 := map[string]any{
+		"addLicenses": []map[string]any{
 			{"skuId": enterpriseSkuId},
 		},
-		"removeLicenses": []interface{}{},
+		"removeLicenses": []any{},
 	}
 
 	assignBody1, _ := json.Marshal(assignReq1)
@@ -456,19 +449,19 @@ func TestAssignLicenseDuplicate(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp1.StatusCode, "Expected 200 OK from first assignLicense")
 
 	body1, _ := io.ReadAll(resp1.Body)
-	var result1 map[string]interface{}
+	var result1 map[string]any
 	require.NoError(t, json.Unmarshal(body1, &result1))
 
-	licenses1, ok := result1["assignedLicenses"].([]interface{})
+	licenses1, ok := result1["assignedLicenses"].([]any)
 	require.True(t, ok)
 	assert.Len(t, licenses1, 1, "Expected 1 license after first assignment")
 
 	// Assign the same license again (should be idempotent)
-	assignReq2 := map[string]interface{}{
-		"addLicenses": []map[string]interface{}{
+	assignReq2 := map[string]any{
+		"addLicenses": []map[string]any{
 			{"skuId": enterpriseSkuId},
 		},
-		"removeLicenses": []interface{}{},
+		"removeLicenses": []any{},
 	}
 
 	assignBody2, _ := json.Marshal(assignReq2)
@@ -482,11 +475,11 @@ func TestAssignLicenseDuplicate(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp2.StatusCode, "Expected 200 OK from second assignLicense")
 
 	body2, _ := io.ReadAll(resp2.Body)
-	var result2 map[string]interface{}
+	var result2 map[string]any
 	require.NoError(t, json.Unmarshal(body2, &result2))
 
 	// Verify only one license entry (not duplicated)
-	licenses2, ok := result2["assignedLicenses"].([]interface{})
+	licenses2, ok := result2["assignedLicenses"].([]any)
 	require.True(t, ok)
 	assert.Len(t, licenses2, 1, "Expected 1 license after duplicate assignment (idempotent)")
 }
@@ -501,11 +494,11 @@ func TestAssignLicenseInvalidUser(t *testing.T) {
 	// Try to assign a license to a non-existent user ID
 	nonExistentUserID := "00000000-0000-0000-0000-000000000000"
 	enterpriseSkuId := "6fd2c87f-b296-42f0-b197-1e91e994b900"
-	assignReq := map[string]interface{}{
-		"addLicenses": []map[string]interface{}{
+	assignReq := map[string]any{
+		"addLicenses": []map[string]any{
 			{"skuId": enterpriseSkuId},
 		},
-		"removeLicenses": []interface{}{},
+		"removeLicenses": []any{},
 	}
 
 	assignBody, _ := json.Marshal(assignReq)
@@ -539,11 +532,11 @@ func TestFilterByLicenseAfterAssign(t *testing.T) {
 
 	// Assign ENTERPRISEPACK license to one user
 	enterpriseSkuId := "6fd2c87f-b296-42f0-b197-1e91e994b900"
-	assignReq := map[string]interface{}{
-		"addLicenses": []map[string]interface{}{
+	assignReq := map[string]any{
+		"addLicenses": []map[string]any{
 			{"skuId": enterpriseSkuId},
 		},
-		"removeLicenses": []interface{}{},
+		"removeLicenses": []any{},
 	}
 
 	assignBody, _ := json.Marshal(assignReq)
@@ -556,7 +549,7 @@ func TestFilterByLicenseAfterAssign(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK from assignLicense")
 
 	// Filter users by assignedLicenses using $filter
-	filterQuery := url.QueryEscape(`assignedLicenses/any(a:a/skuPartNumber eq 'ENTERPRISEPACK')`)
+	filterQuery := url.QueryEscape(fmt.Sprintf(`assignedLicenses/any(a:a/skuId eq '%s')`, enterpriseSkuId))
 	filterReq, _ := http.NewRequest("GET", fmt.Sprintf("%s/v1.0/users?$filter=%s", tss.BaseURL, filterQuery), nil)
 	filterReq.Header.Set("Authorization", "Bearer "+token)
 	filterResp, err := tss.Server.Client().Do(filterReq)
@@ -566,10 +559,10 @@ func TestFilterByLicenseAfterAssign(t *testing.T) {
 	require.Equal(t, http.StatusOK, filterResp.StatusCode, "Expected 200 OK from filter query")
 
 	filterBody, _ := io.ReadAll(filterResp.Body)
-	var filterResult map[string]interface{}
+	var filterResult map[string]any
 	require.NoError(t, json.Unmarshal(filterBody, &filterResult))
 
-	values, ok := filterResult["value"].([]interface{})
+	values, ok := filterResult["value"].([]any)
 	require.True(t, ok, "Expected value to be an array")
 
 	// Verify only the licensed user is returned
@@ -578,7 +571,7 @@ func TestFilterByLicenseAfterAssign(t *testing.T) {
 	foundLicensed := false
 	foundUnlicensed := false
 	for _, v := range values {
-		user := v.(map[string]interface{})
+		user := v.(map[string]any)
 		userID, ok := user["id"].(string)
 		if !ok {
 			continue

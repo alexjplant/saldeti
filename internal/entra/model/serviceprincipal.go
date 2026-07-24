@@ -4,8 +4,8 @@ import "time"
 
 type ServicePrincipal struct {
 	ODataType                          string               `json:"@odata.type,omitempty"`
-	ID                                 string               `json:"id,omitempty"`
-	AppID                              string               `json:"appId,omitempty"`
+	ID                                 string               `json:"id"`
+	AppID                              string               `json:"appId"`
 	DisplayName                        string               `json:"displayName,omitempty"`
 	Description                        string               `json:"description,omitempty"`
 	AppOwnerOrganizationID             string               `json:"appOwnerOrganizationId,omitempty"`
@@ -23,9 +23,9 @@ type ServicePrincipal struct {
 	PreferredTokenSigningKeyThumbprint string               `json:"preferredTokenSigningKeyThumbprint,omitempty"`
 	PreferredSingleSignOnMode          string               `json:"preferredSingleSignOnMode,omitempty"`
 	SamlMetadataURL                    string               `json:"samlMetadataUrl,omitempty"`
-	Tags                               []string              `json:"tags,omitempty"`
-	Owners                             []DirectoryObjectRef  `json:"-"`
-	VerifiedPublisher                  *VerifiedPublisher    `json:"verifiedPublisher,omitempty"`
+	Tags                               []string             `json:"tags,omitempty"`
+	Owners                             []DirectoryObjectRef `json:"-"`
+	VerifiedPublisher                  *VerifiedPublisher   `json:"verifiedPublisher,omitempty"`
 	NotificationEmailAddresses         []string             `json:"notificationEmailAddresses,omitempty"`
 	CreatedDateTime                    *time.Time           `json:"createdDateTime,omitempty"`
 	DeletedDateTime                    *time.Time           `json:"deletedDateTime,omitempty"`

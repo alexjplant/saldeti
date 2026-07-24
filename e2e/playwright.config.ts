@@ -14,6 +14,6 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' }, testIgnore: '**/google/**' },
-    { name: 'google-chromium', use: { browserName: 'chromium' }, testDir: './tests/google' },
+    { name: 'google-chromium', use: { browserName: 'chromium', baseURL: 'https://localhost:9444' }, testDir: './tests/google' },
   ],
 });

@@ -200,14 +200,14 @@ func TestServicePrincipal_Owners(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 	result := readJSON(t, resp2)
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 	assert.NotEmpty(t, value, "Owners list should not be empty")
 
 	// Verify the owner is in the list
 	found := false
 	for _, item := range value {
-		if owner, ok := item.(map[string]interface{}); ok {
+		if owner, ok := item.(map[string]any); ok {
 			if owner["id"] == userID {
 				found = true
 				break
@@ -252,13 +252,13 @@ func TestServicePrincipal_MemberOf(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 	result := readJSON(t, resp2)
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 
 	// Verify the group appears in the memberOf list
 	found := false
 	for _, item := range value {
-		if g, ok := item.(map[string]interface{}); ok {
+		if g, ok := item.(map[string]any); ok {
 			if g["id"] == groupID {
 				found = true
 				break
@@ -298,7 +298,7 @@ func TestServicePrincipal_OAuth2Grants(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 	result := readJSON(t, resp2)
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok, "Response should have value array")
 	assert.NotEmpty(t, value, "OAuth2 grants list should not be empty")
 }
@@ -367,7 +367,7 @@ func TestServicePrincipal_PolicyNavigation(t *testing.T) {
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 			result := readJSON(t, resp)
-			value, ok := result["value"].([]interface{})
+			value, ok := result["value"].([]any)
 			require.True(t, ok, "Response should have value array")
 			assert.Empty(t, value, "Policy list should be empty")
 		})

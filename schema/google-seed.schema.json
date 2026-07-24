@@ -16,6 +16,9 @@
         },
         "notes": {
           "type": "string"
+        },
+        "status": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -95,6 +98,12 @@
             "$ref": "#/$defs/GoogleSeedMobileDevice"
           },
           "type": "array"
+        },
+        "group_settings": {
+          "items": {
+            "$ref": "#/$defs/GoogleSeedGroupSettings"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -146,6 +155,66 @@
       "type": "object",
       "required": [
         "email"
+      ]
+    },
+    "GoogleSeedGroupSettings": {
+      "properties": {
+        "group_email": {
+          "type": "string"
+        },
+        "who_can_post_message": {
+          "type": "string"
+        },
+        "is_archived": {
+          "type": "boolean"
+        },
+        "allow_external_members": {
+          "type": "boolean"
+        },
+        "archive_only": {
+          "type": "boolean"
+        },
+        "who_can_join": {
+          "type": "string"
+        },
+        "who_can_view_group": {
+          "type": "string"
+        },
+        "who_can_view_membership": {
+          "type": "string"
+        },
+        "who_can_invite": {
+          "type": "string"
+        },
+        "who_can_add": {
+          "type": "string"
+        },
+        "who_can_moderate_members": {
+          "type": "string"
+        },
+        "who_can_moderate_content": {
+          "type": "string"
+        },
+        "message_moderation_level": {
+          "type": "string"
+        },
+        "primary_language": {
+          "type": "string"
+        },
+        "include_custom_footer": {
+          "type": "boolean"
+        },
+        "custom_footer_text": {
+          "type": "string"
+        },
+        "max_message_bytes": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "group_email"
       ]
     },
     "GoogleSeedMobileDevice": {

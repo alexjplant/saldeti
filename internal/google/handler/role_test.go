@@ -26,7 +26,7 @@ func TestGoogleRoleCRUD(t *testing.T) {
 	resp = doGoogleRequest(t, http.MethodGet, base+"/roles", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	items, ok := body["items"].([]interface{})
+	items, ok := body["items"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(items), 1)
 

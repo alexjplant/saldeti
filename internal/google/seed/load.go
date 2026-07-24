@@ -35,6 +35,7 @@ func LoadFromFile(path string) (*GoogleSeedConfig, error) {
 func validateConfig(cfg *GoogleSeedConfig) error {
 	// Collect user emails for cross-reference validation
 	userEmails := make(map[string]bool)
+	groupEmails := make(map[string]bool)
 
 	for i, client := range cfg.Clients {
 		if client.ClientID == "" {
@@ -56,6 +57,7 @@ func validateConfig(cfg *GoogleSeedConfig) error {
 		if group.Email == "" {
 			return fmt.Errorf("groups[%d]: email is required", i)
 		}
+		groupEmails[group.Email] = true
 	}
 
 	for i, ou := range cfg.OrgUnits {
@@ -97,6 +99,15 @@ func validateConfig(cfg *GoogleSeedConfig) error {
 		}
 	}
 
+	for i, gs := range cfg.GroupSettings {
+		if gs.GroupEmail == "" {
+			return fmt.Errorf("group_settings[%d]: group_email is required", i)
+		}
+		if !groupEmails[gs.GroupEmail] {
+			return fmt.Errorf("group_settings[%d]: group_email %s does not reference any group", i, gs.GroupEmail)
+		}
+	}
+
 	// Cross-reference: member_emails in groups must reference existing user primary_email values
 	for i, group := range cfg.Groups {
 		for j, memberEmail := range group.MemberEmails {
@@ -135,13 +146,13 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 	for _, user := range cfg.Users {
 		displayName := strings.TrimSpace(user.GivenName + " " + user.FamilyName)
 		u := model.User{
-			Kind:          "admin#directory#user",
-			PrimaryEmail:  user.PrimaryEmail,
-			GivenName:     user.GivenName,
-			FamilyName:    user.FamilyName,
-			DisplayName:   displayName,
-			Suspended:     user.Suspended,
-			OrgUnitPath:   user.OrgUnitPath,
+			Kind:         "admin#directory#user",
+			PrimaryEmail: user.PrimaryEmail,
+			GivenName:    user.GivenName,
+			FamilyName:   user.FamilyName,
+			DisplayName:  displayName,
+			Suspended:    user.Suspended,
+			OrgUnitPath:  user.OrgUnitPath,
 		}
 		if displayName != "" {
 			u.Name = &model.UserName{
@@ -320,9 +331,9 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 	// 10. Create domains
 	for _, seedDomain := range cfg.Domains {
 		domain := model.Domain{
-			Kind:        "admin#directory#domain",
-			DomainName:  seedDomain.DomainName,
-			IsPrimary:   seedDomain.IsPrimary,
+			Kind:       "admin#directory#domain",
+			DomainName: seedDomain.DomainName,
+			IsPrimary:  seedDomain.IsPrimary,
 		}
 		if _, err := s.AddDomain(ctx, customerID, domain); err != nil {
 			return fmt.Errorf("failed to add domain %s: %w", seedDomain.DomainName, err)
@@ -331,13 +342,17 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 
 	// 11. Create ChromeOS devices
 	for _, seedDevice := range cfg.ChromeOSDevices {
+		status := seedDevice.Status
+		if status == "" {
+			status = "ACTIVE"
+		}
 		device := model.ChromeOSDevice{
 			Kind:          "admin#directory#chromeosdevice",
 			SerialNumber:  seedDevice.SerialNumber,
 			AnnotatedUser: seedDevice.AnnotatedUser,
 			OrgUnitPath:   seedDevice.OrgUnitPath,
 			Notes:         seedDevice.Notes,
-			Status:        "ACTIVE",
+			Status:        status,
 		}
 		if _, err := s.CreateChromeOSDevice(ctx, customerID, device); err != nil {
 			return fmt.Errorf("failed to create ChromeOS device %s: %w", seedDevice.SerialNumber, err)
@@ -348,13 +363,72 @@ func SeedFromConfig(s store.Store, cfg *GoogleSeedConfig) error {
 	for _, seedDevice := range cfg.MobileDevices {
 		device := model.MobileDevice{
 			Kind:         "admin#directory#mobiledevice",
-			SerialNumber:  seedDevice.SerialNumber,
+			SerialNumber: seedDevice.SerialNumber,
 			Model:        seedDevice.Model,
 			Os:           seedDevice.OS,
-			Status:        seedDevice.Status,
+			Status:       seedDevice.Status,
 		}
 		if _, err := s.CreateMobileDevice(ctx, customerID, device); err != nil {
 			return fmt.Errorf("failed to create mobile device %s: %w", seedDevice.SerialNumber, err)
+		}
+	}
+
+	// 13. Apply group settings (must be after groups are created)
+	for _, gs := range cfg.GroupSettings {
+		patch := map[string]any{}
+		if gs.WhoCanPostMessage != "" {
+			patch["whoCanPostMessage"] = gs.WhoCanPostMessage
+		}
+		if gs.IsArchived != nil {
+			patch["isArchived"] = *gs.IsArchived
+		}
+		if gs.AllowExternalMembers != nil {
+			patch["allowExternalMembers"] = *gs.AllowExternalMembers
+		}
+		if gs.ArchiveOnly != nil {
+			patch["archiveOnly"] = *gs.ArchiveOnly
+		}
+		if gs.WhoCanJoin != "" {
+			patch["whoCanJoin"] = gs.WhoCanJoin
+		}
+		if gs.WhoCanViewGroup != "" {
+			patch["whoCanViewGroup"] = gs.WhoCanViewGroup
+		}
+		if gs.WhoCanViewMembership != "" {
+			patch["whoCanViewMembership"] = gs.WhoCanViewMembership
+		}
+		if gs.WhoCanInvite != "" {
+			patch["whoCanInvite"] = gs.WhoCanInvite
+		}
+		if gs.WhoCanAdd != "" {
+			patch["whoCanAdd"] = gs.WhoCanAdd
+		}
+		if gs.WhoCanModerateMembers != "" {
+			patch["whoCanModerateMembers"] = gs.WhoCanModerateMembers
+		}
+		if gs.WhoCanModerateContent != "" {
+			patch["whoCanModerateContent"] = gs.WhoCanModerateContent
+		}
+		if gs.MessageModerationLevel != "" {
+			patch["messageModerationLevel"] = gs.MessageModerationLevel
+		}
+		if gs.PrimaryLanguage != "" {
+			patch["primaryLanguage"] = gs.PrimaryLanguage
+		}
+		if gs.IncludeCustomFooter != nil {
+			patch["includeCustomFooter"] = *gs.IncludeCustomFooter
+		}
+		if gs.CustomFooterText != "" {
+			patch["customFooterText"] = gs.CustomFooterText
+		}
+		if gs.MaxMessageBytes != 0 {
+			patch["maxMessageBytes"] = gs.MaxMessageBytes
+		}
+		if len(patch) == 0 {
+			continue
+		}
+		if _, err := s.PatchGroupSettings(ctx, gs.GroupEmail, patch); err != nil {
+			return fmt.Errorf("failed to apply group settings for %s: %w", gs.GroupEmail, err)
 		}
 	}
 

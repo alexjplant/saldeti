@@ -13,13 +13,14 @@ type Store interface {
 	// Auth
 	GetClient(ctx context.Context, clientID string) (clientSecret string, err error)
 	RegisterClient(ctx context.Context, clientID, clientSecret string) error
+	ListClients(ctx context.Context) ([]Client, error)
 
 	// Users (Tier 1B)
 	CreateUser(ctx context.Context, user model.User) (model.User, error)
 	GetUser(ctx context.Context, userKey string) (*model.User, error)
 	ListUsers(ctx context.Context, opts model.ListOptions) ([]model.User, string, error)
 	UpdateUser(ctx context.Context, userKey string, user model.User) (*model.User, error)
-	PatchUser(ctx context.Context, userKey string, patch map[string]interface{}) (*model.User, error)
+	PatchUser(ctx context.Context, userKey string, patch map[string]any) (*model.User, error)
 	DeleteUser(ctx context.Context, userKey string) error
 	MakeAdmin(ctx context.Context, userKey string, isAdmin bool) error
 	UndeleteUser(ctx context.Context, userKey string) (*model.User, error)
@@ -40,7 +41,7 @@ type Store interface {
 	GetGroup(ctx context.Context, groupKey string) (*model.Group, error)
 	ListGroups(ctx context.Context, opts model.ListOptions) ([]model.Group, string, error)
 	UpdateGroup(ctx context.Context, groupKey string, group model.Group) (*model.Group, error)
-	PatchGroup(ctx context.Context, groupKey string, patch map[string]interface{}) (*model.Group, error)
+	PatchGroup(ctx context.Context, groupKey string, patch map[string]any) (*model.Group, error)
 	DeleteGroup(ctx context.Context, groupKey string) error
 
 	// Group Aliases
@@ -61,7 +62,7 @@ type Store interface {
 	GetOrgUnit(ctx context.Context, customerID, orgUnitPath string) (*model.OrgUnit, error)
 	CreateOrgUnit(ctx context.Context, customerID string, ou model.OrgUnit) (model.OrgUnit, error)
 	UpdateOrgUnit(ctx context.Context, customerID, orgUnitPath string, ou model.OrgUnit) (*model.OrgUnit, error)
-	PatchOrgUnit(ctx context.Context, customerID, orgUnitPath string, patch map[string]interface{}) (*model.OrgUnit, error)
+	PatchOrgUnit(ctx context.Context, customerID, orgUnitPath string, patch map[string]any) (*model.OrgUnit, error)
 	DeleteOrgUnit(ctx context.Context, customerID, orgUnitPath string) error
 
 	// Roles (Tier 2B)
@@ -69,7 +70,7 @@ type Store interface {
 	GetRole(ctx context.Context, customerID, roleID string) (*model.Role, error)
 	CreateRole(ctx context.Context, customerID string, role model.Role) (model.Role, error)
 	UpdateRole(ctx context.Context, customerID, roleID string, role model.Role) (*model.Role, error)
-	PatchRole(ctx context.Context, customerID, roleID string, patch map[string]interface{}) (*model.Role, error)
+	PatchRole(ctx context.Context, customerID, roleID string, patch map[string]any) (*model.Role, error)
 	DeleteRole(ctx context.Context, customerID, roleID string) error
 
 	// Role Assignments (Tier 2C)
@@ -84,7 +85,7 @@ type Store interface {
 	// Customers (Tier 3A)
 	GetCustomer(ctx context.Context, customerKey string) (*model.Customer, error)
 	UpdateCustomer(ctx context.Context, customerKey string, customer model.Customer) (*model.Customer, error)
-	PatchCustomer(ctx context.Context, customerKey string, patch map[string]interface{}) (*model.Customer, error)
+	PatchCustomer(ctx context.Context, customerKey string, patch map[string]any) (*model.Customer, error)
 
 	// Domains (Tier 3B)
 	ListDomains(ctx context.Context, customerID string) ([]model.Domain, error)
@@ -101,7 +102,7 @@ type Store interface {
 	// ChromeOS Devices (Tier 4A)
 	ListChromeOSDevices(ctx context.Context, customerID string, opts model.ListOptions) ([]model.ChromeOSDevice, string, error)
 	GetChromeOSDevice(ctx context.Context, customerID, deviceID string) (*model.ChromeOSDevice, error)
-	PatchChromeOSDevice(ctx context.Context, customerID, deviceID string, patch map[string]interface{}) (*model.ChromeOSDevice, error)
+	PatchChromeOSDevice(ctx context.Context, customerID, deviceID string, patch map[string]any) (*model.ChromeOSDevice, error)
 	UpdateChromeOSDevice(ctx context.Context, customerID, deviceID string, device model.ChromeOSDevice) (*model.ChromeOSDevice, error)
 	MoveChromeOSDevices(ctx context.Context, customerID string, deviceIDs []string, orgUnitPath string) error
 	BatchChangeChromeOSStatus(ctx context.Context, customerID string, deviceIDs []string, action string) error
@@ -185,7 +186,7 @@ type Store interface {
 	GetSchema(ctx context.Context, customerID, schemaKey string) (*model.Schema, error)
 	CreateSchema(ctx context.Context, customerID string, schema model.Schema) (model.Schema, error)
 	UpdateSchema(ctx context.Context, customerID, schemaKey string, schema model.Schema) (*model.Schema, error)
-	PatchSchema(ctx context.Context, customerID, schemaKey string, patch map[string]interface{}) (*model.Schema, error)
+	PatchSchema(ctx context.Context, customerID, schemaKey string, patch map[string]any) (*model.Schema, error)
 	DeleteSchema(ctx context.Context, customerID, schemaKey string) error
 
 	// Calendar Resources (Tier 8B)
@@ -193,7 +194,7 @@ type Store interface {
 	GetCalendarResource(ctx context.Context, customerID, resourceID string) (*model.CalendarResource, error)
 	CreateCalendarResource(ctx context.Context, customerID string, resource model.CalendarResource) (model.CalendarResource, error)
 	UpdateCalendarResource(ctx context.Context, customerID, resourceID string, resource model.CalendarResource) (*model.CalendarResource, error)
-	PatchCalendarResource(ctx context.Context, customerID, resourceID string, patch map[string]interface{}) (*model.CalendarResource, error)
+	PatchCalendarResource(ctx context.Context, customerID, resourceID string, patch map[string]any) (*model.CalendarResource, error)
 	DeleteCalendarResource(ctx context.Context, customerID, resourceID string) error
 
 	// Buildings (Tier 8C)
@@ -201,7 +202,7 @@ type Store interface {
 	GetBuilding(ctx context.Context, customerID, buildingID string) (*model.Building, error)
 	CreateBuilding(ctx context.Context, customerID string, building model.Building) (model.Building, error)
 	UpdateBuilding(ctx context.Context, customerID, buildingID string, building model.Building) (*model.Building, error)
-	PatchBuilding(ctx context.Context, customerID, buildingID string, patch map[string]interface{}) (*model.Building, error)
+	PatchBuilding(ctx context.Context, customerID, buildingID string, patch map[string]any) (*model.Building, error)
 	DeleteBuilding(ctx context.Context, customerID, buildingID string) error
 
 	// Features (Tier 8D)
@@ -209,14 +210,14 @@ type Store interface {
 	GetFeature(ctx context.Context, customerID, featureKey string) (*model.Feature, error)
 	CreateFeature(ctx context.Context, customerID string, feature model.Feature) (model.Feature, error)
 	UpdateFeature(ctx context.Context, customerID, featureKey string, feature model.Feature) (*model.Feature, error)
-	PatchFeature(ctx context.Context, customerID, featureKey string, patch map[string]interface{}) (*model.Feature, error)
+	PatchFeature(ctx context.Context, customerID, featureKey string, patch map[string]any) (*model.Feature, error)
 	DeleteFeature(ctx context.Context, customerID, featureKey string) error
 	RenameFeature(ctx context.Context, customerID, oldName, newName string) error
 
 	// Groups Settings (Tier 8E)
 	GetGroupSettings(ctx context.Context, groupUniqueId string) (*model.GroupSettings, error)
 	UpdateGroupSettings(ctx context.Context, groupUniqueId string, settings model.GroupSettings) (*model.GroupSettings, error)
-	PatchGroupSettings(ctx context.Context, groupUniqueId string, patch map[string]interface{}) (*model.GroupSettings, error)
+	PatchGroupSettings(ctx context.Context, groupUniqueId string, patch map[string]any) (*model.GroupSettings, error)
 
 	// Data Transfer (Tier 8F)
 	ListTransferApplications(ctx context.Context) ([]model.TransferApplication, error)
@@ -232,4 +233,10 @@ type Store interface {
 	UpdateSubscription(ctx context.Context, name string, sub model.Subscription) (*model.Subscription, error)
 	DeleteSubscription(ctx context.Context, name string) error
 	ReactivateSubscription(ctx context.Context, name string) error
+}
+
+// Client represents a registered OAuth client.
+type Client struct {
+	ClientID     string
+	ClientSecret string
 }

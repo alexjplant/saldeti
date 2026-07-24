@@ -24,8 +24,8 @@ func listDomainsHandler(st store.Store) gin.HandlerFunc {
 			domains = []model.Domain{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#directory#domains",
-			"etag":  "\"placeholder\"",
+			"kind":    "admin#directory#domains",
+			"etag":    "\"placeholder\"",
 			"domains": domains,
 		})
 	}
@@ -101,8 +101,8 @@ func listDomainAliasesHandler(st store.Store) gin.HandlerFunc {
 			aliases = []model.DomainAlias{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#directory#domainAliases",
-			"etag":  "\"placeholder\"",
+			"kind":          "admin#directory#domainAliases",
+			"etag":          "\"placeholder\"",
 			"domainAliases": aliases,
 		})
 	}

@@ -34,7 +34,7 @@ func TestMintToken(t *testing.T) {
 	assert.Equal(t, subject, claims.Subject)
 	assert.Equal(t, scopes, claims.Scopes)
 	assert.Equal(t, roles, claims.Roles)
-	assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
+	assert.True(t, claims.ExpiresAt.After(time.Now()))
 }
 
 func TestValidateToken_Invalid(t *testing.T) {
@@ -45,7 +45,7 @@ func TestValidateToken_Invalid(t *testing.T) {
 	// Test with expired token
 	token, err := MintToken("tenant", "client", "subject", []string{"scope"}, []string{"role"}, -time.Hour, "", "")
 	require.NoError(t, err)
-	
+
 	_, err = ValidateToken(token)
 	assert.Error(t, err)
 }

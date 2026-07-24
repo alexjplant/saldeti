@@ -157,9 +157,7 @@ func TestHtmxSPCreate(t *testing.T) {
 	formData.Set("displayName", "Test SP via UI")
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/ui/servicePrincipals/new", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req = csrfHtmxPost(t, ts, "/ui/servicePrincipals/new", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	// The response could be either:
@@ -186,9 +184,7 @@ func TestHtmxSPCreateValidation(t *testing.T) {
 	formData := url.Values{}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/new", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/new", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -225,9 +221,7 @@ func TestHtmxSPEdit(t *testing.T) {
 	formData.Set("accountEnabled", "on")
 
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/edit", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req = csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/edit", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusFound {
@@ -288,8 +282,7 @@ func TestHtmxSPDelete(t *testing.T) {
 
 	// POST delete
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+createdSPID+"/delete", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+createdSPID+"/delete", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusFound {
@@ -336,9 +329,7 @@ func TestHtmxSPAddPassword(t *testing.T) {
 	formData.Set("credentialDisplayName", "Test SP Password")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/credentials/password/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/credentials/password/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -368,8 +359,7 @@ func TestHtmxSPRemovePassword(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/credentials/password/"+keyID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/credentials/password/"+keyID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -389,9 +379,7 @@ func TestHtmxSPAddKey(t *testing.T) {
 	formData.Set("keyUsage", "Verify")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/credentials/key/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/credentials/key/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -423,8 +411,7 @@ func TestHtmxSPRemoveKey(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/credentials/key/"+keyID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/credentials/key/"+keyID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -443,9 +430,7 @@ func TestHtmxSPAddOwner(t *testing.T) {
 	formData.Set("userId", userID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/owners/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/owners/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -478,8 +463,7 @@ func TestHtmxSPRemoveOwner(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/owners/"+userID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/owners/"+userID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -507,9 +491,7 @@ func TestHtmxSPAddOwnerValidation(t *testing.T) {
 	formData := url.Values{}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/servicePrincipals/"+spID+"/owners/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/servicePrincipals/"+spID+"/owners/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -520,5 +502,3 @@ func TestHtmxSPAddOwnerValidation(t *testing.T) {
 		t.Error("Expected 'No user selected' error message in response")
 	}
 }
-
-

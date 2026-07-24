@@ -8,20 +8,19 @@ import (
 	"io"
 	"net/http"
 
-	absser "github.com/microsoft/kiota-abstractions-go/serialization"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/gin-gonic/gin"
+	absser "github.com/microsoft/kiota-abstractions-go/serialization"
+	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/rs/zerolog/log"
 	"github.com/saldeti/saldeti/internal/entra/model"
-	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 )
 
 func ptrString(s string) *string { return &s }
-func ptrBool(b bool) *bool { return &b }
-func ptrInt32(i int32) *int32 { return &i }
+func ptrBool(b bool) *bool       { return &b }
+func ptrInt32(i int32) *int32    { return &i }
 
 func newInsecureHTTPClient() *http.Client {
 	return &http.Client{
@@ -60,6 +59,17 @@ func newGraphClient(baseURL string, cred azcore.TokenCredential) (*msgraphsdk.Gr
 	client.GetAdapter().SetBaseUrl(baseURL + "/v1.0")
 
 	return client, nil
+}
+
+// userSelectFields is the complete set of user properties the UI requests via
+// $select. Microsoft Graph does NOT return assignedLicenses by default — it must
+// be explicitly requested — so it is always included here. This list mirrors the
+// fields consumed by sdkUserToModel and the user detail/edit templates.
+var userSelectFields = []string{
+	"id", "displayName", "givenName", "surname", "userPrincipalName",
+	"mail", "mailNickname", "jobTitle", "department", "officeLocation",
+	"mobilePhone", "accountEnabled", "createdDateTime", "userType",
+	"assignedLicenses",
 }
 
 // Convert SDK user to model.User for templates
@@ -112,10 +122,6 @@ func sdkUserToModel(u models.Userable) model.User {
 			al := model.AssignedLicense{}
 			if skuId := lic.GetSkuId(); skuId != nil {
 				al.SkuID = skuId.String()
-				// Look up skuPartNumber from the static catalog
-				if skuPN, found := model.FindSkuBySkuID(al.SkuID); found {
-					al.SkuPartNumber = skuPN
-				}
 			}
 			if disabledPlans := lic.GetDisabledPlans(); disabledPlans != nil {
 				for _, plan := range disabledPlans {
@@ -123,41 +129,6 @@ func sdkUserToModel(u models.Userable) model.User {
 				}
 			}
 			m.AssignedLicenses = append(m.AssignedLicenses, al)
-		}
-	}
-
-	return m
-}
-
-// Convert SDK directory object to model.DirectoryObject
-func sdkDirObjToModel(d models.DirectoryObjectable) model.DirectoryObject {
-	m := model.DirectoryObject{}
-	if v := d.GetId(); v != nil {
-		m.ID = *v
-	}
-	if v := d.GetOdataType(); v != nil {
-		m.ODataType = *v
-	}
-
-	// Try to extract display name via type assertion (SDK creates concrete types via discriminator)
-	if u, ok := d.(models.Userable); ok {
-		if v := u.GetDisplayName(); v != nil {
-			m.DisplayName = *v
-		}
-	} else if g, ok := d.(models.Groupable); ok {
-		if v := g.GetDisplayName(); v != nil {
-			m.DisplayName = *v
-		}
-	}
-
-	// Fallback: try additional data
-	if m.DisplayName == "" {
-		if additionalData := d.GetAdditionalData(); additionalData != nil {
-			if dn, ok := additionalData["displayName"]; ok && dn != nil {
-				if s, ok := dn.(string); ok {
-					m.DisplayName = s
-				}
-			}
 		}
 	}
 
@@ -219,214 +190,117 @@ func strVal(s *string) string {
 	return *s
 }
 
-// Helper to build form map from gin context
-func buildFormMap(c *gin.Context) map[string]string {
-	return map[string]string{
-		"displayName":       c.PostForm("displayName"),
-		"givenName":         c.PostForm("givenName"),
-		"surname":           c.PostForm("surname"),
-		"userPrincipalName": c.PostForm("userPrincipalName"),
-		"mail":              c.PostForm("mail"),
-		"mailNickname":      c.PostForm("mailNickname"),
-		"jobTitle":          c.PostForm("jobTitle"),
-		"department":        c.PostForm("department"),
-		"officeLocation":    c.PostForm("officeLocation"),
-		"mobilePhone":       c.PostForm("mobilePhone"),
-		"accountEnabled":    c.PostForm("accountEnabled"),
-	}
-}
+// errNotFound is returned by doGet when the API responds with HTTP 404 and the
+// caller requested nilOn404 semantics. Fetch methods translate it back into a
+// nil result so that callers see "no data" rather than an error.
+var errNotFound = fmt.Errorf("not found")
 
-// fetchDirectoryObjects performs a manual HTTP GET to fetch a list of directory objects
-func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]model.DirectoryObject, error) {
+// doGet performs an authenticated GET against the Microsoft Graph endpoint at
+// url and decodes the JSON response body into result. It centralises the token
+// acquisition, request construction, header, status-code handling and decoding
+// logic previously duplicated across the fetch* methods.
+//
+// When nilOn404 is true, an HTTP 404 response is reported via errNotFound (the
+// caller is expected to map this to a nil result). When nilOn404 is false, a
+// 404 is treated like any other non-200 status and surfaced as an error. Any
+// other non-200 status is logged and returned as an error.
+func (h *UIHandler) doGet(ctx context.Context, url string, result any, nilOn404 bool) error {
 	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
 		Scopes: []string{"https://graph.microsoft.com/.default"},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
+		return fmt.Errorf("failed to get token: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token.Token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
+		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil // No data is OK for some endpoints
+	if resp.StatusCode == http.StatusNotFound && nilOn404 {
+		return errNotFound
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
+		return fmt.Errorf("request failed with status %d", resp.StatusCode)
 	}
 
+	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	return nil
+}
+
+// fetchDirectoryObjects performs a manual HTTP GET to fetch a list of directory objects
+func (h *UIHandler) fetchDirectoryObjects(ctx context.Context, url string) ([]model.DirectoryObject, error) {
 	var result struct {
 		Value []model.DirectoryObject `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil // No data is OK for some endpoints
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }
 
 // fetchDirectoryObject performs a manual HTTP GET to fetch a single directory object
 func (h *UIHandler) fetchDirectoryObject(ctx context.Context, url string) (*model.DirectoryObject, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var obj model.DirectoryObject
-	if err := json.NewDecoder(resp.Body).Decode(&obj); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &obj, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return &obj, nil
 }
 
 // fetchSubscribedSkus fetches the subscribed SKU catalog from the API
 func (h *UIHandler) fetchSubscribedSkus(ctx context.Context) ([]model.SubscribedSku, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", h.baseURL+"/v1.0/subscribedSkus", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("body", string(body)).Msg("API request failed for subscribedSkus")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.SubscribedSku `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, h.baseURL+"/v1.0/subscribedSkus", &result, false); err != nil {
+		return nil, err
 	}
 	return result.Value, nil
 }
 
 // fetchAppRoleAssignments performs a manual HTTP GET to fetch a list of app role assignments
 func (h *UIHandler) fetchAppRoleAssignments(ctx context.Context, url string) ([]model.AppRoleAssignment, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.AppRoleAssignment `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }
 
 // fetchOAuth2PermissionGrants performs a manual HTTP GET to fetch a list of OAuth2 permission grants
 func (h *UIHandler) fetchOAuth2PermissionGrants(ctx context.Context, url string) ([]model.OAuth2PermissionGrant, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.OAuth2PermissionGrant `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }
@@ -605,40 +479,14 @@ func sdkServicePrincipalToModel(sp models.ServicePrincipalable) model.ServicePri
 
 // fetchExtensionProperties performs a manual HTTP GET to fetch a list of extension properties
 func (h *UIHandler) fetchExtensionProperties(ctx context.Context, url string) ([]model.ExtensionProperty, error) {
-	token, err := h.cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://graph.microsoft.com/.default"},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Error().Int("status", resp.StatusCode).Str("url", url).Str("body", string(body)).Msg("API request failed")
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	var result struct {
 		Value []model.ExtensionProperty `json:"value"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := h.doGet(ctx, url, &result, true); err != nil {
+		if err == errNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return result.Value, nil
 }

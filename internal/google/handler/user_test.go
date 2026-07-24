@@ -38,7 +38,7 @@ func TestGoogleUserCRUD(t *testing.T) {
 	resp = doGoogleRequest(t, http.MethodGet, base+"/users", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	users, ok := body["users"].([]interface{})
+	users, ok := body["users"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(users), 1)
 
@@ -50,11 +50,13 @@ func TestGoogleUserCRUD(t *testing.T) {
 	assert.Equal(t, "updated@example.com", body["primaryEmail"])
 
 	// Patch user
-	patchJSON := `{"givenName":"Patched"}`
+	patchJSON := `{"name":{"givenName":"Patched","familyName":"User"}}`
 	resp = doGoogleRequest(t, http.MethodPatch, base+"/users/updated@example.com", token, patchJSON)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	assert.Equal(t, "Patched", body["givenName"])
+	nameObj, ok := body["name"].(map[string]any)
+	require.True(t, ok, "expected name object in response")
+	assert.Equal(t, "Patched", nameObj["givenName"])
 
 	// Delete user
 	resp = doGoogleRequest(t, http.MethodDelete, base+"/users/"+userID, token, "")
@@ -91,7 +93,7 @@ func TestGoogleUserAliases(t *testing.T) {
 	resp = doGoogleRequest(t, http.MethodGet, base+"/users/"+userID+"/aliases", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	aliases, ok := body["aliases"].([]interface{})
+	aliases, ok := body["aliases"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(aliases), 1)
 
@@ -104,7 +106,7 @@ func TestGoogleUserAliases(t *testing.T) {
 	resp = doGoogleRequest(t, http.MethodGet, base+"/users/"+userID+"/aliases", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	aliases, ok = body["aliases"].([]interface{})
+	aliases, ok = body["aliases"].([]any)
 	require.True(t, ok)
 	assert.Len(t, aliases, 0)
 }

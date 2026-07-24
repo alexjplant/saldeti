@@ -36,8 +36,8 @@ func ApplicationAddPasswordHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"passwordCredential": map[string]interface{}{
+		payload := map[string]any{
+			"passwordCredential": map[string]any{
 				"displayName": displayName,
 			},
 		}
@@ -65,7 +65,7 @@ func ApplicationAddPasswordHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleCredentialResponse(c, id, FlashDanger, "Failed to add password. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
@@ -93,7 +93,7 @@ func ApplicationRemovePasswordHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"keyId": keyID,
 		}
 		payloadJSON, err := json.Marshal(payload)
@@ -120,7 +120,7 @@ func ApplicationRemovePasswordHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleCredentialResponse(c, id, FlashDanger, "Failed to remove password. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
@@ -168,8 +168,8 @@ func ApplicationAddKeyHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"keyCredential": map[string]interface{}{
+		payload := map[string]any{
+			"keyCredential": map[string]any{
 				"displayName": displayName,
 				"type":        keyType,
 				"usage":       keyUsage,
@@ -200,7 +200,7 @@ func ApplicationAddKeyHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleCredentialResponse(c, id, FlashDanger, "Failed to add key. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			body, _ := io.ReadAll(resp.Body)
@@ -228,7 +228,7 @@ func ApplicationRemoveKeyHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"keyId": keyID,
 		}
 		payloadJSON, err := json.Marshal(payload)
@@ -255,7 +255,7 @@ func ApplicationRemoveKeyHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleCredentialResponse(c, id, FlashDanger, "Failed to remove key. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)

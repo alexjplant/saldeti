@@ -25,7 +25,6 @@ func TestGroupListShowsGroups(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-
 	// Get group list
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/groups", nil)
@@ -54,7 +53,6 @@ func TestGroupSearch(t *testing.T) {
 
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
-
 
 	// Search for Engineering
 	w := httptest.NewRecorder()
@@ -103,7 +101,6 @@ func TestGroupDetail(t *testing.T) {
 		t.Fatal("Engineering Team not found in seed data")
 	}
 
-
 	// Get Engineering Team detail page
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/groups/"+engineeringTeamID, nil)
@@ -132,7 +129,6 @@ func TestGroupCreate(t *testing.T) {
 
 	// Setup test server with API and UI routes
 	ts, st := setupTestServer(t)
-
 
 	// Create new group
 	formData := url.Values{}
@@ -194,7 +190,6 @@ func TestGroupCreateValidation(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-
 	// Try to create group without required fields
 	formData := url.Values{}
 	formData.Set("description", "A test group")
@@ -245,7 +240,6 @@ func TestGroupEdit(t *testing.T) {
 	if engineeringTeamID == "" {
 		t.Fatal("Engineering Team not found in seed data")
 	}
-
 
 	// Update Engineering Team
 	formData := url.Values{}
@@ -317,7 +311,6 @@ func TestGroupDelete(t *testing.T) {
 		t.Fatalf("Failed to create test group: %v", err)
 	}
 
-
 	// Verify group exists before deletion
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/groups/"+createdGroup.ID, nil)
@@ -381,7 +374,6 @@ func TestGroupAddMember(t *testing.T) {
 	if henryID == "" {
 		t.Fatal("Henry Taylor not found in seed data")
 	}
-
 
 	// Add Henry to Engineering Team
 	formData := url.Values{}
@@ -450,7 +442,6 @@ func TestGroupRemoveMember(t *testing.T) {
 	if graceID == "" {
 		t.Fatal("Grace Lee not found in seed data")
 	}
-
 
 	// Verify Grace is in the group first
 	members, _, _ := st.ListMembers(ctx, engineeringTeamID, model.ListOptions{Top: 100})
@@ -547,7 +538,6 @@ func TestGroupAddOwner(t *testing.T) {
 		t.Fatal("Henry Taylor not found in seed data")
 	}
 
-
 	// Add Henry as owner of Engineering Team
 	formData := url.Values{}
 	formData.Set("userId", henryID)
@@ -628,7 +618,6 @@ func TestGroupRemoveOwner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to add Alice as owner: %v", err)
 	}
-
 
 	// Verify Alice is an owner
 	owners, _, _ := st.ListOwners(ctx, createdGroup.ID, model.ListOptions{Top: 100})
@@ -714,9 +703,7 @@ func TestHtmxGroupAddMember(t *testing.T) {
 	formData.Set("userId", ivanID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+allStaffID+"/members/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+allStaffID+"/members/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -765,8 +752,7 @@ func TestHtmxGroupRemoveMember(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+engineeringTeamID+"/members/"+graceID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+engineeringTeamID+"/members/"+graceID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -815,9 +801,7 @@ func TestHtmxGroupAddOwner(t *testing.T) {
 	formData.Set("userId", aliceID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+marketingTeamID+"/owners/add", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+marketingTeamID+"/owners/add", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -879,8 +863,7 @@ func TestHtmxGroupRemoveOwner(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/groups/"+createdGroup.ID+"/owners/"+aliceID+"/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/groups/"+createdGroup.ID+"/owners/"+aliceID+"/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -1011,5 +994,3 @@ func TestGroupEditForm(t *testing.T) {
 		t.Error("Expected 'Engineering Team' in group edit form")
 	}
 }
- 
-

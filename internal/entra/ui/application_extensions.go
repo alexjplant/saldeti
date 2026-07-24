@@ -46,7 +46,7 @@ func ApplicationCreateExtensionHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"name":          name,
 			"dataType":      dataType,
 			"targetObjects": targets,
@@ -75,7 +75,7 @@ func ApplicationCreateExtensionHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleExtensionsResponse(c, id, FlashDanger, "Failed to create extension property. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusCreated {
 			body, _ := io.ReadAll(resp.Body)
@@ -119,7 +119,7 @@ func ApplicationDeleteExtensionHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleExtensionsResponse(c, id, FlashDanger, "Failed to delete extension property. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusNoContent {
 			body, _ := io.ReadAll(resp.Body)

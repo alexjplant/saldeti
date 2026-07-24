@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/microsoftgraph/msgraph-sdk-go/users"
 	"github.com/saldeti/saldeti/internal/entra/model"
 )
 
@@ -12,7 +13,11 @@ func UserDetailHandler(h *UIHandler) gin.HandlerFunc {
 		id := c.Param("id")
 		ctx := c.Request.Context()
 
-		sdkUser, err := h.client.Users().ByUserId(id).Get(ctx, nil)
+		sdkUser, err := h.client.Users().ByUserId(id).Get(ctx, &users.UserItemRequestBuilderGetRequestConfiguration{
+			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
+				Select: userSelectFields,
+			},
+		})
 		if err != nil {
 			SetFlash(c, FlashDanger, "User not found")
 			c.Redirect(http.StatusFound, "/ui/users")

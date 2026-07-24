@@ -2,11 +2,14 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
+	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,6 +17,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/saldeti/saldeti/internal/google/model"
+)
+
+const (
+	maxGoogleResults     = 500 // Maximum number of Google API results returned per page
+	defaultGoogleResults = 100 // Default results per page when maxResults is omitted or invalid
 )
 
 var (
@@ -48,8 +56,8 @@ type memoryStore struct {
 	roles           map[string]map[string]*model.Role
 	roleAssignments map[string]map[string]*model.RoleAssignment
 
-	customers    map[string]*model.Customer
-	domains      map[string]map[string]*model.Domain
+	customers     map[string]*model.Customer
+	domains       map[string]map[string]*model.Domain
 	domainAliases map[string]map[string]*model.DomainAlias
 
 	chromeDevices  map[string]map[string]*model.ChromeOSDevice
@@ -132,6 +140,12 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{store: ms}
 }
 
+// checkContext returns the context's error if it has been cancelled or expired.
+// All public methods call this at entry to honour context cancellation.
+func checkContext(ctx context.Context) error {
+	return ctx.Err()
+}
+
 // Pagination helpers
 
 func encodePageToken(offset int) string {
@@ -154,12 +168,17 @@ func decodePageToken(token string) int {
 }
 
 // Generic patch helper using JSON round-trip
-func applyPatchMap(data interface{}, patch map[string]interface{}) error {
+func applyPatchMap(data any, patch map[string]any) error {
+	// Snapshot json:"-" fields before round-trip. Fields tagged json:"-"
+	// are omitted during marshal and cannot be repopulated during unmarshal,
+	// so they would be silently zeroed by the round-trip below.
+	savedFields := extractJsonIgnoreFields(data)
+
 	original, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	var originalMap map[string]interface{}
+	var originalMap map[string]any
 	if err := json.Unmarshal(original, &originalMap); err != nil {
 		return err
 	}
@@ -170,7 +189,50 @@ func applyPatchMap(data interface{}, patch map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(merged, data)
+	if err := json.Unmarshal(merged, data); err != nil {
+		return err
+	}
+
+	// Restore json:"-" field values that did not survive the round-trip.
+	restoreJsonIgnoreFields(data, savedFields)
+	return nil
+}
+
+// extractJsonIgnoreFields returns detached copies of the values of every
+// top-level struct field on data tagged `json:"-"`. data must be a pointer to
+// a struct. Iteration order matches field declaration order, which is stable
+// across calls, so the returned slice can be passed back to
+// restoreJsonIgnoreFields to set fields in the same order.
+func extractJsonIgnoreFields(data any) []reflect.Value {
+	v := reflect.ValueOf(data).Elem()
+	t := v.Type()
+	var saved []reflect.Value
+	for i := 0; i < v.NumField(); i++ {
+		if t.Field(i).Tag.Get("json") == "-" {
+			fieldVal := v.Field(i)
+			copyVal := reflect.New(fieldVal.Type()).Elem()
+			copyVal.Set(fieldVal)
+			saved = append(saved, copyVal)
+		}
+	}
+	return saved
+}
+
+// restoreJsonIgnoreFields sets every top-level struct field on data tagged
+// `json:"-"` back to the corresponding value in saved (matched by position).
+// It is a no-op when saved is empty (e.g. the struct has no json:"-" fields).
+func restoreJsonIgnoreFields(data any, saved []reflect.Value) {
+	v := reflect.ValueOf(data).Elem()
+	t := v.Type()
+	idx := 0
+	for i := 0; i < v.NumField(); i++ {
+		if t.Field(i).Tag.Get("json") == "-" {
+			if idx < len(saved) {
+				v.Field(i).Set(saved[idx])
+				idx++
+			}
+		}
+	}
 }
 
 // User key resolver
@@ -203,20 +265,26 @@ func (ms *memoryStore) resolveGroupKey(groupKey string) (*model.Group, error) {
 }
 
 func maxResultsOrDefault(mr int) int {
-	if mr <= 0 || mr > 500 {
-		return 100
+	if mr <= 0 || mr > maxGoogleResults {
+		return defaultGoogleResults
 	}
 	return mr
 }
 
 // Ping verifies the store is accessible.
 func (s *MemoryStore) Ping(ctx context.Context) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
 // Auth
 
 func (s *MemoryStore) GetClient(ctx context.Context, clientID string) (string, error) {
+	if err := checkContext(ctx); err != nil {
+		return "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	entry, ok := s.store.clients[clientID]
@@ -227,6 +295,9 @@ func (s *MemoryStore) GetClient(ctx context.Context, clientID string) (string, e
 }
 
 func (s *MemoryStore) RegisterClient(ctx context.Context, clientID, clientSecret string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.clients[clientID]; ok {
@@ -236,9 +307,33 @@ func (s *MemoryStore) RegisterClient(ctx context.Context, clientID, clientSecret
 	return nil
 }
 
+// ListClients returns all registered OAuth clients, sorted by ClientID for determinism.
+func (s *MemoryStore) ListClients(ctx context.Context) ([]Client, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	clients := make([]Client, 0, len(s.store.clients))
+	for _, entry := range s.store.clients {
+		clients = append(clients, Client{
+			ClientID:     entry.clientID,
+			ClientSecret: entry.clientSecret,
+		})
+	}
+	sort.Slice(clients, func(i, j int) bool {
+		return clients[i].ClientID < clients[j].ClientID
+	})
+	return clients, nil
+}
+
 // Users
 
 func (s *MemoryStore) CreateUser(ctx context.Context, user model.User) (model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.User{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if user.ID == "" {
@@ -259,12 +354,18 @@ func (s *MemoryStore) CreateUser(ctx context.Context, user model.User) (model.Us
 }
 
 func (s *MemoryStore) GetUser(ctx context.Context, userKey string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	return s.store.resolveUserKey(userKey)
 }
 
 func (s *MemoryStore) ListUsers(ctx context.Context, opts model.ListOptions) ([]model.User, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var all []model.User
@@ -293,6 +394,9 @@ func (s *MemoryStore) ListUsers(ctx context.Context, opts model.ListOptions) ([]
 }
 
 func (s *MemoryStore) UpdateUser(ctx context.Context, userKey string, user model.User) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -313,7 +417,10 @@ func (s *MemoryStore) UpdateUser(ctx context.Context, userKey string, user model
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchUser(ctx context.Context, userKey string, patch map[string]interface{}) (*model.User, error) {
+func (s *MemoryStore) PatchUser(ctx context.Context, userKey string, patch map[string]any) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -331,6 +438,9 @@ func (s *MemoryStore) PatchUser(ctx context.Context, userKey string, patch map[s
 }
 
 func (s *MemoryStore) DeleteUser(ctx context.Context, userKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -346,6 +456,9 @@ func (s *MemoryStore) DeleteUser(ctx context.Context, userKey string) error {
 }
 
 func (s *MemoryStore) MakeAdmin(ctx context.Context, userKey string, isAdmin bool) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -358,6 +471,9 @@ func (s *MemoryStore) MakeAdmin(ctx context.Context, userKey string, isAdmin boo
 }
 
 func (s *MemoryStore) UndeleteUser(ctx context.Context, userKey string) (*model.User, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	// Try deletedUsers by ID
@@ -374,12 +490,18 @@ func (s *MemoryStore) UndeleteUser(ctx context.Context, userKey string) (*model.
 }
 
 func (s *MemoryStore) SignOutUser(ctx context.Context, userKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
 // User Aliases
 
 func (s *MemoryStore) AddUserAlias(ctx context.Context, userKey string, alias string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -393,6 +515,9 @@ func (s *MemoryStore) AddUserAlias(ctx context.Context, userKey string, alias st
 }
 
 func (s *MemoryStore) ListUserAliases(ctx context.Context, userKey string) ([]string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -406,6 +531,9 @@ func (s *MemoryStore) ListUserAliases(ctx context.Context, userKey string) ([]st
 }
 
 func (s *MemoryStore) RemoveUserAlias(ctx context.Context, userKey string, alias string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -427,6 +555,9 @@ func (s *MemoryStore) RemoveUserAlias(ctx context.Context, userKey string, alias
 // User Photos
 
 func (s *MemoryStore) GetUserPhoto(ctx context.Context, userKey string) (*model.UserPhoto, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -442,6 +573,9 @@ func (s *MemoryStore) GetUserPhoto(ctx context.Context, userKey string) (*model.
 }
 
 func (s *MemoryStore) UpdateUserPhoto(ctx context.Context, userKey string, photo model.UserPhoto) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -454,6 +588,9 @@ func (s *MemoryStore) UpdateUserPhoto(ctx context.Context, userKey string, photo
 }
 
 func (s *MemoryStore) DeleteUserPhoto(ctx context.Context, userKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -467,6 +604,9 @@ func (s *MemoryStore) DeleteUserPhoto(ctx context.Context, userKey string) error
 // Groups
 
 func (s *MemoryStore) CreateGroup(ctx context.Context, group model.Group) (model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Group{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if group.ID == "" {
@@ -487,12 +627,18 @@ func (s *MemoryStore) CreateGroup(ctx context.Context, group model.Group) (model
 }
 
 func (s *MemoryStore) GetGroup(ctx context.Context, groupKey string) (*model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	return s.store.resolveGroupKey(groupKey)
 }
 
 func (s *MemoryStore) ListGroups(ctx context.Context, opts model.ListOptions) ([]model.Group, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var all []model.Group
@@ -519,6 +665,9 @@ func (s *MemoryStore) ListGroups(ctx context.Context, opts model.ListOptions) ([
 }
 
 func (s *MemoryStore) UpdateGroup(ctx context.Context, groupKey string, group model.Group) (*model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -539,7 +688,10 @@ func (s *MemoryStore) UpdateGroup(ctx context.Context, groupKey string, group mo
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchGroup(ctx context.Context, groupKey string, patch map[string]interface{}) (*model.Group, error) {
+func (s *MemoryStore) PatchGroup(ctx context.Context, groupKey string, patch map[string]any) (*model.Group, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -557,6 +709,9 @@ func (s *MemoryStore) PatchGroup(ctx context.Context, groupKey string, patch map
 }
 
 func (s *MemoryStore) DeleteGroup(ctx context.Context, groupKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -573,6 +728,9 @@ func (s *MemoryStore) DeleteGroup(ctx context.Context, groupKey string) error {
 // Group Aliases
 
 func (s *MemoryStore) AddGroupAlias(ctx context.Context, groupKey string, alias string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -586,6 +744,9 @@ func (s *MemoryStore) AddGroupAlias(ctx context.Context, groupKey string, alias 
 }
 
 func (s *MemoryStore) ListGroupAliases(ctx context.Context, groupKey string) ([]string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -599,6 +760,9 @@ func (s *MemoryStore) ListGroupAliases(ctx context.Context, groupKey string) ([]
 }
 
 func (s *MemoryStore) RemoveGroupAlias(ctx context.Context, groupKey string, alias string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -620,6 +784,9 @@ func (s *MemoryStore) RemoveGroupAlias(ctx context.Context, groupKey string, ali
 // Members
 
 func (s *MemoryStore) ListMembers(ctx context.Context, groupKey string, opts model.ListOptions) ([]model.Member, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -654,6 +821,9 @@ func (s *MemoryStore) ListMembers(ctx context.Context, groupKey string, opts mod
 }
 
 func (s *MemoryStore) GetMember(ctx context.Context, groupKey, memberKey string) (*model.Member, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -680,6 +850,9 @@ func (s *MemoryStore) GetMember(ctx context.Context, groupKey, memberKey string)
 }
 
 func (s *MemoryStore) AddMember(ctx context.Context, groupKey string, member model.Member) (model.Member, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Member{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -698,6 +871,9 @@ func (s *MemoryStore) AddMember(ctx context.Context, groupKey string, member mod
 }
 
 func (s *MemoryStore) UpdateMember(ctx context.Context, groupKey, memberKey string, member model.Member) (*model.Member, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -734,6 +910,9 @@ func (s *MemoryStore) UpdateMember(ctx context.Context, groupKey, memberKey stri
 }
 
 func (s *MemoryStore) RemoveMember(ctx context.Context, groupKey, memberKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -760,6 +939,9 @@ func (s *MemoryStore) RemoveMember(ctx context.Context, groupKey, memberKey stri
 }
 
 func (s *MemoryStore) HasMember(ctx context.Context, groupKey, memberKey string) (bool, error) {
+	if err := checkContext(ctx); err != nil {
+		return false, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	existing, err := s.store.resolveGroupKey(groupKey)
@@ -786,6 +968,9 @@ func (s *MemoryStore) HasMember(ctx context.Context, groupKey, memberKey string)
 // OrgUnits
 
 func (s *MemoryStore) ListOrgUnits(ctx context.Context, customerID string) ([]model.OrgUnit, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	ouMap, ok := s.store.orgUnits[customerID]
@@ -800,6 +985,9 @@ func (s *MemoryStore) ListOrgUnits(ctx context.Context, customerID string) ([]mo
 }
 
 func (s *MemoryStore) GetOrgUnit(ctx context.Context, customerID, orgUnitPath string) (*model.OrgUnit, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	ouMap, ok := s.store.orgUnits[customerID]
@@ -815,6 +1003,9 @@ func (s *MemoryStore) GetOrgUnit(ctx context.Context, customerID, orgUnitPath st
 }
 
 func (s *MemoryStore) CreateOrgUnit(ctx context.Context, customerID string, ou model.OrgUnit) (model.OrgUnit, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.OrgUnit{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if ou.OrgUnitId == "" {
@@ -829,6 +1020,9 @@ func (s *MemoryStore) CreateOrgUnit(ctx context.Context, customerID string, ou m
 }
 
 func (s *MemoryStore) UpdateOrgUnit(ctx context.Context, customerID, orgUnitPath string, ou model.OrgUnit) (*model.OrgUnit, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	ouMap, ok := s.store.orgUnits[customerID]
@@ -846,7 +1040,10 @@ func (s *MemoryStore) UpdateOrgUnit(ctx context.Context, customerID, orgUnitPath
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchOrgUnit(ctx context.Context, customerID, orgUnitPath string, patch map[string]interface{}) (*model.OrgUnit, error) {
+func (s *MemoryStore) PatchOrgUnit(ctx context.Context, customerID, orgUnitPath string, patch map[string]any) (*model.OrgUnit, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	ouMap, ok := s.store.orgUnits[customerID]
@@ -866,6 +1063,9 @@ func (s *MemoryStore) PatchOrgUnit(ctx context.Context, customerID, orgUnitPath 
 }
 
 func (s *MemoryStore) DeleteOrgUnit(ctx context.Context, customerID, orgUnitPath string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	ouMap, ok := s.store.orgUnits[customerID]
@@ -882,6 +1082,9 @@ func (s *MemoryStore) DeleteOrgUnit(ctx context.Context, customerID, orgUnitPath
 // Roles
 
 func (s *MemoryStore) ListRoles(ctx context.Context, customerID string) ([]model.Role, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	rMap, ok := s.store.roles[customerID]
@@ -896,6 +1099,9 @@ func (s *MemoryStore) ListRoles(ctx context.Context, customerID string) ([]model
 }
 
 func (s *MemoryStore) GetRole(ctx context.Context, customerID, roleID string) (*model.Role, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	rMap, ok := s.store.roles[customerID]
@@ -911,11 +1117,15 @@ func (s *MemoryStore) GetRole(ctx context.Context, customerID, roleID string) (*
 }
 
 func (s *MemoryStore) CreateRole(ctx context.Context, customerID string, role model.Role) (model.Role, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Role{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if role.RoleId == "" {
 		role.RoleId = uuid.New().String()
 	}
+	role.Kind = "admin#directory#role"
 	if s.store.roles[customerID] == nil {
 		s.store.roles[customerID] = make(map[string]*model.Role)
 	}
@@ -924,6 +1134,9 @@ func (s *MemoryStore) CreateRole(ctx context.Context, customerID string, role mo
 }
 
 func (s *MemoryStore) UpdateRole(ctx context.Context, customerID, roleID string, role model.Role) (*model.Role, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.roles[customerID]
@@ -934,12 +1147,16 @@ func (s *MemoryStore) UpdateRole(ctx context.Context, customerID, roleID string,
 		return nil, ErrNotFound
 	}
 	role.RoleId = roleID
+	role.Kind = "admin#directory#role"
 	rMap[roleID] = &role
 	cp := role
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchRole(ctx context.Context, customerID, roleID string, patch map[string]interface{}) (*model.Role, error) {
+func (s *MemoryStore) PatchRole(ctx context.Context, customerID, roleID string, patch map[string]any) (*model.Role, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.roles[customerID]
@@ -958,6 +1175,9 @@ func (s *MemoryStore) PatchRole(ctx context.Context, customerID, roleID string, 
 }
 
 func (s *MemoryStore) DeleteRole(ctx context.Context, customerID, roleID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.roles[customerID]
@@ -974,6 +1194,9 @@ func (s *MemoryStore) DeleteRole(ctx context.Context, customerID, roleID string)
 // Role Assignments
 
 func (s *MemoryStore) ListRoleAssignments(ctx context.Context, customerID string) ([]model.RoleAssignment, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	raMap, ok := s.store.roleAssignments[customerID]
@@ -988,6 +1211,9 @@ func (s *MemoryStore) ListRoleAssignments(ctx context.Context, customerID string
 }
 
 func (s *MemoryStore) GetRoleAssignment(ctx context.Context, customerID, assignmentID string) (*model.RoleAssignment, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	raMap, ok := s.store.roleAssignments[customerID]
@@ -1003,6 +1229,9 @@ func (s *MemoryStore) GetRoleAssignment(ctx context.Context, customerID, assignm
 }
 
 func (s *MemoryStore) CreateRoleAssignment(ctx context.Context, customerID string, ra model.RoleAssignment) (model.RoleAssignment, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.RoleAssignment{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if ra.RoleAssignmentId == "" {
@@ -1017,6 +1246,9 @@ func (s *MemoryStore) CreateRoleAssignment(ctx context.Context, customerID strin
 }
 
 func (s *MemoryStore) DeleteRoleAssignment(ctx context.Context, customerID, assignmentID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	raMap, ok := s.store.roleAssignments[customerID]
@@ -1033,6 +1265,9 @@ func (s *MemoryStore) DeleteRoleAssignment(ctx context.Context, customerID, assi
 // Privileges
 
 func (s *MemoryStore) ListPrivileges(ctx context.Context, customerID string) ([]model.Privilege, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	return []model.Privilege{
 		{Kind: "admin#directory#privilege", ServiceName: "admin", PrivilegeName: "ADMIN_CONSOLE_ALL", ServiceId: "serviceAdmin", IsOuScopable: true},
 		{Kind: "admin#directory#privilege", ServiceName: "admin", PrivilegeName: "USERS_MANAGE", ServiceId: "serviceAdmin", IsOuScopable: true},
@@ -1047,6 +1282,9 @@ func (s *MemoryStore) ListPrivileges(ctx context.Context, customerID string) ([]
 // Customers
 
 func (s *MemoryStore) GetCustomer(ctx context.Context, customerKey string) (*model.Customer, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	c, ok := s.store.customers[customerKey]
@@ -1058,6 +1296,9 @@ func (s *MemoryStore) GetCustomer(ctx context.Context, customerKey string) (*mod
 }
 
 func (s *MemoryStore) UpdateCustomer(ctx context.Context, customerKey string, customer model.Customer) (*model.Customer, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.customers[customerKey]; !ok {
@@ -1069,7 +1310,10 @@ func (s *MemoryStore) UpdateCustomer(ctx context.Context, customerKey string, cu
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchCustomer(ctx context.Context, customerKey string, patch map[string]interface{}) (*model.Customer, error) {
+func (s *MemoryStore) PatchCustomer(ctx context.Context, customerKey string, patch map[string]any) (*model.Customer, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	c, ok := s.store.customers[customerKey]
@@ -1086,6 +1330,9 @@ func (s *MemoryStore) PatchCustomer(ctx context.Context, customerKey string, pat
 // Domains
 
 func (s *MemoryStore) ListDomains(ctx context.Context, customerID string) ([]model.Domain, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dMap, ok := s.store.domains[customerID]
@@ -1100,6 +1347,9 @@ func (s *MemoryStore) ListDomains(ctx context.Context, customerID string) ([]mod
 }
 
 func (s *MemoryStore) GetDomain(ctx context.Context, customerID, domainName string) (*model.Domain, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dMap, ok := s.store.domains[customerID]
@@ -1115,6 +1365,9 @@ func (s *MemoryStore) GetDomain(ctx context.Context, customerID, domainName stri
 }
 
 func (s *MemoryStore) AddDomain(ctx context.Context, customerID string, domain model.Domain) (model.Domain, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Domain{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	domain.Kind = "admin#directory#domain"
@@ -1127,6 +1380,9 @@ func (s *MemoryStore) AddDomain(ctx context.Context, customerID string, domain m
 }
 
 func (s *MemoryStore) DeleteDomain(ctx context.Context, customerID, domainName string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	dMap, ok := s.store.domains[customerID]
@@ -1143,6 +1399,9 @@ func (s *MemoryStore) DeleteDomain(ctx context.Context, customerID, domainName s
 // Domain Aliases
 
 func (s *MemoryStore) ListDomainAliases(ctx context.Context, customerID string) ([]model.DomainAlias, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	daMap, ok := s.store.domainAliases[customerID]
@@ -1157,6 +1416,9 @@ func (s *MemoryStore) ListDomainAliases(ctx context.Context, customerID string) 
 }
 
 func (s *MemoryStore) GetDomainAlias(ctx context.Context, customerID, aliasName string) (*model.DomainAlias, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	daMap, ok := s.store.domainAliases[customerID]
@@ -1172,6 +1434,9 @@ func (s *MemoryStore) GetDomainAlias(ctx context.Context, customerID, aliasName 
 }
 
 func (s *MemoryStore) CreateDomainAlias(ctx context.Context, customerID string, da model.DomainAlias) (model.DomainAlias, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.DomainAlias{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	da.Kind = "admin#directory#domainAlias"
@@ -1183,6 +1448,9 @@ func (s *MemoryStore) CreateDomainAlias(ctx context.Context, customerID string, 
 }
 
 func (s *MemoryStore) DeleteDomainAlias(ctx context.Context, customerID, aliasName string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	daMap, ok := s.store.domainAliases[customerID]
@@ -1199,6 +1467,9 @@ func (s *MemoryStore) DeleteDomainAlias(ctx context.Context, customerID, aliasNa
 // ChromeOS Devices
 
 func (s *MemoryStore) ListChromeOSDevices(ctx context.Context, customerID string, opts model.ListOptions) ([]model.ChromeOSDevice, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dMap, ok := s.store.chromeDevices[customerID]
@@ -1230,6 +1501,9 @@ func (s *MemoryStore) ListChromeOSDevices(ctx context.Context, customerID string
 }
 
 func (s *MemoryStore) GetChromeOSDevice(ctx context.Context, customerID, deviceID string) (*model.ChromeOSDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dMap, ok := s.store.chromeDevices[customerID]
@@ -1244,7 +1518,10 @@ func (s *MemoryStore) GetChromeOSDevice(ctx context.Context, customerID, deviceI
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchChromeOSDevice(ctx context.Context, customerID, deviceID string, patch map[string]interface{}) (*model.ChromeOSDevice, error) {
+func (s *MemoryStore) PatchChromeOSDevice(ctx context.Context, customerID, deviceID string, patch map[string]any) (*model.ChromeOSDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	dMap, ok := s.store.chromeDevices[customerID]
@@ -1263,6 +1540,9 @@ func (s *MemoryStore) PatchChromeOSDevice(ctx context.Context, customerID, devic
 }
 
 func (s *MemoryStore) UpdateChromeOSDevice(ctx context.Context, customerID, deviceID string, device model.ChromeOSDevice) (*model.ChromeOSDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if s.store.chromeDevices[customerID] == nil {
@@ -1279,6 +1559,9 @@ func (s *MemoryStore) UpdateChromeOSDevice(ctx context.Context, customerID, devi
 }
 
 func (s *MemoryStore) MoveChromeOSDevices(ctx context.Context, customerID string, deviceIDs []string, orgUnitPath string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	dMap, ok := s.store.chromeDevices[customerID]
@@ -1294,6 +1577,9 @@ func (s *MemoryStore) MoveChromeOSDevices(ctx context.Context, customerID string
 }
 
 func (s *MemoryStore) BatchChangeChromeOSStatus(ctx context.Context, customerID string, deviceIDs []string, action string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	dMap, ok := s.store.chromeDevices[customerID]
@@ -1309,6 +1595,9 @@ func (s *MemoryStore) BatchChangeChromeOSStatus(ctx context.Context, customerID 
 }
 
 func (s *MemoryStore) CountChromeOSDevices(ctx context.Context, customerID string) (int64, error) {
+	if err := checkContext(ctx); err != nil {
+		return 0, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dMap, ok := s.store.chromeDevices[customerID]
@@ -1319,6 +1608,9 @@ func (s *MemoryStore) CountChromeOSDevices(ctx context.Context, customerID strin
 }
 
 func (s *MemoryStore) IssueChromeOSCommand(ctx context.Context, customerID, deviceID string, cmd model.ChromeOSCommand) (model.ChromeOSCommandResult, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.ChromeOSCommandResult{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	result := model.ChromeOSCommandResult{
@@ -1336,6 +1628,9 @@ func (s *MemoryStore) IssueChromeOSCommand(ctx context.Context, customerID, devi
 }
 
 func (s *MemoryStore) CreateChromeOSDevice(ctx context.Context, customerID string, device model.ChromeOSDevice) (model.ChromeOSDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.ChromeOSDevice{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if device.DeviceID == "" {
@@ -1350,6 +1645,9 @@ func (s *MemoryStore) CreateChromeOSDevice(ctx context.Context, customerID strin
 }
 
 func (s *MemoryStore) GetChromeOSCommand(ctx context.Context, customerID, deviceID, commandID string) (*model.ChromeOSCommandResult, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	cMap, ok := s.store.chromeCommands[customerID]
@@ -1367,6 +1665,9 @@ func (s *MemoryStore) GetChromeOSCommand(ctx context.Context, customerID, device
 // Mobile Devices
 
 func (s *MemoryStore) ListMobileDevices(ctx context.Context, customerID string, opts model.ListOptions) ([]model.MobileDevice, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dMap, ok := s.store.mobileDevices[customerID]
@@ -1397,6 +1698,9 @@ func (s *MemoryStore) ListMobileDevices(ctx context.Context, customerID string, 
 }
 
 func (s *MemoryStore) GetMobileDevice(ctx context.Context, customerID, resourceID string) (*model.MobileDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dMap, ok := s.store.mobileDevices[customerID]
@@ -1412,6 +1716,9 @@ func (s *MemoryStore) GetMobileDevice(ctx context.Context, customerID, resourceI
 }
 
 func (s *MemoryStore) DeleteMobileDevice(ctx context.Context, customerID, resourceID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	dMap, ok := s.store.mobileDevices[customerID]
@@ -1426,6 +1733,9 @@ func (s *MemoryStore) DeleteMobileDevice(ctx context.Context, customerID, resour
 }
 
 func (s *MemoryStore) CreateMobileDevice(ctx context.Context, customerID string, device model.MobileDevice) (model.MobileDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.MobileDevice{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if device.ResourceId == "" {
@@ -1440,6 +1750,9 @@ func (s *MemoryStore) CreateMobileDevice(ctx context.Context, customerID string,
 }
 
 func (s *MemoryStore) MobileDeviceAction(ctx context.Context, customerID, resourceID string, action model.MobileDeviceAction) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	dMap, ok := s.store.mobileDevices[customerID]
@@ -1470,6 +1783,9 @@ func (s *MemoryStore) MobileDeviceAction(ctx context.Context, customerID, resour
 // Cloud Identity Devices
 
 func (s *MemoryStore) ListCIDevices(ctx context.Context, opts model.ListOptions) ([]model.CloudIdentityDevice, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var all []model.CloudIdentityDevice
@@ -1496,6 +1812,9 @@ func (s *MemoryStore) ListCIDevices(ctx context.Context, opts model.ListOptions)
 }
 
 func (s *MemoryStore) GetCIDevice(ctx context.Context, name string) (*model.CloudIdentityDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	d, ok := s.store.ciDevices[name]
@@ -1507,6 +1826,9 @@ func (s *MemoryStore) GetCIDevice(ctx context.Context, name string) (*model.Clou
 }
 
 func (s *MemoryStore) CreateCIDevice(ctx context.Context, device model.CloudIdentityDevice) (model.CloudIdentityDevice, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.CloudIdentityDevice{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if device.Name == "" {
@@ -1523,6 +1845,9 @@ func (s *MemoryStore) CreateCIDevice(ctx context.Context, device model.CloudIden
 }
 
 func (s *MemoryStore) DeleteCIDevice(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.ciDevices[name]; !ok {
@@ -1534,6 +1859,9 @@ func (s *MemoryStore) DeleteCIDevice(ctx context.Context, name string) error {
 }
 
 func (s *MemoryStore) WipeCIDevice(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	d, ok := s.store.ciDevices[name]
@@ -1545,6 +1873,9 @@ func (s *MemoryStore) WipeCIDevice(ctx context.Context, name string) error {
 }
 
 func (s *MemoryStore) CancelWipeCIDevice(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	d, ok := s.store.ciDevices[name]
@@ -1558,6 +1889,9 @@ func (s *MemoryStore) CancelWipeCIDevice(ctx context.Context, name string) error
 // Device Users
 
 func (s *MemoryStore) ListDeviceUsers(ctx context.Context, parent string) ([]model.DeviceUser, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	users, ok := s.store.deviceUsers[parent]
@@ -1572,6 +1906,9 @@ func (s *MemoryStore) ListDeviceUsers(ctx context.Context, parent string) ([]mod
 }
 
 func (s *MemoryStore) GetDeviceUser(ctx context.Context, name string) (*model.DeviceUser, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	for _, users := range s.store.deviceUsers {
@@ -1586,6 +1923,9 @@ func (s *MemoryStore) GetDeviceUser(ctx context.Context, name string) (*model.De
 }
 
 func (s *MemoryStore) DeleteDeviceUser(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	for parent, users := range s.store.deviceUsers {
@@ -1600,6 +1940,9 @@ func (s *MemoryStore) DeleteDeviceUser(ctx context.Context, name string) error {
 }
 
 func (s *MemoryStore) ApproveDeviceUser(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	for _, users := range s.store.deviceUsers {
@@ -1614,6 +1957,9 @@ func (s *MemoryStore) ApproveDeviceUser(ctx context.Context, name string) error 
 }
 
 func (s *MemoryStore) BlockDeviceUser(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	for _, users := range s.store.deviceUsers {
@@ -1628,6 +1974,9 @@ func (s *MemoryStore) BlockDeviceUser(ctx context.Context, name string) error {
 }
 
 func (s *MemoryStore) WipeDeviceUser(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	for _, users := range s.store.deviceUsers {
@@ -1642,6 +1991,9 @@ func (s *MemoryStore) WipeDeviceUser(ctx context.Context, name string) error {
 }
 
 func (s *MemoryStore) CancelWipeDeviceUser(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	for _, users := range s.store.deviceUsers {
@@ -1656,12 +2008,18 @@ func (s *MemoryStore) CancelWipeDeviceUser(ctx context.Context, name string) err
 }
 
 func (s *MemoryStore) LookupDeviceUser(ctx context.Context, parent string) ([]model.DeviceUser, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	return s.ListDeviceUsers(ctx, parent)
 }
 
 // Cloud Identity Groups
 
 func (s *MemoryStore) ListCIGroups(ctx context.Context, opts model.ListOptions) ([]model.CloudIdentityGroup, string, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var all []model.CloudIdentityGroup
@@ -1688,6 +2046,9 @@ func (s *MemoryStore) ListCIGroups(ctx context.Context, opts model.ListOptions) 
 }
 
 func (s *MemoryStore) GetCIGroup(ctx context.Context, name string) (*model.CloudIdentityGroup, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	g, ok := s.store.ciGroups[name]
@@ -1699,6 +2060,9 @@ func (s *MemoryStore) GetCIGroup(ctx context.Context, name string) (*model.Cloud
 }
 
 func (s *MemoryStore) CreateCIGroup(ctx context.Context, group model.CloudIdentityGroup) (model.CloudIdentityGroup, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.CloudIdentityGroup{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if group.Name == "" {
@@ -1713,6 +2077,9 @@ func (s *MemoryStore) CreateCIGroup(ctx context.Context, group model.CloudIdenti
 }
 
 func (s *MemoryStore) UpdateCIGroup(ctx context.Context, name string, group model.CloudIdentityGroup) (*model.CloudIdentityGroup, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.ciGroups[name]; !ok {
@@ -1726,6 +2093,9 @@ func (s *MemoryStore) UpdateCIGroup(ctx context.Context, name string, group mode
 }
 
 func (s *MemoryStore) DeleteCIGroup(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.ciGroups[name]; !ok {
@@ -1737,6 +2107,9 @@ func (s *MemoryStore) DeleteCIGroup(ctx context.Context, name string) error {
 }
 
 func (s *MemoryStore) LookupCIGroup(ctx context.Context, key model.EntityKey) (*model.CloudIdentityGroup, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	for _, g := range s.store.ciGroups {
@@ -1749,6 +2122,9 @@ func (s *MemoryStore) LookupCIGroup(ctx context.Context, key model.EntityKey) (*
 }
 
 func (s *MemoryStore) SearchCIGroups(ctx context.Context, query string) ([]model.CloudIdentityGroup, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var results []model.CloudIdentityGroup
@@ -1763,20 +2139,26 @@ func (s *MemoryStore) SearchCIGroups(ctx context.Context, query string) ([]model
 }
 
 func (s *MemoryStore) GetCIGroupSecuritySettings(ctx context.Context, name string) (*model.SecuritySettings, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	if _, ok := s.store.ciGroups[name]; !ok {
 		return nil, ErrNotFound
 	}
 	return &model.SecuritySettings{
-		Name:                name + "/securitySettings",
-		WhoCanJoin:          "ANYONE_CAN_JOIN",
+		Name:                 name + "/securitySettings",
+		WhoCanJoin:           "ANYONE_CAN_JOIN",
 		WhoCanViewMembership: "ALL_MEMBERS_CAN_VIEW",
-		WhoCanDiscoverGroup: "ALL_IN_DOMAIN_CAN_DISCOVER",
+		WhoCanDiscoverGroup:  "ALL_IN_DOMAIN_CAN_DISCOVER",
 	}, nil
 }
 
 func (s *MemoryStore) UpdateCIGroupSecuritySettings(ctx context.Context, name string, settings model.SecuritySettings) (*model.SecuritySettings, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.ciGroups[name]; !ok {
@@ -1789,6 +2171,9 @@ func (s *MemoryStore) UpdateCIGroupSecuritySettings(ctx context.Context, name st
 // Cloud Identity Memberships
 
 func (s *MemoryStore) ListCIMemberships(ctx context.Context, parent string) ([]model.Membership, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	mMap, ok := s.store.ciMemberships[parent]
@@ -1803,6 +2188,9 @@ func (s *MemoryStore) ListCIMemberships(ctx context.Context, parent string) ([]m
 }
 
 func (s *MemoryStore) GetCIMembership(ctx context.Context, name string) (*model.Membership, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	for _, mMap := range s.store.ciMemberships {
@@ -1815,6 +2203,9 @@ func (s *MemoryStore) GetCIMembership(ctx context.Context, name string) (*model.
 }
 
 func (s *MemoryStore) CreateCIMembership(ctx context.Context, parent string, membership model.Membership) (model.Membership, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Membership{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if membership.Name == "" {
@@ -1831,12 +2222,14 @@ func (s *MemoryStore) CreateCIMembership(ctx context.Context, parent string, mem
 }
 
 func (s *MemoryStore) DeleteCIMembership(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
-	for parent, mMap := range s.store.ciMemberships {
+	for _, mMap := range s.store.ciMemberships {
 		if _, ok := mMap[name]; ok {
 			delete(mMap, name)
-			_ = parent
 			return nil
 		}
 	}
@@ -1844,6 +2237,9 @@ func (s *MemoryStore) DeleteCIMembership(ctx context.Context, name string) error
 }
 
 func (s *MemoryStore) LookupCIMembership(ctx context.Context, parent string, key model.EntityKey) (*model.Membership, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	mMap, ok := s.store.ciMemberships[parent]
@@ -1860,6 +2256,9 @@ func (s *MemoryStore) LookupCIMembership(ctx context.Context, parent string, key
 }
 
 func (s *MemoryStore) ModifyMembershipRoles(ctx context.Context, name string, roles model.ModifyMembershipRolesRequest) (*model.Membership, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	for _, mMap := range s.store.ciMemberships {
@@ -1889,6 +2288,9 @@ func (s *MemoryStore) ModifyMembershipRoles(ctx context.Context, name string, ro
 }
 
 func (s *MemoryStore) CheckTransitiveMembership(ctx context.Context, parent string, key model.EntityKey) (bool, error) {
+	if err := checkContext(ctx); err != nil {
+		return false, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	mMap, ok := s.store.ciMemberships[parent]
@@ -1904,6 +2306,9 @@ func (s *MemoryStore) CheckTransitiveMembership(ctx context.Context, parent stri
 }
 
 func (s *MemoryStore) GetMembershipGraph(ctx context.Context, parent string, query string) (*model.MembershipGraph, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	mMap, ok := s.store.ciMemberships[parent]
@@ -1925,6 +2330,9 @@ func (s *MemoryStore) GetMembershipGraph(ctx context.Context, parent string, que
 }
 
 func (s *MemoryStore) SearchTransitiveGroups(ctx context.Context, parent string, query string) ([]model.CloudIdentityGroup, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var results []model.CloudIdentityGroup
@@ -1958,6 +2366,9 @@ func (s *MemoryStore) SearchTransitiveGroups(ctx context.Context, parent string,
 }
 
 func (s *MemoryStore) SearchTransitiveMemberships(ctx context.Context, parent string, query string) ([]model.Membership, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var results []model.Membership
@@ -1989,6 +2400,9 @@ func (s *MemoryStore) SearchTransitiveMemberships(ctx context.Context, parent st
 }
 
 func (s *MemoryStore) SearchDirectGroups(ctx context.Context, parent string, query string) ([]model.Membership, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var results []model.Membership
@@ -2007,6 +2421,9 @@ func (s *MemoryStore) SearchDirectGroups(ctx context.Context, parent string, que
 // Reports
 
 func (s *MemoryStore) ListActivities(ctx context.Context, userKey, applicationName string) ([]model.Activity, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var results []model.Activity
@@ -2027,6 +2444,9 @@ func (s *MemoryStore) ListActivities(ctx context.Context, userKey, applicationNa
 }
 
 func (s *MemoryStore) ListUsageReports(ctx context.Context, date, userKey, entityType, entityKey string) ([]model.UsageReport, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var results []model.UsageReport
@@ -2053,6 +2473,9 @@ func (s *MemoryStore) ListUsageReports(ctx context.Context, date, userKey, entit
 // Security - Tokens
 
 func (s *MemoryStore) ListTokens(ctx context.Context, userKey string) ([]model.Token, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	tMap, ok := s.store.tokens[userKey]
@@ -2067,6 +2490,9 @@ func (s *MemoryStore) ListTokens(ctx context.Context, userKey string) ([]model.T
 }
 
 func (s *MemoryStore) GetToken(ctx context.Context, userKey, clientID string) (*model.Token, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	tMap, ok := s.store.tokens[userKey]
@@ -2082,6 +2508,9 @@ func (s *MemoryStore) GetToken(ctx context.Context, userKey, clientID string) (*
 }
 
 func (s *MemoryStore) DeleteToken(ctx context.Context, userKey, clientID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	tMap, ok := s.store.tokens[userKey]
@@ -2098,6 +2527,9 @@ func (s *MemoryStore) DeleteToken(ctx context.Context, userKey, clientID string)
 // Security - ASPs
 
 func (s *MemoryStore) ListASPs(ctx context.Context, userKey string) ([]model.ASP, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	aMap, ok := s.store.asps[userKey]
@@ -2112,6 +2544,9 @@ func (s *MemoryStore) ListASPs(ctx context.Context, userKey string) ([]model.ASP
 }
 
 func (s *MemoryStore) GetASP(ctx context.Context, userKey, codeID string) (*model.ASP, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	aMap, ok := s.store.asps[userKey]
@@ -2127,6 +2562,9 @@ func (s *MemoryStore) GetASP(ctx context.Context, userKey, codeID string) (*mode
 }
 
 func (s *MemoryStore) DeleteASP(ctx context.Context, userKey, codeID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	aMap, ok := s.store.asps[userKey]
@@ -2143,6 +2581,9 @@ func (s *MemoryStore) DeleteASP(ctx context.Context, userKey, codeID string) err
 // Security - Verification Codes
 
 func (s *MemoryStore) ListVerificationCodes(ctx context.Context, userKey string) ([]model.VerificationCode, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	codes, ok := s.store.verificationCodes[userKey]
@@ -2153,12 +2594,20 @@ func (s *MemoryStore) ListVerificationCodes(ctx context.Context, userKey string)
 }
 
 func (s *MemoryStore) GenerateVerificationCodes(ctx context.Context, userKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
+	max := big.NewInt(1000000)
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return fmt.Errorf("failed to generate verification code: %w", err)
+	}
 	code := model.VerificationCode{
 		Kind:                  "admin#directory#verificationCode",
 		UserId:                userKey,
-		VerificationCode:      fmt.Sprintf("%06d", rand.Intn(1000000)),
+		VerificationCode:      fmt.Sprintf("%06d", n.Int64()),
 		VerificationMethod:    "sms",
 		VerificationTimestamp: time.Now().Format(time.RFC3339),
 	}
@@ -2167,6 +2616,9 @@ func (s *MemoryStore) GenerateVerificationCodes(ctx context.Context, userKey str
 }
 
 func (s *MemoryStore) InvalidateVerificationCodes(ctx context.Context, userKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	s.store.verificationCodes[userKey] = nil
@@ -2174,6 +2626,9 @@ func (s *MemoryStore) InvalidateVerificationCodes(ctx context.Context, userKey s
 }
 
 func (s *MemoryStore) TurnOff2SV(ctx context.Context, userKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	existing, err := s.store.resolveUserKey(userKey)
@@ -2182,7 +2637,6 @@ func (s *MemoryStore) TurnOff2SV(ctx context.Context, userKey string) error {
 	}
 	existing.IsEnrolledIn2Sv = false
 	existing.IsEnforcedIn2Sv = false
-	existing.Is2svEnrolled = false
 	s.store.users[existing.ID] = existing
 	return nil
 }
@@ -2190,6 +2644,9 @@ func (s *MemoryStore) TurnOff2SV(ctx context.Context, userKey string) error {
 // User Invitations
 
 func (s *MemoryStore) ListUserInvitations(ctx context.Context, parent string) ([]model.UserInvitation, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var results []model.UserInvitation
@@ -2202,6 +2659,9 @@ func (s *MemoryStore) ListUserInvitations(ctx context.Context, parent string) ([
 }
 
 func (s *MemoryStore) GetUserInvitation(ctx context.Context, name string) (*model.UserInvitation, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	inv, ok := s.store.userInvitations[name]
@@ -2213,6 +2673,9 @@ func (s *MemoryStore) GetUserInvitation(ctx context.Context, name string) (*mode
 }
 
 func (s *MemoryStore) IsInvitableUser(ctx context.Context, name string) (bool, error) {
+	if err := checkContext(ctx); err != nil {
+		return false, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	_, ok := s.store.userInvitations[name]
@@ -2220,6 +2683,9 @@ func (s *MemoryStore) IsInvitableUser(ctx context.Context, name string) (bool, e
 }
 
 func (s *MemoryStore) SendUserInvitation(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	inv, ok := s.store.userInvitations[name]
@@ -2232,6 +2698,9 @@ func (s *MemoryStore) SendUserInvitation(ctx context.Context, name string) error
 }
 
 func (s *MemoryStore) CancelUserInvitation(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	inv, ok := s.store.userInvitations[name]
@@ -2246,6 +2715,9 @@ func (s *MemoryStore) CancelUserInvitation(ctx context.Context, name string) err
 // Custom Schemas
 
 func (s *MemoryStore) ListSchemas(ctx context.Context, customerID string) ([]model.Schema, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	sMap, ok := s.store.schemas[customerID]
@@ -2260,6 +2732,9 @@ func (s *MemoryStore) ListSchemas(ctx context.Context, customerID string) ([]mod
 }
 
 func (s *MemoryStore) GetSchema(ctx context.Context, customerID, schemaKey string) (*model.Schema, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	sMap, ok := s.store.schemas[customerID]
@@ -2275,6 +2750,9 @@ func (s *MemoryStore) GetSchema(ctx context.Context, customerID, schemaKey strin
 }
 
 func (s *MemoryStore) CreateSchema(ctx context.Context, customerID string, schema model.Schema) (model.Schema, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Schema{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if schema.SchemaId == "" {
@@ -2289,6 +2767,9 @@ func (s *MemoryStore) CreateSchema(ctx context.Context, customerID string, schem
 }
 
 func (s *MemoryStore) UpdateSchema(ctx context.Context, customerID, schemaKey string, schema model.Schema) (*model.Schema, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	sMap, ok := s.store.schemas[customerID]
@@ -2306,7 +2787,10 @@ func (s *MemoryStore) UpdateSchema(ctx context.Context, customerID, schemaKey st
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchSchema(ctx context.Context, customerID, schemaKey string, patch map[string]interface{}) (*model.Schema, error) {
+func (s *MemoryStore) PatchSchema(ctx context.Context, customerID, schemaKey string, patch map[string]any) (*model.Schema, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	sMap, ok := s.store.schemas[customerID]
@@ -2326,6 +2810,9 @@ func (s *MemoryStore) PatchSchema(ctx context.Context, customerID, schemaKey str
 }
 
 func (s *MemoryStore) DeleteSchema(ctx context.Context, customerID, schemaKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	sMap, ok := s.store.schemas[customerID]
@@ -2342,6 +2829,9 @@ func (s *MemoryStore) DeleteSchema(ctx context.Context, customerID, schemaKey st
 // Calendar Resources
 
 func (s *MemoryStore) ListCalendarResources(ctx context.Context, customerID string) ([]model.CalendarResource, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	rMap, ok := s.store.calendarResources[customerID]
@@ -2356,6 +2846,9 @@ func (s *MemoryStore) ListCalendarResources(ctx context.Context, customerID stri
 }
 
 func (s *MemoryStore) GetCalendarResource(ctx context.Context, customerID, resourceID string) (*model.CalendarResource, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	rMap, ok := s.store.calendarResources[customerID]
@@ -2371,6 +2864,9 @@ func (s *MemoryStore) GetCalendarResource(ctx context.Context, customerID, resou
 }
 
 func (s *MemoryStore) CreateCalendarResource(ctx context.Context, customerID string, resource model.CalendarResource) (model.CalendarResource, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.CalendarResource{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if resource.ResourceId == "" {
@@ -2385,6 +2881,9 @@ func (s *MemoryStore) CreateCalendarResource(ctx context.Context, customerID str
 }
 
 func (s *MemoryStore) UpdateCalendarResource(ctx context.Context, customerID, resourceID string, resource model.CalendarResource) (*model.CalendarResource, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.calendarResources[customerID]
@@ -2400,7 +2899,10 @@ func (s *MemoryStore) UpdateCalendarResource(ctx context.Context, customerID, re
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchCalendarResource(ctx context.Context, customerID, resourceID string, patch map[string]interface{}) (*model.CalendarResource, error) {
+func (s *MemoryStore) PatchCalendarResource(ctx context.Context, customerID, resourceID string, patch map[string]any) (*model.CalendarResource, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.calendarResources[customerID]
@@ -2419,6 +2921,9 @@ func (s *MemoryStore) PatchCalendarResource(ctx context.Context, customerID, res
 }
 
 func (s *MemoryStore) DeleteCalendarResource(ctx context.Context, customerID, resourceID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	rMap, ok := s.store.calendarResources[customerID]
@@ -2435,6 +2940,9 @@ func (s *MemoryStore) DeleteCalendarResource(ctx context.Context, customerID, re
 // Buildings
 
 func (s *MemoryStore) ListBuildings(ctx context.Context, customerID string) ([]model.Building, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	bMap, ok := s.store.buildings[customerID]
@@ -2449,6 +2957,9 @@ func (s *MemoryStore) ListBuildings(ctx context.Context, customerID string) ([]m
 }
 
 func (s *MemoryStore) GetBuilding(ctx context.Context, customerID, buildingID string) (*model.Building, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	bMap, ok := s.store.buildings[customerID]
@@ -2464,6 +2975,9 @@ func (s *MemoryStore) GetBuilding(ctx context.Context, customerID, buildingID st
 }
 
 func (s *MemoryStore) CreateBuilding(ctx context.Context, customerID string, building model.Building) (model.Building, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Building{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if building.BuildingId == "" {
@@ -2478,6 +2992,9 @@ func (s *MemoryStore) CreateBuilding(ctx context.Context, customerID string, bui
 }
 
 func (s *MemoryStore) UpdateBuilding(ctx context.Context, customerID, buildingID string, building model.Building) (*model.Building, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	bMap, ok := s.store.buildings[customerID]
@@ -2493,7 +3010,10 @@ func (s *MemoryStore) UpdateBuilding(ctx context.Context, customerID, buildingID
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchBuilding(ctx context.Context, customerID, buildingID string, patch map[string]interface{}) (*model.Building, error) {
+func (s *MemoryStore) PatchBuilding(ctx context.Context, customerID, buildingID string, patch map[string]any) (*model.Building, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	bMap, ok := s.store.buildings[customerID]
@@ -2512,6 +3032,9 @@ func (s *MemoryStore) PatchBuilding(ctx context.Context, customerID, buildingID 
 }
 
 func (s *MemoryStore) DeleteBuilding(ctx context.Context, customerID, buildingID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	bMap, ok := s.store.buildings[customerID]
@@ -2528,6 +3051,9 @@ func (s *MemoryStore) DeleteBuilding(ctx context.Context, customerID, buildingID
 // Features
 
 func (s *MemoryStore) ListFeatures(ctx context.Context, customerID string) ([]model.Feature, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	fMap, ok := s.store.features[customerID]
@@ -2542,6 +3068,9 @@ func (s *MemoryStore) ListFeatures(ctx context.Context, customerID string) ([]mo
 }
 
 func (s *MemoryStore) GetFeature(ctx context.Context, customerID, featureKey string) (*model.Feature, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	fMap, ok := s.store.features[customerID]
@@ -2557,6 +3086,9 @@ func (s *MemoryStore) GetFeature(ctx context.Context, customerID, featureKey str
 }
 
 func (s *MemoryStore) CreateFeature(ctx context.Context, customerID string, feature model.Feature) (model.Feature, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Feature{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	feature.Kind = "admin#directory#resources#features#Feature"
@@ -2568,6 +3100,9 @@ func (s *MemoryStore) CreateFeature(ctx context.Context, customerID string, feat
 }
 
 func (s *MemoryStore) UpdateFeature(ctx context.Context, customerID, featureKey string, feature model.Feature) (*model.Feature, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	fMap, ok := s.store.features[customerID]
@@ -2583,7 +3118,10 @@ func (s *MemoryStore) UpdateFeature(ctx context.Context, customerID, featureKey 
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchFeature(ctx context.Context, customerID, featureKey string, patch map[string]interface{}) (*model.Feature, error) {
+func (s *MemoryStore) PatchFeature(ctx context.Context, customerID, featureKey string, patch map[string]any) (*model.Feature, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	fMap, ok := s.store.features[customerID]
@@ -2603,6 +3141,9 @@ func (s *MemoryStore) PatchFeature(ctx context.Context, customerID, featureKey s
 }
 
 func (s *MemoryStore) DeleteFeature(ctx context.Context, customerID, featureKey string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	fMap, ok := s.store.features[customerID]
@@ -2617,6 +3158,9 @@ func (s *MemoryStore) DeleteFeature(ctx context.Context, customerID, featureKey 
 }
 
 func (s *MemoryStore) RenameFeature(ctx context.Context, customerID, oldName, newName string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	fMap, ok := s.store.features[customerID]
@@ -2636,6 +3180,9 @@ func (s *MemoryStore) RenameFeature(ctx context.Context, customerID, oldName, ne
 // Groups Settings
 
 func (s *MemoryStore) GetGroupSettings(ctx context.Context, groupUniqueId string) (*model.GroupSettings, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	gs, ok := s.store.groupSettingsMap[groupUniqueId]
@@ -2651,6 +3198,9 @@ func (s *MemoryStore) GetGroupSettings(ctx context.Context, groupUniqueId string
 }
 
 func (s *MemoryStore) UpdateGroupSettings(ctx context.Context, groupUniqueId string, settings model.GroupSettings) (*model.GroupSettings, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	settings.Kind = "groupsSettings#groups"
@@ -2660,7 +3210,10 @@ func (s *MemoryStore) UpdateGroupSettings(ctx context.Context, groupUniqueId str
 	return &cp, nil
 }
 
-func (s *MemoryStore) PatchGroupSettings(ctx context.Context, groupUniqueId string, patch map[string]interface{}) (*model.GroupSettings, error) {
+func (s *MemoryStore) PatchGroupSettings(ctx context.Context, groupUniqueId string, patch map[string]any) (*model.GroupSettings, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	gs, ok := s.store.groupSettingsMap[groupUniqueId]
@@ -2680,6 +3233,9 @@ func (s *MemoryStore) PatchGroupSettings(ctx context.Context, groupUniqueId stri
 // Data Transfer
 
 func (s *MemoryStore) ListTransferApplications(ctx context.Context) ([]model.TransferApplication, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	result := make([]model.TransferApplication, len(s.store.transferApps))
@@ -2688,6 +3244,9 @@ func (s *MemoryStore) ListTransferApplications(ctx context.Context) ([]model.Tra
 }
 
 func (s *MemoryStore) GetTransferApplication(ctx context.Context, applicationID string) (*model.TransferApplication, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	for _, app := range s.store.transferApps {
@@ -2700,6 +3259,9 @@ func (s *MemoryStore) GetTransferApplication(ctx context.Context, applicationID 
 }
 
 func (s *MemoryStore) ListTransfers(ctx context.Context) ([]model.DataTransfer, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var all []model.DataTransfer
@@ -2710,6 +3272,9 @@ func (s *MemoryStore) ListTransfers(ctx context.Context) ([]model.DataTransfer, 
 }
 
 func (s *MemoryStore) GetTransfer(ctx context.Context, transferID string) (*model.DataTransfer, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	dt, ok := s.store.dataTransfers[transferID]
@@ -2721,6 +3286,9 @@ func (s *MemoryStore) GetTransfer(ctx context.Context, transferID string) (*mode
 }
 
 func (s *MemoryStore) CreateTransfer(ctx context.Context, transfer model.DataTransfer) (model.DataTransfer, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.DataTransfer{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if transfer.Id == "" {
@@ -2736,6 +3304,9 @@ func (s *MemoryStore) CreateTransfer(ctx context.Context, transfer model.DataTra
 // Subscriptions
 
 func (s *MemoryStore) ListSubscriptions(ctx context.Context) ([]model.Subscription, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	var all []model.Subscription
@@ -2746,6 +3317,9 @@ func (s *MemoryStore) ListSubscriptions(ctx context.Context) ([]model.Subscripti
 }
 
 func (s *MemoryStore) GetSubscription(ctx context.Context, name string) (*model.Subscription, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 	sub, ok := s.store.subscriptions[name]
@@ -2757,6 +3331,9 @@ func (s *MemoryStore) GetSubscription(ctx context.Context, name string) (*model.
 }
 
 func (s *MemoryStore) CreateSubscription(ctx context.Context, sub model.Subscription) (model.Subscription, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Subscription{}, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if sub.Name == "" {
@@ -2776,6 +3353,9 @@ func (s *MemoryStore) CreateSubscription(ctx context.Context, sub model.Subscrip
 }
 
 func (s *MemoryStore) UpdateSubscription(ctx context.Context, name string, sub model.Subscription) (*model.Subscription, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.subscriptions[name]; !ok {
@@ -2789,6 +3369,9 @@ func (s *MemoryStore) UpdateSubscription(ctx context.Context, name string, sub m
 }
 
 func (s *MemoryStore) DeleteSubscription(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	if _, ok := s.store.subscriptions[name]; !ok {
@@ -2799,6 +3382,9 @@ func (s *MemoryStore) DeleteSubscription(ctx context.Context, name string) error
 }
 
 func (s *MemoryStore) ReactivateSubscription(ctx context.Context, name string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 	sub, ok := s.store.subscriptions[name]

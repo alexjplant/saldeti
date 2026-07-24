@@ -36,6 +36,9 @@ func (s *memoryStore) resolvePrincipalInfo(objectID string) (displayName string,
 // ========== Application CRUD ==========
 
 func (s *memoryStore) ListApplications(ctx context.Context, opts model.ListOptions) ([]model.Application, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -52,6 +55,9 @@ func (s *memoryStore) ListApplications(ctx context.Context, opts model.ListOptio
 }
 
 func (s *memoryStore) GetApplication(ctx context.Context, id string) (*model.Application, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -63,6 +69,9 @@ func (s *memoryStore) GetApplication(ctx context.Context, id string) (*model.App
 }
 
 func (s *memoryStore) GetApplicationByAppID(ctx context.Context, appId string) (*model.Application, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -75,6 +84,9 @@ func (s *memoryStore) GetApplicationByAppID(ctx context.Context, appId string) (
 }
 
 func (s *memoryStore) CreateApplication(ctx context.Context, app model.Application) (model.Application, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.Application{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -180,7 +192,10 @@ func (s *memoryStore) CreateApplication(ctx context.Context, app model.Applicati
 	return app, nil
 }
 
-func (s *memoryStore) UpdateApplication(ctx context.Context, id string, patch map[string]interface{}) (*model.Application, error) {
+func (s *memoryStore) UpdateApplication(ctx context.Context, id string, patch map[string]any) (*model.Application, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -200,6 +215,9 @@ func (s *memoryStore) UpdateApplication(ctx context.Context, id string, patch ma
 }
 
 func (s *memoryStore) DeleteApplication(ctx context.Context, id string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -251,6 +269,9 @@ func (s *memoryStore) DeleteApplication(ctx context.Context, id string) error {
 // ========== Credential Management ==========
 
 func (s *memoryStore) AddApplicationPassword(ctx context.Context, appID string, cred model.PasswordCredential) (model.PasswordCredential, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.PasswordCredential{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -280,6 +301,9 @@ func (s *memoryStore) AddApplicationPassword(ctx context.Context, appID string, 
 }
 
 func (s *memoryStore) RemoveApplicationPassword(ctx context.Context, appID, keyID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -306,6 +330,9 @@ func (s *memoryStore) RemoveApplicationPassword(ctx context.Context, appID, keyI
 }
 
 func (s *memoryStore) AddApplicationKey(ctx context.Context, appID string, cred model.KeyCredential) (model.KeyCredential, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.KeyCredential{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -330,6 +357,9 @@ func (s *memoryStore) AddApplicationKey(ctx context.Context, appID string, cred 
 }
 
 func (s *memoryStore) RemoveApplicationKey(ctx context.Context, appID, keyID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -358,6 +388,9 @@ func (s *memoryStore) RemoveApplicationKey(ctx context.Context, appID, keyID str
 // ========== Application Owners ==========
 
 func (s *memoryStore) ListApplicationOwners(ctx context.Context, appID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -404,6 +437,9 @@ func (s *memoryStore) ListApplicationOwners(ctx context.Context, appID string, o
 }
 
 func (s *memoryStore) AddApplicationOwner(ctx context.Context, appID, objectID, objectType string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -433,6 +469,9 @@ func (s *memoryStore) AddApplicationOwner(ctx context.Context, appID, objectID, 
 }
 
 func (s *memoryStore) RemoveApplicationOwner(ctx context.Context, appID, objectID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -459,6 +498,9 @@ func (s *memoryStore) RemoveApplicationOwner(ctx context.Context, appID, objectI
 // ========== Extension Properties ==========
 
 func (s *memoryStore) ListExtensionProperties(ctx context.Context, appID string) ([]model.ExtensionProperty, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -479,6 +521,9 @@ func (s *memoryStore) ListExtensionProperties(ctx context.Context, appID string)
 }
 
 func (s *memoryStore) CreateExtensionProperty(ctx context.Context, appID string, ep model.ExtensionProperty) (model.ExtensionProperty, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.ExtensionProperty{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -504,6 +549,9 @@ func (s *memoryStore) CreateExtensionProperty(ctx context.Context, appID string,
 }
 
 func (s *memoryStore) DeleteExtensionProperty(ctx context.Context, appID, extID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -525,7 +573,10 @@ func (s *memoryStore) DeleteExtensionProperty(ctx context.Context, appID, extID 
 
 // ========== Application Delta ==========
 
-func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken string) ([]map[string]interface{}, string, int, error) {
+func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken string) ([]map[string]any, string, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, "", 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -540,7 +591,7 @@ func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken strin
 		}
 	}
 
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 
 	for _, app := range s.applications {
 		if deltaToken == "" || app.ModifiedAt.After(sinceTime) {
@@ -548,7 +599,7 @@ func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken strin
 			if err != nil {
 				continue
 			}
-			var appMap map[string]interface{}
+			var appMap map[string]any
 			if err := json.Unmarshal(appJSON, &appMap); err != nil {
 				continue
 			}
@@ -559,9 +610,9 @@ func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken strin
 
 	for appID, deletedAt := range s.deletedApplications {
 		if deltaToken == "" || deletedAt.After(sinceTime) {
-			result = append(result, map[string]interface{}{
+			result = append(result, map[string]any{
 				"id": appID,
-				"@removed": map[string]interface{}{
+				"@removed": map[string]any{
 					"reason": "deleted",
 				},
 			})
@@ -575,6 +626,9 @@ func (s *memoryStore) GetApplicationsDelta(ctx context.Context, deltaToken strin
 // ========== Service Principal CRUD ==========
 
 func (s *memoryStore) ListServicePrincipals(ctx context.Context, opts model.ListOptions) ([]model.ServicePrincipal, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -591,6 +645,9 @@ func (s *memoryStore) ListServicePrincipals(ctx context.Context, opts model.List
 }
 
 func (s *memoryStore) GetServicePrincipal(ctx context.Context, id string) (*model.ServicePrincipal, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -602,6 +659,9 @@ func (s *memoryStore) GetServicePrincipal(ctx context.Context, id string) (*mode
 }
 
 func (s *memoryStore) GetServicePrincipalByAppID(ctx context.Context, appId string) (*model.ServicePrincipal, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -614,6 +674,9 @@ func (s *memoryStore) GetServicePrincipalByAppID(ctx context.Context, appId stri
 }
 
 func (s *memoryStore) CreateServicePrincipal(ctx context.Context, sp model.ServicePrincipal) (model.ServicePrincipal, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.ServicePrincipal{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -674,7 +737,10 @@ func (s *memoryStore) CreateServicePrincipal(ctx context.Context, sp model.Servi
 	return sp, nil
 }
 
-func (s *memoryStore) UpdateServicePrincipal(ctx context.Context, id string, patch map[string]interface{}) (*model.ServicePrincipal, error) {
+func (s *memoryStore) UpdateServicePrincipal(ctx context.Context, id string, patch map[string]any) (*model.ServicePrincipal, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -694,6 +760,9 @@ func (s *memoryStore) UpdateServicePrincipal(ctx context.Context, id string, pat
 }
 
 func (s *memoryStore) DeleteServicePrincipal(ctx context.Context, id string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -741,6 +810,9 @@ func (s *memoryStore) DeleteServicePrincipal(ctx context.Context, id string) err
 }
 
 func (s *memoryStore) UpdateSPCredentials(ctx context.Context, spID string, update func(*model.ServicePrincipal) error) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -762,6 +834,9 @@ func (s *memoryStore) UpdateSPCredentials(ctx context.Context, spID string, upda
 // ========== SP Owners ==========
 
 func (s *memoryStore) ListSPOwners(ctx context.Context, spID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -808,6 +883,9 @@ func (s *memoryStore) ListSPOwners(ctx context.Context, spID string, opts model.
 }
 
 func (s *memoryStore) AddSPOwner(ctx context.Context, spID, objectID, objectType string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -836,6 +914,9 @@ func (s *memoryStore) AddSPOwner(ctx context.Context, spID, objectID, objectType
 }
 
 func (s *memoryStore) RemoveSPOwner(ctx context.Context, spID, objectID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -862,6 +943,9 @@ func (s *memoryStore) RemoveSPOwner(ctx context.Context, spID, objectID string) 
 // ========== SP MemberOf ==========
 
 func (s *memoryStore) ListSPMemberOf(ctx context.Context, spID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -890,6 +974,9 @@ func (s *memoryStore) ListSPMemberOf(ctx context.Context, spID string, opts mode
 }
 
 func (s *memoryStore) ListSPTransitiveMemberOf(ctx context.Context, spID string, opts model.ListOptions) ([]model.DirectoryObject, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -937,6 +1024,9 @@ func (s *memoryStore) ListSPTransitiveMemberOf(ctx context.Context, spID string,
 // ========== App Role Assignments ==========
 
 func (s *memoryStore) CreateAppRoleAssignment(ctx context.Context, resourceID, principalID, appRoleID string) (model.AppRoleAssignment, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.AppRoleAssignment{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -982,6 +1072,9 @@ func (s *memoryStore) CreateAppRoleAssignment(ctx context.Context, resourceID, p
 }
 
 func (s *memoryStore) ListAppRoleAssignments(ctx context.Context, principalID string, opts model.ListOptions) ([]model.AppRoleAssignment, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1000,6 +1093,9 @@ func (s *memoryStore) ListAppRoleAssignments(ctx context.Context, principalID st
 }
 
 func (s *memoryStore) ListAppRoleAssignedTo(ctx context.Context, resourceID string, opts model.ListOptions) ([]model.AppRoleAssignment, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1018,6 +1114,9 @@ func (s *memoryStore) ListAppRoleAssignedTo(ctx context.Context, resourceID stri
 }
 
 func (s *memoryStore) DeleteAppRoleAssignment(ctx context.Context, assignmentID string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1031,6 +1130,9 @@ func (s *memoryStore) DeleteAppRoleAssignment(ctx context.Context, assignmentID 
 // ========== OAuth2 Permission Grants ==========
 
 func (s *memoryStore) ListOAuth2PermissionGrants(ctx context.Context, opts model.ListOptions) ([]model.OAuth2PermissionGrant, int, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, 0, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1047,6 +1149,9 @@ func (s *memoryStore) ListOAuth2PermissionGrants(ctx context.Context, opts model
 }
 
 func (s *memoryStore) GetOAuth2PermissionGrant(ctx context.Context, id string) (*model.OAuth2PermissionGrant, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -1058,6 +1163,9 @@ func (s *memoryStore) GetOAuth2PermissionGrant(ctx context.Context, id string) (
 }
 
 func (s *memoryStore) CreateOAuth2PermissionGrant(ctx context.Context, grant model.OAuth2PermissionGrant) (model.OAuth2PermissionGrant, error) {
+	if err := checkContext(ctx); err != nil {
+		return model.OAuth2PermissionGrant{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1072,7 +1180,10 @@ func (s *memoryStore) CreateOAuth2PermissionGrant(ctx context.Context, grant mod
 	return grant, nil
 }
 
-func (s *memoryStore) UpdateOAuth2PermissionGrant(ctx context.Context, id string, patch map[string]interface{}) (*model.OAuth2PermissionGrant, error) {
+func (s *memoryStore) UpdateOAuth2PermissionGrant(ctx context.Context, id string, patch map[string]any) (*model.OAuth2PermissionGrant, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1091,6 +1202,9 @@ func (s *memoryStore) UpdateOAuth2PermissionGrant(ctx context.Context, id string
 }
 
 func (s *memoryStore) DeleteOAuth2PermissionGrant(ctx context.Context, id string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

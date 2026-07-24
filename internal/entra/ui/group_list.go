@@ -29,7 +29,7 @@ func GroupListHandler(h *UIHandler) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		
+
 		// Use server-side pagination with Skip for groups
 		config := &groups.GroupsRequestBuilderGetRequestConfiguration{
 			QueryParameters: &groups.GroupsRequestBuilderGetQueryParameters{

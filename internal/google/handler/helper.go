@@ -9,7 +9,7 @@ import (
 
 const maxBodyBytes int64 = 1 << 20 // 1MB
 
-func writeJSON(c *gin.Context, status int, data interface{}) {
+func writeJSON(c *gin.Context, status int, data any) {
 	c.JSON(status, data)
 }
 

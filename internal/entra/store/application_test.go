@@ -46,7 +46,7 @@ func TestApplicationCRUD(t *testing.T) {
 	assert.Len(t, apps, 1)
 
 	// Update
-	updated, err := s.UpdateApplication(ctx, created.ID, map[string]interface{}{
+	updated, err := s.UpdateApplication(ctx, created.ID, map[string]any{
 		"displayName": "Updated App",
 	})
 	require.NoError(t, err)
@@ -93,7 +93,7 @@ func TestApplicationNotFound(t *testing.T) {
 	err = s.DeleteApplication(ctx, "nonexistent")
 	assert.ErrorIs(t, err, ErrApplicationNotFound)
 
-	_, err = s.UpdateApplication(ctx, "nonexistent", map[string]interface{}{"displayName": "x"})
+	_, err = s.UpdateApplication(ctx, "nonexistent", map[string]any{"displayName": "x"})
 	assert.ErrorIs(t, err, ErrApplicationNotFound)
 }
 
@@ -257,8 +257,8 @@ func TestExtensionProperties(t *testing.T) {
 
 	// Create extension
 	ep, err := s.CreateExtensionProperty(ctx, app.ID, model.ExtensionProperty{
-		Name:         "extension_test_attr",
-		DataType:     "String",
+		Name:          "extension_test_attr",
+		DataType:      "String",
 		TargetObjects: []string{"User"},
 	})
 	require.NoError(t, err)
@@ -361,7 +361,7 @@ func TestServicePrincipalCRUD(t *testing.T) {
 	assert.Equal(t, sp2.ID, got.ID)
 
 	// Update SP
-	updated, err := s.UpdateServicePrincipal(ctx, sp2.ID, map[string]interface{}{
+	updated, err := s.UpdateServicePrincipal(ctx, sp2.ID, map[string]any{
 		"displayName": "Updated SP",
 	})
 	require.NoError(t, err)
@@ -616,7 +616,7 @@ func TestOAuth2PermissionGrantCRUD(t *testing.T) {
 	assert.Len(t, grants, 1)
 
 	// Update
-	updated, err := s.UpdateOAuth2PermissionGrant(ctx, created.ID, map[string]interface{}{
+	updated, err := s.UpdateOAuth2PermissionGrant(ctx, created.ID, map[string]any{
 		"scope": "User.ReadWrite.All",
 	})
 	require.NoError(t, err)
@@ -699,8 +699,6 @@ func TestSeedCreatesApplication(t *testing.T) {
 	ctx := context.Background()
 	s := NewMemoryStore()
 
-
-
 	// Just verify the application creation and SP auto-creation works
 	app := model.Application{
 		AppID:       "sim-client-id",
@@ -727,8 +725,6 @@ func TestSeedCreatesApplication(t *testing.T) {
 	assert.Equal(t, "Saldeti Simulator App", sp.DisplayName)
 	assert.Len(t, sp.AppRoles, 1)
 }
-
-
 
 func boolPtr(b bool) *bool {
 	return &b

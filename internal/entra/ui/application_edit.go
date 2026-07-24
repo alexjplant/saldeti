@@ -31,7 +31,7 @@ func ApplicationEditHandler(h *UIHandler) gin.HandlerFunc {
 				"IsEdit":     true,
 				"FormAction": "/ui/applications/" + appID + "/edit",
 				"CancelURL":  "/ui/applications/" + appID,
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    strVal(sdkApp.GetDisplayName()),
 					"Description":    strVal(sdkApp.GetDescription()),
 					"SignInAudience": signInAudience,
@@ -51,7 +51,7 @@ func ApplicationEditHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/applications/" + appID + "/edit",
 				"CancelURL":  "/ui/applications/" + appID,
 				"Error":      "Display name is required",
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    c.PostForm("displayName"),
 					"Description":    c.PostForm("description"),
 					"SignInAudience": c.PostForm("signInAudience"),
@@ -77,7 +77,7 @@ func ApplicationEditHandler(h *UIHandler) gin.HandlerFunc {
 				"FormAction": "/ui/applications/" + appID + "/edit",
 				"CancelURL":  "/ui/applications/" + appID,
 				"Error":      fmt.Sprintf("Failed to update application: %v", err),
-				"Form": map[string]interface{}{
+				"Form": map[string]any{
 					"DisplayName":    c.PostForm("displayName"),
 					"Description":    c.PostForm("description"),
 					"SignInAudience": c.PostForm("signInAudience"),

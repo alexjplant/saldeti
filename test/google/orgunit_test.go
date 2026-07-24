@@ -1,4 +1,4 @@
-//go:build google
+//go:build e2e && google
 
 package google_e2e
 
@@ -27,7 +27,7 @@ func TestGoogleOrgUnit_CreateAndList(t *testing.T) {
 	resp = googleRequest(t, client, http.MethodGet, base+"/", token, "")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body = readBody(t, resp)
-	orgUnits, ok := body["organizationUnits"].([]interface{})
+	orgUnits, ok := body["organizationUnits"].([]any)
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(orgUnits), 1)
 }

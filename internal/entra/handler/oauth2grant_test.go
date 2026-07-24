@@ -42,7 +42,7 @@ func TestOAuth2GrantCreate(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/v1.0/oauth2PermissionGrants/")
 
-	var grantResp map[string]interface{}
+	var grantResp map[string]any
 	bodyBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(bodyBytes, &grantResp)
@@ -99,14 +99,14 @@ func TestOAuth2GrantList(t *testing.T) {
 	// Assert 200, @odata.context, value array has 2 items
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://graph.microsoft.com/v1.0/$metadata#oauth2PermissionGrants", listResp["@odata.context"])
-	grants := listResp["value"].([]interface{})
+	grants := listResp["value"].([]any)
 	assert.Len(t, grants, 2)
 }
 
@@ -143,7 +143,7 @@ func TestOAuth2GrantGet(t *testing.T) {
 	// Assert 200, @odata.context contains "$entity", fields match
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var grantResp map[string]interface{}
+	var grantResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &grantResp)
@@ -214,7 +214,7 @@ func TestOAuth2GrantUpdate(t *testing.T) {
 	// Assert 200, updated scope in response
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var grantResp map[string]interface{}
+	var grantResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &grantResp)

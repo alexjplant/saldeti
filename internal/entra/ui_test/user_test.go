@@ -23,7 +23,6 @@ func TestUserListShowsUsers(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-
 	// Get user list
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/users", nil)
@@ -52,7 +51,6 @@ func TestUserSearch(t *testing.T) {
 
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
-
 
 	// Search for Alice
 	w := httptest.NewRecorder()
@@ -94,7 +92,6 @@ func TestUserDetail(t *testing.T) {
 		t.Fatalf("Failed to get Alice user: %v", err)
 	}
 
-
 	// Get Alice's detail page
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ui/users/"+alice.ID, nil)
@@ -130,7 +127,6 @@ func TestUserCreate(t *testing.T) {
 
 	// Setup test server with API and UI routes
 	ts, st := setupTestServer(t)
-
 
 	// Create new user
 	formData := url.Values{}
@@ -197,7 +193,6 @@ func TestUserCreateValidation(t *testing.T) {
 	// Setup test server with API and UI routes
 	ts, _ := setupTestServer(t)
 
-
 	// Try to create user without required fields
 	formData := url.Values{}
 	formData.Set("givenName", "Test")
@@ -238,7 +233,6 @@ func TestUserEdit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get Alice user: %v", err)
 	}
-
 
 	// Update Alice's department
 	formData := url.Values{}
@@ -302,7 +296,6 @@ func TestUserDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get Grace user: %v", err)
 	}
-
 
 	// Verify Grace exists before deletion
 	w := httptest.NewRecorder()
@@ -371,9 +364,7 @@ func TestHtmxUserSetManager(t *testing.T) {
 	formData.Set("managerId", bob.ID)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/manager/set", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+alice.ID+"/manager/set", formData)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -406,8 +397,7 @@ func TestHtmxUserRemoveManager(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/ui/users/"+alice.ID+"/manager/remove", nil)
-	req.Header.Set("HX-Request", "true")
+	req := csrfHtmxPost(t, ts, "/ui/users/"+alice.ID+"/manager/remove", nil)
 	ts.Config.Handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -494,6 +484,5 @@ func TestUserEditForm(t *testing.T) {
 		t.Error("Expected 'Alice Smith' in user edit form")
 	}
 }
- 
 
 // Helper function to login and get session cookie

@@ -75,7 +75,7 @@ func (c *GoogleClient) getToken(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -93,7 +93,7 @@ func (c *GoogleClient) getToken(ctx context.Context) error {
 	return nil
 }
 
-func (c *GoogleClient) doGet(ctx context.Context, path string, result interface{}) error {
+func (c *GoogleClient) doGet(ctx context.Context, path string, result any) error {
 	if err := c.getToken(ctx); err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (c *GoogleClient) doGet(ctx context.Context, path string, result interface{
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode == http.StatusNotFound {
 		return errNotFound
@@ -116,7 +116,7 @@ func (c *GoogleClient) doGet(ctx context.Context, path string, result interface{
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("GET %s failed with status %d: %s", path, resp.StatusCode, string(body))
+		return fmt.Errorf("get %s failed with status %d: %s", path, resp.StatusCode, string(body))
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
@@ -126,7 +126,7 @@ func (c *GoogleClient) doGet(ctx context.Context, path string, result interface{
 	return nil
 }
 
-func (c *GoogleClient) doPost(ctx context.Context, path string, body interface{}, result interface{}) error {
+func (c *GoogleClient) doPost(ctx context.Context, path string, body any, result any) error {
 	if err := c.getToken(ctx); err != nil {
 		return err
 	}
@@ -147,11 +147,11 @@ func (c *GoogleClient) doPost(ctx context.Context, path string, body interface{}
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("POST %s failed with status %d: %s", path, resp.StatusCode, string(body))
+		return fmt.Errorf("post %s failed with status %d: %s", path, resp.StatusCode, string(body))
 	}
 
 	if result != nil {
@@ -163,7 +163,7 @@ func (c *GoogleClient) doPost(ctx context.Context, path string, body interface{}
 	return nil
 }
 
-func (c *GoogleClient) doPut(ctx context.Context, path string, body interface{}, result interface{}) error {
+func (c *GoogleClient) doPut(ctx context.Context, path string, body any, result any) error {
 	if err := c.getToken(ctx); err != nil {
 		return err
 	}
@@ -184,11 +184,11 @@ func (c *GoogleClient) doPut(ctx context.Context, path string, body interface{},
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("PUT %s failed with status %d: %s", path, resp.StatusCode, string(body))
+		return fmt.Errorf("put %s failed with status %d: %s", path, resp.StatusCode, string(body))
 	}
 
 	if result != nil {
@@ -215,11 +215,11 @@ func (c *GoogleClient) doDelete(ctx context.Context, path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("DELETE %s failed with status %d: %s", path, resp.StatusCode, string(body))
+		return fmt.Errorf("delete %s failed with status %d: %s", path, resp.StatusCode, string(body))
 	}
 
 	return nil

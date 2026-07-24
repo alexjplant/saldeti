@@ -2,11 +2,42 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	gauth "github.com/saldeti/saldeti/internal/google/auth"
 	"github.com/saldeti/saldeti/internal/google/store"
 )
+
+func zerologMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		duration := time.Since(start)
+
+		log.Info().
+			Str("method", c.Request.Method).
+			Str("path", c.Request.URL.Path).
+			Int("status", c.Writer.Status()).
+			Dur("latency", duration).
+			Str("client_ip", c.ClientIP()).
+			Msg("request")
+	}
+}
+
+// NewRouter creates a gin.Engine with logging and recovery middleware, then
+// registers all Google Workspace API routes on it. This mirrors the pattern
+// used by the Entra handler's NewRouter.
+func NewRouter(st store.Store) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.RedirectTrailingSlash = false
+	r.Use(zerologMiddleware())
+	r.Use(gin.Recovery())
+	RegisterRoutes(r, st)
+	return r
+}
 
 // RegisterRoutes registers all Google Workspace API routes on the given gin engine.
 func RegisterRoutes(engine *gin.Engine, st store.Store) {

@@ -300,6 +300,8 @@ For base URL, authentication, scopes, and common query parameters, refer to the 
 
 ### 8A. Custom Schemas
 
+> **Note:** These are Google Directory custom user-attribute schemas, not the seed-file JSON schema. See [Seed Files](/seed-files) for the seed-data format.
+
 | # | Method | Path | Description |
 |---|--------|------|-------------|
 | 133 | `GET` | `/admin/directory/v1/customer/{customerId}/schemas` | List all custom schemas |
@@ -389,3 +391,9 @@ For base URL, authentication, scopes, and common query parameters, refer to the 
 | 7 | Tokens, ASPs, Verification Codes, User Invitations | 15 |
 | 8 | Schemas, Calendar Resources, Buildings, Features, Groups Settings, Data Transfer, Subscriptions | 39 |
 | **Total** | | **171** |
+
+---
+
+::: warning Trademark Notice
+Saldeti is an independent project and is not affiliated with, endorsed by, or sponsored by Microsoft Corporation or Google LLC. All product names and trademarks are property of their respective owners.
+:::

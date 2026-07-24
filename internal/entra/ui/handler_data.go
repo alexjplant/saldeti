@@ -5,12 +5,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/microsoftgraph/msgraph-sdk-go/users"
 	"github.com/saldeti/saldeti/internal/entra/model"
 )
 
 // fetchLicensePartialData fetches all data needed by the licenses partial.
 func (h *UIHandler) fetchLicensePartialData(ctx context.Context, userID string) (gin.H, error) {
-	sdkUser, err := h.client.Users().ByUserId(userID).Get(ctx, nil)
+	sdkUser, err := h.client.Users().ByUserId(userID).Get(ctx, &users.UserItemRequestBuilderGetRequestConfiguration{
+		QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
+			Select: userSelectFields,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +43,6 @@ func (h *UIHandler) fetchLicensePartialData(ctx context.Context, userID string) 
 		"AvailableSkus":    availableSkus,
 	}, nil
 }
-
 
 // fetchAllUsers retrieves all users from Graph and converts them to model.User.
 func (h *UIHandler) fetchAllUsers(ctx context.Context) []model.User {

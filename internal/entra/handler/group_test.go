@@ -52,7 +52,7 @@ func TestCreateGroup(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/v1.0/groups/")
 
-	var groupResp map[string]interface{}
+	var groupResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &groupResp)
@@ -133,7 +133,7 @@ func TestGetGroup(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var groupResp map[string]interface{}
+	var groupResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &groupResp)
@@ -206,14 +206,14 @@ func TestListGroups(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://graph.microsoft.com/v1.0/$metadata#groups", listResp["@odata.context"])
-	groups := listResp["value"].([]interface{})
+	groups := listResp["value"].([]any)
 	assert.Len(t, groups, 3)
 }
 
@@ -270,18 +270,18 @@ func TestListGroupsFilter(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	groupsResp := listResp["value"].([]interface{})
+	groupsResp := listResp["value"].([]any)
 	assert.Len(t, groupsResp, 2) // Should have 2 security groups
 
 	// Verify only security groups returned
 	for _, g := range groupsResp {
-		groupMap := g.(map[string]interface{})
+		groupMap := g.(map[string]any)
 		assert.Equal(t, true, groupMap["securityEnabled"])
 		assert.Contains(t, groupMap["displayName"], "Security Group")
 	}
@@ -329,7 +329,7 @@ func TestUpdateGroup(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var groupResp map[string]interface{}
+	var groupResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &groupResp)
@@ -432,7 +432,7 @@ func TestCreateGroupWithMembers(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
-	var groupResp map[string]interface{}
+	var groupResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &groupResp)
@@ -451,13 +451,13 @@ func TestCreateGroupWithMembers(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var membersResp map[string]interface{}
+	var membersResp map[string]any
 	body, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &membersResp)
 	require.NoError(t, err)
 
-	members := membersResp["value"].([]interface{})
+	members := membersResp["value"].([]any)
 	assert.Len(t, members, 1)
 }
 
@@ -522,16 +522,16 @@ func TestAddMember(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var membersResp map[string]interface{}
+	var membersResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &membersResp)
 	require.NoError(t, err)
 
-	members := membersResp["value"].([]interface{})
+	members := membersResp["value"].([]any)
 	assert.Len(t, members, 1)
 
-	member := members[0].(map[string]interface{})
+	member := members[0].(map[string]any)
 	assert.Equal(t, createdUser.ID, member["id"])
 	assert.Equal(t, "#microsoft.graph.user", member["@odata.type"])
 }
@@ -596,13 +596,13 @@ func TestRemoveMember(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var membersResp map[string]interface{}
+	var membersResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &membersResp)
 	require.NoError(t, err)
 
-	members := membersResp["value"].([]interface{})
+	members := membersResp["value"].([]any)
 	assert.Len(t, members, 0)
 }
 
@@ -656,18 +656,18 @@ func TestListMembers(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var membersResp map[string]interface{}
+	var membersResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &membersResp)
 	require.NoError(t, err)
 
-	members := membersResp["value"].([]interface{})
+	members := membersResp["value"].([]any)
 	assert.Len(t, members, 3)
 
 	// Verify each member has @odata.type
 	for _, m := range members {
-		member := m.(map[string]interface{})
+		member := m.(map[string]any)
 		assert.Contains(t, member, "@odata.type")
 		assert.Equal(t, "#microsoft.graph.user", member["@odata.type"])
 		assert.Contains(t, member, "id")
@@ -754,19 +754,19 @@ func TestTransitiveMembership(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var transitiveResp map[string]interface{}
+	var transitiveResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &transitiveResp)
 	require.NoError(t, err)
 
-	members := transitiveResp["value"].([]interface{})
-	
+	members := transitiveResp["value"].([]any)
+
 	// Should include: user, group C, group B
 	// Note: transitiveMembers includes all nested objects
 	foundUser := false
 	for _, m := range members {
-		member := m.(map[string]interface{})
+		member := m.(map[string]any)
 		if member["id"] == createdUser.ID {
 			foundUser = true
 			break
@@ -836,16 +836,16 @@ func TestAddOwner(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var ownersResp map[string]interface{}
+	var ownersResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &ownersResp)
 	require.NoError(t, err)
 
-	owners := ownersResp["value"].([]interface{})
+	owners := ownersResp["value"].([]any)
 	assert.Len(t, owners, 1)
 
-	owner := owners[0].(map[string]interface{})
+	owner := owners[0].(map[string]any)
 	assert.Equal(t, createdUser.ID, owner["id"])
 	assert.Equal(t, "#microsoft.graph.user", owner["@odata.type"])
 }
@@ -910,13 +910,13 @@ func TestRemoveOwner(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var ownersResp map[string]interface{}
+	var ownersResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &ownersResp)
 	require.NoError(t, err)
 
-	owners := ownersResp["value"].([]interface{})
+	owners := ownersResp["value"].([]any)
 	assert.Len(t, owners, 0)
 }
 
@@ -979,13 +979,13 @@ func TestCheckMemberGroups(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var checkResp map[string]interface{}
+	var checkResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &checkResp)
 	require.NoError(t, err)
 
-	value := checkResp["value"].([]interface{})
+	value := checkResp["value"].([]any)
 	assert.Len(t, value, 2) // Should return G1 and G2
 
 	// Verify G1 and G2 are in response, G3 is not
@@ -1073,13 +1073,13 @@ func TestGetMemberGroups(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var getResp map[string]interface{}
+	var getResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &getResp)
 	require.NoError(t, err)
 
-	value := getResp["value"].([]interface{})
+	value := getResp["value"].([]any)
 	// Should include both A and B (transitive membership)
 	assert.Len(t, value, 2)
 
@@ -1149,17 +1149,17 @@ func TestGroupMemberOf(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var memberOfResp map[string]interface{}
+	var memberOfResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &memberOfResp)
 	require.NoError(t, err)
 
-	memberOf := memberOfResp["value"].([]interface{})
+	memberOf := memberOfResp["value"].([]any)
 	assert.Len(t, memberOf, 1)
 
 	// Verify group A is returned
-	member := memberOf[0].(map[string]interface{})
+	member := memberOf[0].(map[string]any)
 	assert.Equal(t, createdGroupA.ID, member["id"])
 	assert.Equal(t, "#microsoft.graph.group", member["@odata.type"])
 	assert.Equal(t, "Group A", member["displayName"])
@@ -1181,7 +1181,6 @@ func TestListMembersByTypeWithCount(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create 2 users and add as members
-	var userIDs []string
 	for i := 1; i <= 2; i++ {
 		accountEnabled := true
 		user := model.User{
@@ -1192,7 +1191,6 @@ func TestListMembersByTypeWithCount(t *testing.T) {
 		}
 		createdUser, err := store.CreateUser(ctx, user)
 		require.NoError(t, err)
-		userIDs = append(userIDs, createdUser.ID)
 		err = store.AddMember(ctx, createdGroup.ID, createdUser.ID, "user")
 		require.NoError(t, err)
 	}
@@ -1226,13 +1224,13 @@ func TestListMembersByTypeWithCount(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 2) // Only user members, not the subgroup
 
@@ -1301,13 +1299,13 @@ func TestListOwnersByTypeWithCount(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &result)
 	require.NoError(t, err)
 
-	value, ok := result["value"].([]interface{})
+	value, ok := result["value"].([]any)
 	require.True(t, ok)
 	assert.Len(t, value, 2) // Only user owners, not the subgroup
 
@@ -1363,25 +1361,25 @@ func TestListGroupsExpandMembers(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	groups := listResp["value"].([]interface{})
+	groups := listResp["value"].([]any)
 	require.GreaterOrEqual(t, len(groups), 1)
 
 	// Find our group and verify members
 	found := false
 	for _, g := range groups {
-		groupMap := g.(map[string]interface{})
+		groupMap := g.(map[string]any)
 		if groupMap["displayName"] == "Test Group" {
 			found = true
-			members, ok := groupMap["members"].([]interface{})
+			members, ok := groupMap["members"].([]any)
 			require.True(t, ok, "group should have members key")
 			assert.Len(t, members, 1)
-			member := members[0].(map[string]interface{})
+			member := members[0].(map[string]any)
 			assert.Equal(t, createdUser.ID, member["id"])
 			assert.Contains(t, member, "@odata.type")
 			break
@@ -1435,20 +1433,20 @@ func TestListGroupsExpandMembersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	groups := listResp["value"].([]interface{})
+	groups := listResp["value"].([]any)
 	for _, g := range groups {
-		groupMap := g.(map[string]interface{})
+		groupMap := g.(map[string]any)
 		if groupMap["displayName"] == "Test Group" {
-			members, ok := groupMap["members"].([]interface{})
+			members, ok := groupMap["members"].([]any)
 			require.True(t, ok)
 			assert.Len(t, members, 1)
-			member := members[0].(map[string]interface{})
+			member := members[0].(map[string]any)
 			assert.Contains(t, member, "id")
 			assert.Contains(t, member, "displayName")
 			assert.Contains(t, member, "@odata.type")
@@ -1503,16 +1501,16 @@ func TestGetGroupExpandMembersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var groupResp map[string]interface{}
+	var groupResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &groupResp)
 	require.NoError(t, err)
 
-	members, ok := groupResp["members"].([]interface{})
+	members, ok := groupResp["members"].([]any)
 	require.True(t, ok)
 	assert.Len(t, members, 1)
-	member := members[0].(map[string]interface{})
+	member := members[0].(map[string]any)
 	assert.Contains(t, member, "id")
 	assert.Contains(t, member, "@odata.type")
 	assert.NotContains(t, member, "displayName")
@@ -1564,20 +1562,20 @@ func TestListGroupsExpandOwnersWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	groups := listResp["value"].([]interface{})
+	groups := listResp["value"].([]any)
 	for _, g := range groups {
-		groupMap := g.(map[string]interface{})
+		groupMap := g.(map[string]any)
 		if groupMap["displayName"] == "Test Group" {
-			owners, ok := groupMap["owners"].([]interface{})
+			owners, ok := groupMap["owners"].([]any)
 			require.True(t, ok)
 			assert.Len(t, owners, 1)
-			owner := owners[0].(map[string]interface{})
+			owner := owners[0].(map[string]any)
 			assert.Contains(t, owner, "id")
 			assert.Contains(t, owner, "displayName")
 			assert.Contains(t, owner, "@odata.type")
@@ -1631,20 +1629,20 @@ func TestListGroupsExpandMemberOfWithSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	groups := listResp["value"].([]interface{})
+	groups := listResp["value"].([]any)
 	for _, g := range groups {
-		groupMap := g.(map[string]interface{})
+		groupMap := g.(map[string]any)
 		if groupMap["displayName"] == "Child Group" {
-			memberOf, ok := groupMap["memberOf"].([]interface{})
+			memberOf, ok := groupMap["memberOf"].([]any)
 			require.True(t, ok)
 			assert.Len(t, memberOf, 1)
-			parent := memberOf[0].(map[string]interface{})
+			parent := memberOf[0].(map[string]any)
 			assert.Contains(t, parent, "id")
 			assert.Contains(t, parent, "displayName")
 			assert.Contains(t, parent, "@odata.type")
@@ -1699,25 +1697,25 @@ func TestListGroupsExpandMembersWithGroupSelect(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var listResp map[string]interface{}
+	var listResp map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &listResp)
 	require.NoError(t, err)
 
-	groups := listResp["value"].([]interface{})
+	groups := listResp["value"].([]any)
 	for _, g := range groups {
-		groupMap := g.(map[string]interface{})
+		groupMap := g.(map[string]any)
 		if groupMap["displayName"] == "Test Group" {
 			// Outer $select should limit group fields to displayName, id, @odata.*
 			assert.Contains(t, groupMap, "displayName")
 			assert.Contains(t, groupMap, "id")
 			assert.NotContains(t, groupMap, "mailNickname")
 			// But members should be preserved because it's an expanded property
-			members, ok := groupMap["members"].([]interface{})
+			members, ok := groupMap["members"].([]any)
 			require.True(t, ok, "members should be preserved even with outer $select")
 			assert.Len(t, members, 1)
-			member := members[0].(map[string]interface{})
+			member := members[0].(map[string]any)
 			assert.Contains(t, member, "id")
 			assert.NotContains(t, member, "displayName") // nested $select=id only
 			break
@@ -1782,13 +1780,13 @@ func TestGetMemberObjects(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var result map[string]interface{}
+	var result map[string]any
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	err = json.Unmarshal(body, &result)
 	require.NoError(t, err)
 
-	value := result["value"].([]interface{})
+	value := result["value"].([]any)
 	assert.Len(t, value, 2) // Should include A and B
 
 	returnedIDs := make([]string, 0, 2)

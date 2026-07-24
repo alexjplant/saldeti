@@ -11,7 +11,7 @@
                 {{range .AssignedLicenses}}
                 <tr>
                     <td>{{.SkuID}}</td>
-                    <td><strong>{{.SkuPartNumber}}</strong></td>
+                    <td><strong>{{skuIDToPartNumber .SkuID}}</strong></td>
                     <td>{{if .DisabledPlans}}{{join (planIDsToNames .DisabledPlans) ", "}}{{else}}None{{end}}</td>
                     <td>
                         <div role="group">

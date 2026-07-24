@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -20,8 +21,11 @@ func (t *httpTransport) Do(req *http.Request) (*http.Response, error) {
 	return t.client.Do(req)
 }
 
-func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSecret, adminTenantID string) {
-	baseTmpl := parseBaseTemplates()
+func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSecret, adminTenantID string) error {
+	baseTmpl, err := parseBaseTemplates()
+	if err != nil {
+		return fmt.Errorf("failed to parse base templates: %w", err)
+	}
 
 	insecureClient := newInsecureHTTPClient()
 
@@ -39,12 +43,12 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 		},
 	)
 	if err != nil {
-		panic("Failed to create admin credential: " + err.Error())
+		return fmt.Errorf("failed to create admin credential: %w", err)
 	}
 
 	client, err := newGraphClient(baseURL, cred)
 	if err != nil {
-		panic("Failed to create Graph SDK client: " + err.Error())
+		return fmt.Errorf("failed to create Graph SDK client: %w", err)
 	}
 
 	handler := NewUIHandler(client, cred, baseURL, baseTmpl)
@@ -53,7 +57,10 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 	uiGroup.Use(csrfMiddleware())
 
 	// Serve embedded static files
-	staticSub, _ := fs.Sub(staticFS, "static")
+	staticSub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		return fmt.Errorf("failed to get static sub-filesystem: %w", err)
+	}
 	uiGroup.StaticFS("/static", http.FS(staticSub))
 
 	// Routes
@@ -117,9 +124,11 @@ func RegisterUIRoutes(engine *gin.Engine, baseURL, adminClientID, adminClientSec
 	uiGroup.POST("/servicePrincipals/:id/credentials/password/:keyId/remove", SPRemovePasswordHandler(handler))
 	uiGroup.POST("/servicePrincipals/:id/credentials/key/add", SPAddKeyHandler(handler))
 	uiGroup.POST("/servicePrincipals/:id/credentials/key/:keyId/remove", SPRemoveKeyHandler(handler))
+
+	return nil
 }
 
-func parseBaseTemplates() *template.Template {
+func parseBaseTemplates() (*template.Template, error) {
 	t := template.New("").Funcs(funcMap())
 	// Parse all embedded templates at once from the embedded filesystem
 	tmpl, err := t.ParseFS(templateFS,
@@ -131,7 +140,7 @@ func parseBaseTemplates() *template.Template {
 		"templates/serviceprincipals/_*.html",
 	)
 	if err != nil {
-		panic("Failed to parse embedded base templates: " + err.Error())
+		return nil, fmt.Errorf("failed to parse embedded base templates: %w", err)
 	}
-	return tmpl
+	return tmpl, nil
 }

@@ -33,7 +33,7 @@ func TestE2E_ConcurrentRequests(t *testing.T) {
 			// Each goroutine creates, reads, updates, and deletes a user via SDK
 			userID, err := performUserLifecycleSDK(t, tss, id)
 			if err != nil {
-				errors <- fmt.Errorf("goroutine %d: %v", id, err)
+				errors <- fmt.Errorf("goroutine %d: %w", id, err)
 				return
 			}
 
@@ -85,7 +85,7 @@ func performUserLifecycleSDK(t *testing.T, tss *TestServer, id int) (string, err
 
 	created, err := tss.SDKClient.Users().Post(ctx, user, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create user: %v", err)
+		return "", fmt.Errorf("failed to create user: %w", err)
 	}
 
 	userID := *created.GetId()
@@ -93,7 +93,7 @@ func performUserLifecycleSDK(t *testing.T, tss *TestServer, id int) (string, err
 	// 2. Read the user via SDK
 	fetched, err := tss.SDKClient.Users().ByUserId(userID).Get(ctx, nil)
 	if err != nil {
-		return userID, fmt.Errorf("failed to read user: %v", err)
+		return userID, fmt.Errorf("failed to read user: %w", err)
 	}
 
 	if fetched.GetDisplayName() == nil || *fetched.GetDisplayName() != dn {
@@ -106,13 +106,13 @@ func performUserLifecycleSDK(t *testing.T, tss *TestServer, id int) (string, err
 	patch.SetDepartment(&dept)
 	_, err = tss.SDKClient.Users().ByUserId(userID).Patch(ctx, patch, nil)
 	if err != nil {
-		return userID, fmt.Errorf("failed to update user: %v", err)
+		return userID, fmt.Errorf("failed to update user: %w", err)
 	}
 
 	// 4. Read again to verify update via SDK
 	updated, err := tss.SDKClient.Users().ByUserId(userID).Get(ctx, nil)
 	if err != nil {
-		return userID, fmt.Errorf("failed to read user after update: %v", err)
+		return userID, fmt.Errorf("failed to read user after update: %w", err)
 	}
 
 	if updated.GetDepartment() == nil || *updated.GetDepartment() != dept {
@@ -122,7 +122,7 @@ func performUserLifecycleSDK(t *testing.T, tss *TestServer, id int) (string, err
 	// 5. Delete the user via SDK
 	err = tss.SDKClient.Users().ByUserId(userID).Delete(ctx, nil)
 	if err != nil {
-		return userID, fmt.Errorf("failed to delete user: %v", err)
+		return userID, fmt.Errorf("failed to delete user: %w", err)
 	}
 
 	return userID, nil

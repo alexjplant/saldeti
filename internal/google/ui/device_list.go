@@ -20,9 +20,9 @@ func DeviceListHandler(h *UIHandler) gin.HandlerFunc {
 		}
 
 		h.render(c, "templates/devices/list.html", gin.H{
-			"ActiveNav":        "devices",
-			"ChromeOSDevices":  chromeOSDevices,
-			"MobileDevices":    mobileDevices,
+			"ActiveNav":       "devices",
+			"ChromeOSDevices": chromeOSDevices,
+			"MobileDevices":   mobileDevices,
 		})
 	}
 }

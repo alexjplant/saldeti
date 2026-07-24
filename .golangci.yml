@@ -1,0 +1,29 @@
+# golangci-lint v2 configuration
+# Note: In golangci-lint v2, gosimple is merged into staticcheck,
+# and gofmt is classified as a formatter rather than a linter.
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - ineffassign
+    - unused
+  exclusions:
+    rules:
+      # Exclude test files from errcheck
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

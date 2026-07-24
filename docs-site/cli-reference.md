@@ -23,18 +23,10 @@ saldeti -seed examples/seed.json
 
 ### Google Workspace mode
 
-Enable the Google Workspace API simulator alongside Entra ID:
+Run the Google Workspace API simulator exclusively:
 
 ```sh
-saldeti -google
-```
-
-### Both Entra ID and Google Workspace
-
-Run both simulators together with seed data:
-
-```sh
-saldeti -google -seed examples/seed.json
+saldeti -mode google
 ```
 
 ### Daemon mode
@@ -74,11 +66,11 @@ saldeti -base-url https://example.com -trust-forwarded-headers
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `-port` | int | `9443` | Port to listen on. |
-| `-ui` | bool | `true` | Enable the admin UI. When enabled, a web dashboard is available at the server root. |
-| `-seed` | string | `""` | Path to a JSON seed file. See [Seed Files](/seed-files) for the file format. |
+| `-ui` | bool | `true` | Enable the admin UI. When enabled, a web dashboard is available at `/ui` (Entra mode, default) or `/google-ui/` (Google mode). |
+| `-seed` | string | `""` | Path to a JSON seed file. The format depends on the active `-mode` (`seed.schema.json` for Entra ID, `google-seed.schema.json` for Google Workspace). See [Seed Files](/seed-files) for the file format. |
 | `-dump` | string | `""` | Path to write a seed JSON file on graceful shutdown. Useful for capturing runtime state. |
 | `-domain` | string | `saldeti.local` | Default directory domain. Used for admin user UPN and for seeded users whose username does not contain `@`. |
-| `-google` | bool | `false` | Enable the Google Workspace API simulator. When set, Google-specific OAuth2 and API endpoints are registered alongside the Entra ID endpoints. |
+| `-mode` | string | `entra` | Operating mode. Set to `google` to run the Google Workspace API simulator exclusively, or `entra` (default) for Microsoft Entra ID / Graph. The two modes are mutually exclusive. |
 | `-debug` | bool | `false` | Enable debug-level logging. |
 
 ### Authentication & Security Flags
@@ -90,9 +82,9 @@ saldeti -base-url https://example.com -trust-forwarded-headers
 | `-tls-key` | string | `""` | Path to a TLS key file (PEM). If not set, a self-signed certificate is auto-generated. |
 | `-base-url` | string | `""` | External base URL (e.g. `https://example.com`). Overrides any proxy header detection. When set, `X-Forwarded-Host` and `X-Forwarded-Proto` headers are ignored. |
 | `-trust-forwarded-headers` | bool | `false` | Trust `X-Forwarded-Host` and `X-Forwarded-Proto` headers for base URL detection. Only enable this if the server is behind a trusted reverse proxy. |
-| `-admin-client-id` | string | `""` | Admin application client ID. If empty, a random UUID is generated. |
-| `-admin-client-secret` | string | `""` | Admin application client secret. If empty, a random UUID is generated. |
-| `-admin-tenant-id` | string | `""` | Admin application tenant ID. If empty, a random UUID is generated. |
+| `-admin-client-id` | string | `""` | Admin application client ID. If empty, a random UUID is generated. (Entra mode only; ignored in google mode) |
+| `-admin-client-secret` | string | `""` | Admin application client secret. If empty, a random UUID is generated. (Entra mode only; ignored in google mode) |
+| `-admin-tenant-id` | string | `""` | Admin application tenant ID. If empty, a random UUID is generated. (Entra mode only; ignored in google mode) |
 
 ### Daemon Mode Flags
 
@@ -108,6 +100,8 @@ saldeti -base-url https://example.com -trust-forwarded-headers
 ### Admin credentials are all-or-nothing
 
 The three admin credential flags (`-admin-client-id`, `-admin-client-secret`, `-admin-tenant-id`) must all be set or all be left empty. If you set one, you must set all three — otherwise the server will refuse to start.
+
+These flags only apply in entra mode. In google mode, they are ignored.
 
 ::: tip
 If you leave all three empty, Saldeti generates random UUIDs and prints them to the console at startup. This is ideal for local development where you just need valid credentials quickly.
@@ -146,3 +140,9 @@ You can specify a custom PID file path if the daemon was started with `-pidfile`
 ```sh
 saldeti -stop -pidfile /var/run/saldeti.pid
 ```
+
+---
+
+::: warning Trademark Notice
+Saldeti is an independent project and is not affiliated with, endorsed by, or sponsored by Microsoft Corporation or Google LLC. All product names and trademarks are property of their respective owners.
+:::

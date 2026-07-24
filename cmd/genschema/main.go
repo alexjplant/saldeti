@@ -70,7 +70,7 @@ func validateExample(schemaPath, examplePath, label string) {
 		fatalf("reading %s: %v", examplePath, err)
 	}
 
-	var exampleData interface{}
+	var exampleData any
 	if err := json.Unmarshal(exampleBytes, &exampleData); err != nil {
 		fatalf("parsing %s: %v", examplePath, err)
 	}
@@ -82,7 +82,7 @@ func validateExample(schemaPath, examplePath, label string) {
 	fmt.Printf("%s validates against the %s schema\n", examplePath, label)
 }
 
-func fatalf(format string, args ...interface{}) {
+func fatalf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "ERROR: "+format+"\n", args...)
 	os.Exit(1)
 }

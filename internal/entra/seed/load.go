@@ -329,7 +329,6 @@ func SeedFromConfig(s store.Store, cfg *SeedConfig) error {
 				}
 				licenses = append(licenses, model.AssignedLicense{
 					SkuID:         skuID,
-					SkuPartNumber: sl.SkuPartNumber,
 					DisabledPlans: disabledPlans,
 				})
 			}

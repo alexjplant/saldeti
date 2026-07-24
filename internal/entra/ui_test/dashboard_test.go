@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/saldeti/saldeti/internal/entra/handler"
-	"github.com/saldeti/saldeti/internal/entra/seed"
 	"github.com/saldeti/saldeti/internal/entra/store"
 	ui "github.com/saldeti/saldeti/internal/entra/ui"
 )
@@ -21,9 +20,7 @@ func TestDashboardShowsStatsAfterLogin(t *testing.T) {
 
 	// Create test store and seed data
 	st := store.NewMemoryStore()
-	if err := seed.Seed(st); err != nil {
-		t.Fatalf("Failed to seed data: %v", err)
-	}
+	seedTestStore(t, st)
 
 	// Create engine with API routes
 	engine := handler.NewRouter(st)
@@ -42,7 +39,9 @@ func TestDashboardShowsStatsAfterLogin(t *testing.T) {
 
 	// Register UI routes with the HTTPS base URL
 	baseURL := ts.URL
-	ui.RegisterUIRoutes(engine, baseURL, adminClientID, adminClientSecret, adminTenantID)
+	if err := ui.RegisterUIRoutes(engine, baseURL, adminClientID, adminClientSecret, adminTenantID); err != nil {
+		t.Fatalf("Failed to register UI routes: %v", err)
+	}
 
 	t.Cleanup(func() { ts.Close() })
 
@@ -74,5 +73,3 @@ func TestDashboardShowsStatsAfterLogin(t *testing.T) {
 		t.Error("Expected 'Dashboard' title in response")
 	}
 }
-
-

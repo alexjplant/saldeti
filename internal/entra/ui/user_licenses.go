@@ -33,11 +33,11 @@ func UserAddLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"addLicenses": []map[string]interface{}{
+		payload := map[string]any{
+			"addLicenses": []map[string]any{
 				{"skuId": skuID},
 			},
-			"removeLicenses": []interface{}{},
+			"removeLicenses": []any{},
 		}
 		body, err := json.Marshal(payload)
 		if err != nil {
@@ -59,7 +59,7 @@ func UserAddLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleLicenseResponse(c, id, FlashDanger, "Failed to assign license. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)
@@ -93,9 +93,9 @@ func UserRemoveLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			return
 		}
 
-		payload := map[string]interface{}{
-			"addLicenses":    []interface{}{},
-			"removeLicenses": []map[string]interface{}{{"skuId": skuID}},
+		payload := map[string]any{
+			"addLicenses":    []any{},
+			"removeLicenses": []string{skuID},
 		}
 		body, err := json.Marshal(payload)
 		if err != nil {
@@ -117,7 +117,7 @@ func UserRemoveLicenseHandler(h *UIHandler) gin.HandlerFunc {
 			h.handleLicenseResponse(c, id, FlashDanger, "Failed to remove license. Please try again.")
 			return
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck // deferred close error not actionable
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)

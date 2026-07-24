@@ -19,7 +19,9 @@ import (
 func TestDumpStore(t *testing.T) {
 	// Seed a store with the default seed data
 	s := store.NewMemoryStore()
-	err := Seed(s)
+	seedCfg, err := LoadFromFile("../../../examples/seed.json")
+	require.NoError(t, err)
+	err = SeedFromConfig(s, seedCfg)
 	require.NoError(t, err)
 
 	// Dump the store
@@ -204,8 +206,10 @@ func TestRoundTrip(t *testing.T) {
 
 	// 1. Seed a store with the default Seed() data (which covers all entity types)
 	s1 := store.NewMemoryStore()
-	err := Seed(s1)
-	require.NoError(t, err, "Seed() should succeed")
+	seedCfg, err := LoadFromFile("../../../examples/seed.json")
+	require.NoError(t, err)
+	err = SeedFromConfig(s1, seedCfg)
+	require.NoError(t, err)
 
 	// 2. Dump the store
 	cfg, err := DumpStore(s1)
@@ -267,13 +271,13 @@ func TestRoundTrip(t *testing.T) {
 		assert.Len(t, u2.AssignedLicenses, len(u1.AssignedLicenses), "User %s: license count mismatch", upn)
 		lics1 := make(map[string]model.AssignedLicense)
 		for _, l := range u1.AssignedLicenses {
-			lics1[l.SkuPartNumber] = l
+			lics1[l.SkuID] = l
 		}
 		for _, l2 := range u2.AssignedLicenses {
-			l1, ok := lics1[l2.SkuPartNumber]
-			require.True(t, ok, "User %s: unexpected license %s", upn, l2.SkuPartNumber)
+			l1, ok := lics1[l2.SkuID]
+			require.True(t, ok, "User %s: unexpected license %s", upn, l2.SkuID)
 			assert.ElementsMatch(t, l1.DisabledPlans, l2.DisabledPlans,
-				"User %s: disabledPlans mismatch for %s", upn, l2.SkuPartNumber)
+				"User %s: disabledPlans mismatch for %s", upn, l2.SkuID)
 		}
 
 		// Compare managers
@@ -320,11 +324,12 @@ func TestRoundTrip(t *testing.T) {
 		memberUPNs1 := make(map[string]bool)
 		memberGroupNames1 := make(map[string]bool)
 		for _, m := range members1 {
-			if m.ODataType == "#microsoft.graph.user" {
+			switch m.ODataType {
+			case "#microsoft.graph.user":
 				if u, err := s1.GetUser(ctx, m.ID); err == nil {
 					memberUPNs1[u.UserPrincipalName] = true
 				}
-			} else if m.ODataType == "#microsoft.graph.group" {
+			case "#microsoft.graph.group":
 				if grp, err := s1.GetGroup(ctx, m.ID); err == nil {
 					memberGroupNames1[grp.DisplayName] = true
 				}
@@ -333,11 +338,12 @@ func TestRoundTrip(t *testing.T) {
 		memberUPNs2 := make(map[string]bool)
 		memberGroupNames2 := make(map[string]bool)
 		for _, m := range members2 {
-			if m.ODataType == "#microsoft.graph.user" {
+			switch m.ODataType {
+			case "#microsoft.graph.user":
 				if u, err := s2.GetUser(ctx, m.ID); err == nil {
 					memberUPNs2[u.UserPrincipalName] = true
 				}
-			} else if m.ODataType == "#microsoft.graph.group" {
+			case "#microsoft.graph.group":
 				if grp, err := s2.GetGroup(ctx, m.ID); err == nil {
 					memberGroupNames2[grp.DisplayName] = true
 				}

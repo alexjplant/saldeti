@@ -11,10 +11,10 @@ type Activity struct {
 }
 
 type ActivityId struct {
-	Time             string `json:"time,omitempty"`
-	UniqueQualifier  string `json:"uniqueQualifier,omitempty"`
-	ApplicationName  string `json:"applicationName,omitempty"`
-	CustomerId       string `json:"customerId,omitempty"`
+	Time            string `json:"time,omitempty"`
+	UniqueQualifier string `json:"uniqueQualifier,omitempty"`
+	ApplicationName string `json:"applicationName,omitempty"`
+	CustomerId      string `json:"customerId,omitempty"`
 }
 
 type ActivityActor struct {
@@ -30,12 +30,12 @@ type ActivityEvent struct {
 }
 
 type ActivityParameter struct {
-	Name         string          `json:"name,omitempty"`
-	Value        string          `json:"value,omitempty"`
-	MultiValue   []string        `json:"multiValue,omitempty"`
-	IntValue     int64           `json:"intValue,omitempty"`
-	BoolValue    bool            `json:"boolValue,omitempty"`
-	MessageValue *MessageValue   `json:"messageValue,omitempty"`
+	Name         string        `json:"name,omitempty"`
+	Value        string        `json:"value,omitempty"`
+	MultiValue   []string      `json:"multiValue,omitempty"`
+	IntValue     int64         `json:"intValue,omitempty"`
+	BoolValue    bool          `json:"boolValue,omitempty"`
+	MessageValue *MessageValue `json:"messageValue,omitempty"`
 }
 
 type MessageValue struct {
@@ -43,10 +43,10 @@ type MessageValue struct {
 }
 
 type UsageReport struct {
-	Kind       string                `json:"kind"`
-	Etag       string                `json:"etag,omitempty"`
-	Date       string                `json:"date,omitempty"`
-	Entity     *UsageReportEntity    `json:"entity,omitempty"`
+	Kind       string                 `json:"kind"`
+	Etag       string                 `json:"etag,omitempty"`
+	Date       string                 `json:"date,omitempty"`
+	Entity     *UsageReportEntity     `json:"entity,omitempty"`
 	Parameters []UsageReportParameter `json:"parameters,omitempty"`
 }
 

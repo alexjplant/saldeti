@@ -1,4 +1,4 @@
-//go:build google
+//go:build e2e && google
 
 package google_e2e
 
@@ -31,7 +31,7 @@ func setupGoogleServer(t *testing.T) (*httptest.Server, store.Store) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	s := store.NewMemoryStore()
-	s.RegisterClient(context.Background(), "test-client", "test-secret")
+	require.NoError(t, s.RegisterClient(context.Background(), "test-client", "test-secret"))
 	r := gin.New()
 	handler.RegisterRoutes(r, s)
 	ts := httptest.NewTLSServer(r)
@@ -61,7 +61,7 @@ func getGoogleToken(t *testing.T, client *http.Client, baseURL string) string {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "token request failed: %s", string(body))
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 	token, _ := result["access_token"].(string)
 	require.NotEmpty(t, token, "access_token was empty")
@@ -85,12 +85,12 @@ func googleRequest(t *testing.T, client *http.Client, method, url, token, body s
 	return resp
 }
 
-func readBody(t *testing.T, resp *http.Response) map[string]interface{} {
+func readBody(t *testing.T, resp *http.Response) map[string]any {
 	t.Helper()
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	resp.Body.Close()
-	var result map[string]interface{}
+	var result map[string]any
 	require.NoError(t, json.Unmarshal(body, &result))
 	return result
 }

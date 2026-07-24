@@ -15,7 +15,7 @@ import (
 // listUserMemberOfHandler handles GET /v1.0/users/{id}/memberOf
 func listUserMemberOfHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 		opts := parseListOptions(c.Request.URL.Query())
 
 		memberOf, totalCount, err := st.ListUserMemberOf(c.Request.Context(), userID, opts)
@@ -43,7 +43,7 @@ func listUserMemberOfHandler(st store.Store) gin.HandlerFunc {
 // listUserTransitiveMemberOfHandler handles GET /v1.0/users/{id}/transitiveMemberOf
 func listUserTransitiveMemberOfHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 		opts := parseListOptions(c.Request.URL.Query())
 
 		memberOf, totalCount, err := st.ListUserTransitiveMemberOf(c.Request.Context(), userID, opts)
@@ -71,7 +71,7 @@ func listUserTransitiveMemberOfHandler(st store.Store) gin.HandlerFunc {
 // getManagerHandler handles GET /v1.0/users/{id}/manager
 func getManagerHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 
 		manager, err := st.GetManager(c.Request.Context(), userID)
 		if err != nil {
@@ -94,7 +94,7 @@ func getManagerHandler(st store.Store) gin.HandlerFunc {
 // setManagerHandler handles PUT /v1.0/users/{id}/manager/$ref
 func setManagerHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 
 		var requestBody struct {
 			ODataID string `json:"@odata.id"`
@@ -129,7 +129,7 @@ func setManagerHandler(st store.Store) gin.HandlerFunc {
 // removeManagerHandler handles DELETE /v1.0/users/{id}/manager/$ref
 func removeManagerHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 
 		if err := st.RemoveManager(c.Request.Context(), userID); err != nil {
 			if errors.Is(err, store.ErrUserNotFound) {
@@ -147,7 +147,7 @@ func removeManagerHandler(st store.Store) gin.HandlerFunc {
 // listDirectReportsHandler handles GET /v1.0/users/{id}/directReports
 func listDirectReportsHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 		opts := parseListOptions(c.Request.URL.Query())
 
 		directReports, totalCount, err := st.ListDirectReports(c.Request.Context(), userID, opts)
@@ -195,7 +195,7 @@ func getByIdsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		writeJSON(c, http.StatusOK, map[string]interface{}{
+		writeJSON(c, http.StatusOK, map[string]any{
 			"value": objects,
 		})
 	}
@@ -204,7 +204,7 @@ func getByIdsHandler(st store.Store) gin.HandlerFunc {
 // checkUserMemberGroupsHandler handles POST /v1.0/users/{id}/checkMemberGroups
 func checkUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 
 		var requestBody struct {
 			GroupIDs []string `json:"groupIds"`
@@ -229,7 +229,7 @@ func checkUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		writeJSON(c, http.StatusOK, map[string]interface{}{
+		writeJSON(c, http.StatusOK, map[string]any{
 			"value": memberGroups,
 		})
 	}
@@ -238,7 +238,7 @@ func checkUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 // getUserMemberGroupsHandler handles POST /v1.0/users/{id}/getMemberGroups
 func getUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param( "id")
+		userID := c.Param("id")
 
 		var requestBody struct {
 			SecurityEnabledOnly bool `json:"securityEnabledOnly"`
@@ -258,7 +258,7 @@ func getUserMemberGroupsHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		writeJSON(c, http.StatusOK, map[string]interface{}{
+		writeJSON(c, http.StatusOK, map[string]any{
 			"value": memberGroups,
 		})
 	}
@@ -275,7 +275,7 @@ func usersDeltaHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
 			"value":          items,
 		}
@@ -300,7 +300,7 @@ func groupsDeltaHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#groups",
 			"value":          items,
 		}

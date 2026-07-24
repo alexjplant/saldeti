@@ -23,8 +23,8 @@ func listTransferApplicationsHandler(st store.Store) gin.HandlerFunc {
 			apps = []model.TransferApplication{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#datatransfer#applicationsList",
-			"etag":  "\"placeholder\"",
+			"kind":         "admin#datatransfer#applicationsList",
+			"etag":         "\"placeholder\"",
 			"applications": apps,
 		})
 	}
@@ -59,8 +59,8 @@ func listTransfersHandler(st store.Store) gin.HandlerFunc {
 			transfers = []model.DataTransfer{}
 		}
 		writeJSON(c, http.StatusOK, gin.H{
-			"kind":  "admin#datatransfer#dataTransfersList",
-			"etag":  "\"placeholder\"",
+			"kind":          "admin#datatransfer#dataTransfersList",
+			"etag":          "\"placeholder\"",
 			"dataTransfers": transfers,
 		})
 	}

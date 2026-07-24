@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,27 +21,29 @@ import (
 	"github.com/saldeti/saldeti/internal/google/store"
 )
 
+const refreshTokenTTL = 24 * time.Hour // Refresh token time-to-live
+
 var (
-	signingKey         []byte
+	signingKey         atomic.Pointer[[]byte]
 	refreshTokens      = make(map[string]refreshTokenClaims)
 	refreshTokensMutex sync.RWMutex
 )
 
 var knownScopes = map[string]bool{
-	"https://www.googleapis.com/auth/admin.directory.user":           true,
-	"https://www.googleapis.com/auth/admin.directory.group":          true,
+	"https://www.googleapis.com/auth/admin.directory.user":            true,
+	"https://www.googleapis.com/auth/admin.directory.group":           true,
 	"https://www.googleapis.com/auth/admin.directory.device.chromeos": true,
-	"https://www.googleapis.com/auth/admin.directory.device.mobile":  true,
+	"https://www.googleapis.com/auth/admin.directory.device.mobile":   true,
 	"https://www.googleapis.com/auth/cloud-identity.devices.readonly": true,
-	"https://www.googleapis.com/auth/cloud-identity.groups":          true,
-	"https://www.googleapis.com/auth/admin.reports.usage.readonly":   true,
-	"https://www.googleapis.com/auth/admin.reports.audit.readonly":   true,
-	"https://www.googleapis.com/auth/admin.datatransfer":             true,
-	"https://www.googleapis.com/auth/apps.groups.settings":           true,
-	"https://www.googleapis.com/auth/cloud-platform":                 true,
-	"openid":   true,
-	"profile":  true,
-	"email":    true,
+	"https://www.googleapis.com/auth/cloud-identity.groups":           true,
+	"https://www.googleapis.com/auth/admin.reports.usage.readonly":    true,
+	"https://www.googleapis.com/auth/admin.reports.audit.readonly":    true,
+	"https://www.googleapis.com/auth/admin.datatransfer":              true,
+	"https://www.googleapis.com/auth/apps.groups.settings":            true,
+	"https://www.googleapis.com/auth/cloud-platform":                  true,
+	"openid":  true,
+	"profile": true,
+	"email":   true,
 }
 
 type GoogleClaims struct {
@@ -61,23 +65,26 @@ type refreshTokenClaims struct {
 
 // SetSigningKey sets the JWT signing key for Google token generation.
 func SetSigningKey(key []byte) {
-	signingKey = key
-	// Generate a short hash of the key for logging
-	hash := sha256.Sum256(key)
-	shortHash := hex.EncodeToString(hash[:])[:16]
-	if key == nil || len(key) == 0 {
+	k := key
+	signingKey.Store(&k)
+	if len(k) == 0 {
 		log.Warn().Msg("JWT signing key is empty")
-	} else if len(key) < 32 {
-		log.Warn().Int("key_len", len(key)).Msg("JWT signing key is less than 32 bytes (insecure)")
-	} else {
-		log.Info().Str("hash", shortHash).Msg("JWT signing key configured")
+		return
 	}
+	if len(k) < 32 {
+		log.Warn().Int("key_len", len(k)).Msg("JWT signing key is less than 32 bytes (insecure)")
+	}
+	// Generate a short hash of the key for logging
+	hash := sha256.Sum256(k)
+	shortHash := hex.EncodeToString(hash[:])[:16]
+	log.Info().Str("hash", shortHash).Msg("JWT signing key configured")
 }
 
 // MintToken creates a new JWT token with the given parameters.
 func MintToken(iss, sub, email string, scopes []string, lifetime time.Duration) (string, error) {
-	if signingKey == nil {
-		return "", errors.New("JWT signing key not configured")
+	key := signingKey.Load()
+	if key == nil || *key == nil {
+		return "", errors.New("jwt signing key not configured")
 	}
 	now := time.Now()
 	scopeString := strings.Join(scopes, " ")
@@ -100,19 +107,20 @@ func MintToken(iss, sub, email string, scopes []string, lifetime time.Duration) 
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(signingKey)
+	return token.SignedString(*key)
 }
 
 // ValidateToken validates a JWT token and returns the claims.
 func ValidateToken(tokenString string) (*GoogleClaims, error) {
-	if signingKey == nil {
-		return nil, errors.New("JWT signing key not configured")
+	key := signingKey.Load()
+	if key == nil || *key == nil {
+		return nil, errors.New("jwt signing key not configured")
 	}
-	token, err := jwt.ParseWithClaims(tokenString, &GoogleClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &GoogleClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return signingKey, nil
+		return *key, nil
 	})
 
 	if err != nil {
@@ -158,12 +166,12 @@ func GenerateRefreshToken(clientID, subject string, scopes []string) (string, er
 	refreshTokensMutex.Lock()
 	defer refreshTokensMutex.Unlock()
 
-	// Store refresh token with 24h TTL
+	// Store refresh token with TTL
 	refreshTokens[tokenID] = refreshTokenClaims{
 		ClientID:  clientID,
 		Subject:   subject,
 		Scopes:    scopes,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		ExpiresAt: time.Now().Add(refreshTokenTTL),
 	}
 
 	return tokenID, nil
@@ -209,7 +217,7 @@ func handleClientCredentialsGoogle(c *gin.Context, st store.Store) {
 
 	// Validate client credentials
 	storedSecret, err := st.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}
@@ -258,7 +266,7 @@ func handleAuthCodeGoogle(c *gin.Context, st store.Store) {
 
 	// Validate client credentials
 	storedSecret, err := st.GetClient(c.Request.Context(), clientID)
-	if err != nil || storedSecret != clientSecret {
+	if err != nil || subtle.ConstantTimeCompare([]byte(storedSecret), []byte(clientSecret)) != 1 {
 		writeTokenError(c, "invalid_client", "Invalid client credentials")
 		return
 	}

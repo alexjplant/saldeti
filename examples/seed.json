@@ -46,11 +46,11 @@
       ]
     },
     {
-      "email": "charlie.brown@saldeti.local",
-      "display_name": "Charlie Brown",
+      "email": "charles.brennan@saldeti.local",
+      "display_name": "Charles Brennan",
       "password": "Simulator123!",
-      "given_name": "Charlie",
-      "surname": "Brown",
+      "given_name": "Charles",
+      "surname": "Brennan",
       "job_title": "Marketing Manager",
       "department": "Marketing",
       "assigned_licenses": [
@@ -58,11 +58,11 @@
       ]
     },
     {
-      "email": "diana.prince@saldeti.local",
-      "display_name": "Diana Prince",
+      "email": "diana.palmer@saldeti.local",
+      "display_name": "Diana Palmer",
       "password": "Simulator123!",
       "given_name": "Diana",
-      "surname": "Prince",
+      "surname": "Palmer",
       "job_title": "HR Director",
       "department": "HR",
       "manager_upn": "admin@saldeti.local",
@@ -128,11 +128,11 @@
       "is_guest": true
     },
     {
-      "email": "julia.roberts@saldeti.local",
-      "display_name": "Julia Roberts",
+      "email": "julia.robertson@saldeti.local",
+      "display_name": "Julia Robertson",
       "password": "Simulator123!",
       "given_name": "Julia",
-      "surname": "Roberts",
+      "surname": "Robertson",
       "job_title": "Content Writer",
       "department": "Marketing",
       "assigned_licenses": [
@@ -159,8 +159,8 @@
       "mail_nickname": "marketingteam",
       "visibility": "Public",
       "member_upns": [
-        "charlie.brown@saldeti.local",
-        "julia.roberts@saldeti.local"
+        "charles.brennan@saldeti.local",
+        "julia.robertson@saldeti.local"
       ]
     },
     {
@@ -171,12 +171,12 @@
       "member_upns": [
         "alice.smith@saldeti.local",
         "bob.jones@saldeti.local",
-        "charlie.brown@saldeti.local",
-        "diana.prince@saldeti.local",
+        "charles.brennan@saldeti.local",
+        "diana.palmer@saldeti.local",
         "eve.wilson@saldeti.local",
         "frank.miller@saldeti.local",
         "henry.taylor@saldeti.local",
-        "julia.roberts@saldeti.local"
+        "julia.robertson@saldeti.local"
       ],
       "member_group_names": [
         "Engineering Team",
@@ -189,7 +189,7 @@
       "mail_nickname": "leadership",
       "visibility": "Private",
       "member_upns": [
-        "diana.prince@saldeti.local",
+        "diana.palmer@saldeti.local",
         "frank.miller@saldeti.local"
       ]
     },
@@ -201,7 +201,7 @@
       "group_types": ["Unified"],
       "member_upns": [
         "alice.smith@saldeti.local",
-        "charlie.brown@saldeti.local",
+        "charles.brennan@saldeti.local",
         "eve.wilson@saldeti.local"
       ]
     }
@@ -221,6 +221,44 @@
           "value": "Application.Read.All"
         }
       ]
+    }
+  ],
+  "service_principals": [
+    {
+      "app_id": "sim-client-id",
+      "owner_upns": ["admin@saldeti.local"]
+    },
+    {
+      "app_id": "00000003-0000-0000-0000-000000000000"
+    }
+  ],
+  "app_role_assignments": [
+    {
+      "principal_type": "service_principal",
+      "principal_name": "00000003-0000-0000-0000-000000000000",
+      "resource_app_id": "sim-client-id",
+      "role_value": "Application.Read.All"
+    },
+    {
+      "principal_type": "user",
+      "principal_name": "admin@saldeti.local",
+      "resource_app_id": "sim-client-id",
+      "role_value": "Application.Read.All"
+    }
+  ],
+  "oauth2_grants": [
+    {
+      "client_app_id": "sim-client-id",
+      "resource_app_id": "00000003-0000-0000-0000-000000000000",
+      "scope": "User.Read.All",
+      "consent_type": "AllPrincipals"
+    },
+    {
+      "client_app_id": "sim-client-id",
+      "resource_app_id": "00000003-0000-0000-0000-000000000000",
+      "scope": "Directory.Read.All",
+      "consent_type": "Principal",
+      "principal_upn": "admin@saldeti.local"
     }
   ]
 }

@@ -29,7 +29,7 @@ func TestOAuth2Grant_CRUDViaHTTP(t *testing.T) {
 	userID := *user.GetId()
 
 	// 2. Create OAuth2 permission grant via raw HTTP POST
-	grantBody := map[string]interface{}{
+	grantBody := map[string]any{
 		"clientId":    appId,
 		"consentType": "Principal",
 		"principalId": userID,
@@ -61,11 +61,11 @@ func TestOAuth2Grant_CRUDViaHTTP(t *testing.T) {
 	assert.Equal(t, http.StatusOK, listResp.StatusCode)
 
 	listResult := readJSON(t, listResp)
-	values := listResult["value"].([]interface{})
+	values := listResult["value"].([]any)
 	assert.GreaterOrEqual(t, len(values), 1, "Expected at least 1 grant")
 
 	// 5. PATCH the grant (update scope)
-	patchBody := map[string]interface{}{
+	patchBody := map[string]any{
 		"scope": "User.Read",
 	}
 	patchJSON, err := json.Marshal(patchBody)
@@ -100,10 +100,10 @@ func TestOAuth2Grant_ListGrantsForSP(t *testing.T) {
 	sp := getAutoCreatedSP(t, tss, appId)
 	spID := *sp.GetId()
 
- 	// Create a grant
- 	grantBody := map[string]interface{}{
- 		"clientId":    spID,
- 		"consentType": "AllPrincipals",
+	// Create a grant
+	grantBody := map[string]any{
+		"clientId":    spID,
+		"consentType": "AllPrincipals",
 		"resourceId":  spID,
 		"scope":       "Directory.Read.All",
 	}
@@ -118,7 +118,7 @@ func TestOAuth2Grant_ListGrantsForSP(t *testing.T) {
 	assert.Equal(t, http.StatusOK, listResp.StatusCode)
 
 	listResult := readJSON(t, listResp)
-	values := listResult["value"].([]interface{})
+	values := listResult["value"].([]any)
 	assert.GreaterOrEqual(t, len(values), 1, "Expected at least 1 grant for SP")
 }
 
@@ -145,7 +145,7 @@ func TestOAuth2Grant_FilterByClientId(t *testing.T) {
 	resourceSpId := *resourceSP.GetId()
 
 	// Create OAuth2 grant with clientSpId1 as clientId and resourceSpId as resourceId
-	grantBody1 := map[string]interface{}{
+	grantBody1 := map[string]any{
 		"clientId":    clientSpId1,
 		"consentType": "AllPrincipals",
 		"resourceId":  resourceSpId,
@@ -158,7 +158,7 @@ func TestOAuth2Grant_FilterByClientId(t *testing.T) {
 	require.Equal(t, http.StatusCreated, createResp1.StatusCode, "Expected 201 for grant 1 creation")
 
 	// Create OAuth2 grant with clientSpId2 as clientId and resourceSpId as resourceId
-	grantBody2 := map[string]interface{}{
+	grantBody2 := map[string]any{
 		"clientId":    clientSpId2,
 		"consentType": "AllPrincipals",
 		"resourceId":  resourceSpId,
@@ -177,10 +177,10 @@ func TestOAuth2Grant_FilterByClientId(t *testing.T) {
 	assert.Equal(t, http.StatusOK, filterResp.StatusCode)
 
 	filterResult := readJSON(t, filterResp)
-	values := filterResult["value"].([]interface{})
+	values := filterResult["value"].([]any)
 	assert.Equal(t, 1, len(values), "Expected exactly 1 grant with matching clientId")
 
-	grant := values[0].(map[string]interface{})
+	grant := values[0].(map[string]any)
 	assert.Equal(t, clientSpId1, grant["clientId"])
 }
 
@@ -207,7 +207,7 @@ func TestOAuth2Grant_FilterByResourceId(t *testing.T) {
 	resourceSpId := *resourceSP.GetId()
 
 	// Create OAuth2 grant with clientSpId1 as clientId and resourceSpId as resourceId
-	grantBody1 := map[string]interface{}{
+	grantBody1 := map[string]any{
 		"clientId":    clientSpId1,
 		"consentType": "AllPrincipals",
 		"resourceId":  resourceSpId,
@@ -220,7 +220,7 @@ func TestOAuth2Grant_FilterByResourceId(t *testing.T) {
 	require.Equal(t, http.StatusCreated, createResp1.StatusCode, "Expected 201 for grant 1 creation")
 
 	// Create OAuth2 grant with clientSpId2 as clientId and resourceSpId as resourceId
-	grantBody2 := map[string]interface{}{
+	grantBody2 := map[string]any{
 		"clientId":    clientSpId2,
 		"consentType": "AllPrincipals",
 		"resourceId":  resourceSpId,
@@ -239,11 +239,11 @@ func TestOAuth2Grant_FilterByResourceId(t *testing.T) {
 	assert.Equal(t, http.StatusOK, filterResp.StatusCode)
 
 	filterResult := readJSON(t, filterResp)
-	values := filterResult["value"].([]interface{})
+	values := filterResult["value"].([]any)
 	assert.Equal(t, 2, len(values), "Expected exactly 2 grants with matching resourceId")
 
 	for _, v := range values {
-		grant := v.(map[string]interface{})
+		grant := v.(map[string]any)
 		assert.Equal(t, resourceSpId, grant["resourceId"])
 	}
 }
@@ -270,7 +270,7 @@ func TestOAuth2Grant_CreateValidation(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
 	// Subtest 2: Missing clientId → 400
-	body, _ := json.Marshal(map[string]interface{}{
+	body, _ := json.Marshal(map[string]any{
 		"consentType": "AllPrincipals",
 		"resourceId":  resourceSpId,
 		"scope":       "User.Read",
@@ -280,7 +280,7 @@ func TestOAuth2Grant_CreateValidation(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp2.StatusCode)
 
 	// Subtest 3: Invalid consentType → 400
-	body3, _ := json.Marshal(map[string]interface{}{
+	body3, _ := json.Marshal(map[string]any{
 		"clientId":    clientSpId,
 		"consentType": "InvalidType",
 		"resourceId":  resourceSpId,
@@ -291,7 +291,7 @@ func TestOAuth2Grant_CreateValidation(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp3.StatusCode)
 
 	// Subtest 4: Principal consentType without principalId → 400
-	body4, _ := json.Marshal(map[string]interface{}{
+	body4, _ := json.Marshal(map[string]any{
 		"clientId":    clientSpId,
 		"consentType": "Principal",
 		"resourceId":  resourceSpId,

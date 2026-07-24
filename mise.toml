@@ -40,19 +40,19 @@ rm -rf bin/
 """
 
 [tasks.e2e]
-description = "Runs end-to-end tests (requires e2e build tag)"
+description = "Runs end-to-end tests (Entra + Google, requires e2e build tag)"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test ./test/ -v -count=1 -tags=e2e,entra "$@"
+go test ./test/... -v -count=1 -tags=e2e,entra,google "$@"
 """
 
 [tasks.lint]
-description = "Runs go vet"
+description = "Runs golangci-lint"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go vet ./...
+golangci-lint run ./...
 """
 
 [tasks.run]
@@ -72,11 +72,11 @@ go test ./internal/... ./cmd/... -v -count=1 "$@"
 """
 
 [tasks.test-all]
-description = "Runs unit + integration tests"
+description = "Runs unit + integration tests (Entra + Google E2E)"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-go test -tags e2e,entra ./...
+go test -tags=e2e,entra,google ./...
 """
 
 [tasks.ui-test]
@@ -170,14 +170,96 @@ trap 'mise run ui-e2e-stop' EXIT
 npx playwright test --project=chromium "$@"
 """
 
-[tasks.ui-e2e-headed]
-description = "Runs Playwright E2E tests with visible browser"
+[tasks.ui-e2e-server-google]
+description = "Starts the saldeti server in Google mode for E2E tests"
 depends = ["build"]
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+export NODE_TLS_REJECT_UNAUTHORIZED=0
+
+# Start the server in Google mode on a different port
+bin/saldeti -daemon -mode google -port 9444 -seed examples/google-seed.json -pidfile /tmp/saldeti-e2e-google.pid -logfile /tmp/saldeti-e2e-google.log
+
+# Wait for the server to be ready
+echo "Waiting for Google server to be ready..."
+timeout=15
+elapsed=0
+while [ $elapsed -lt $timeout ]; do
+  if curl -sk https://localhost:9444/google-ui > /dev/null 2>&1; then
+    echo "Google server is ready!"
+    exit 0
+  fi
+  sleep 1
+  elapsed=$((elapsed + 1))
+done
+
+echo "Google server did not become ready within ${timeout}s"
+exit 1
+"""
+
+[tasks.ui-e2e-stop-google]
+description = "Stops the Google daemon server used for E2E tests"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ -f /tmp/saldeti-e2e-google.pid ]; then
+  pid=$(cat /tmp/saldeti-e2e-google.pid)
+  if kill "$pid" 2>/dev/null; then
+    echo "Stopping Google server (PID: $pid)..."
+    timeout=5
+    elapsed=0
+    while [ $elapsed -lt $timeout ]; do
+      if ! kill -0 "$pid" 2>/dev/null; then
+        echo "Google server stopped gracefully"
+        rm -f /tmp/saldeti-e2e-google.pid
+        exit 0
+      fi
+      sleep 1
+      elapsed=$((elapsed + 1))
+    done
+    echo "Google server did not stop gracefully, forcing..."
+    kill -9 "$pid" 2>/dev/null || true
+  fi
+  rm -f /tmp/saldeti-e2e-google.pid
+else
+  echo "No Google PID file found, server may not be running"
+fi
+"""
+
+[tasks.ui-e2e-google]
+description = "Runs Playwright E2E tests for Google mode against the UI"
+depends = ["build", "ui-e2e-server-google"]
+env = { NODE_TLS_REJECT_UNAUTHORIZED = "0" }
 dir = "e2e"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
-npx playwright test --headed "$@"
+trap 'mise run ui-e2e-stop-google' EXIT
+npx playwright test --project=google-chromium "$@"
+"""
+
+[tasks.ui-e2e-all]
+description = "Runs all Playwright E2E tests (Entra + Google)"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+mise run ui-e2e "$@"
+mise run ui-e2e-google "$@"
+"""
+
+[tasks.ui-e2e-headed]
+description = "Runs Playwright E2E tests with a visible browser (Entra mode)"
+depends = ["build", "ui-e2e-server"]
+env = { NODE_TLS_REJECT_UNAUTHORIZED = "0" }
+dir = "e2e"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+trap 'mise run ui-e2e-stop' EXIT
+npx playwright test --project=chromium --headed "$@"
 """
 
 [tasks.schema]

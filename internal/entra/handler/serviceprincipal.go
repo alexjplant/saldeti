@@ -26,9 +26,9 @@ func listServicePrincipalsHandler(st store.Store) gin.HandlerFunc {
 		// Validate $top parameter
 		if topStr := c.Request.URL.Query().Get("$top"); topStr != "" {
 			if top, err := strconv.Atoi(topStr); err == nil && top > 0 {
-				if top > 999 {
+				if top > maxTopValue {
 					writeError(c, http.StatusBadRequest, "Request_BadRequest",
-						fmt.Sprintf("$top value %d exceeds maximum of 999.", top))
+						fmt.Sprintf("$top value %d exceeds maximum of %d.", top, maxTopValue))
 					return
 				}
 			}
@@ -37,15 +37,8 @@ func listServicePrincipalsHandler(st store.Store) gin.HandlerFunc {
 		// Call store to list service principals
 		sps, totalCount, err := st.ListServicePrincipals(c.Request.Context(), opts)
 		if err != nil {
-			// Check if error is a filter parsing error
-			errStr := err.Error()
-			if strings.Contains(errStr, "unable to parse filter expression") ||
-				strings.Contains(errStr, "cannot compare values") ||
-				strings.Contains(errStr, "operator not supported") ||
-				strings.Contains(errStr, "function value must be string") ||
-				strings.Contains(errStr, "unknown function") ||
-				strings.Contains(errStr, "invalid filter node") {
-				writeError(c, http.StatusBadRequest, "InvalidRequest", errStr)
+			if isFilterError(err) {
+				writeError(c, http.StatusBadRequest, "InvalidRequest", err.Error())
 			} else {
 				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to list service principals")
 			}
@@ -57,11 +50,11 @@ func listServicePrincipalsHandler(st store.Store) gin.HandlerFunc {
 			sps = []model.ServicePrincipal{}
 		}
 
-		var responseValue interface{} = sps
+		var responseValue any = sps
 		if len(opts.ExpandOptions) > 0 {
-			expandedSPs := make([]map[string]interface{}, 0, len(sps))
+			expandedSPs := make([]map[string]any, 0, len(sps))
 			for _, sp := range sps {
-				spMap := make(map[string]interface{})
+				spMap := make(map[string]any)
 				spJSON, err := json.Marshal(sp)
 				if err != nil {
 					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process service principal expansion")
@@ -75,12 +68,12 @@ func listServicePrincipalsHandler(st store.Store) gin.HandlerFunc {
 				for _, expand := range opts.ExpandOptions {
 					switch expand.Property {
 					case "owners":
-						owners, _, err := st.ListSPOwners(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+						owners, _, err := st.ListSPOwners(c.Request.Context(), sp.ID, model.ListOptions{Top: maxTopValue})
 						if err == nil {
 							spMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 						}
 					case "memberOf":
-						groups, _, err := st.ListSPMemberOf(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+						groups, _, err := st.ListSPMemberOf(c.Request.Context(), sp.ID, model.ListOptions{Top: maxTopValue})
 						if err == nil {
 							spMap["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 						}
@@ -95,19 +88,19 @@ func listServicePrincipalsHandler(st store.Store) gin.HandlerFunc {
 		if len(opts.Select) > 0 {
 			if len(opts.ExpandOptions) > 0 {
 				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
-				maps := responseValue.([]map[string]interface{})
+				maps := responseValue.([]map[string]any)
 				for i, m := range maps {
 					maps[i] = applySelect(m, opts.Select, expandedProps)
 				}
 			} else {
-				filteredItems := make([]map[string]interface{}, 0, len(sps))
+				filteredItems := make([]map[string]any, 0, len(sps))
 				for i := range sps {
 					itemJSON, err := json.Marshal(sps[i])
 					if err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
 					}
-					var itemMap map[string]interface{}
+					var itemMap map[string]any
 					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
@@ -175,12 +168,12 @@ func getServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 		for _, expand := range opts.ExpandOptions {
 			switch expand.Property {
 			case "owners":
-				owners, _, err := st.ListSPOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
+				owners, _, err := st.ListSPOwners(c.Request.Context(), id, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 				}
 			case "memberOf":
-				groups, _, err := st.ListSPMemberOf(c.Request.Context(), id, model.ListOptions{Top: 999})
+				groups, _, err := st.ListSPMemberOf(c.Request.Context(), id, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 				}
@@ -235,12 +228,12 @@ func getSPByAppIDHandler(st store.Store) gin.HandlerFunc {
 		for _, expand := range opts.ExpandOptions {
 			switch expand.Property {
 			case "owners":
-				owners, _, err := st.ListSPOwners(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+				owners, _, err := st.ListSPOwners(c.Request.Context(), sp.ID, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 				}
 			case "memberOf":
-				groups, _, err := st.ListSPMemberOf(c.Request.Context(), sp.ID, model.ListOptions{Top: 999})
+				groups, _, err := st.ListSPMemberOf(c.Request.Context(), sp.ID, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["memberOf"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(groups), expand.Select)
 				}
@@ -270,6 +263,11 @@ func createServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 		if sp.AppID == "" {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "appId is required")
 			return
+		}
+
+		// Set OData type if not provided
+		if sp.ODataType == "" {
+			sp.ODataType = "#microsoft.graph.servicePrincipal"
 		}
 
 		createdSP, err := st.CreateServicePrincipal(c.Request.Context(), sp)
@@ -305,7 +303,7 @@ func updateServicePrincipalHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Decode patch as map
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
@@ -1172,7 +1170,7 @@ func listEmptyPoliciesHandler(st store.Store, collectionName string) gin.Handler
 
 		writeJSON(c, http.StatusOK, gin.H{
 			"@odata.context": fmt.Sprintf("https://graph.microsoft.com/v1.0/$metadata#servicePrincipals('%s')/%s", id, collectionName),
-			"value":          []interface{}{},
+			"value":          []any{},
 		})
 	}
 }

@@ -24,9 +24,9 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 		// Validate $top parameter
 		if topStr := c.Request.URL.Query().Get("$top"); topStr != "" {
 			if top, err := strconv.Atoi(topStr); err == nil && top > 0 {
-				if top > 999 {
+				if top > maxTopValue {
 					writeError(c, http.StatusBadRequest, "Request_BadRequest",
-						fmt.Sprintf("$top value %d exceeds maximum of 999.", top))
+						fmt.Sprintf("$top value %d exceeds maximum of %d.", top, maxTopValue))
 					return
 				}
 			}
@@ -35,15 +35,8 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 		// Call store to list applications
 		applications, totalCount, err := st.ListApplications(c.Request.Context(), opts)
 		if err != nil {
-			// Check if error is a filter parsing error
-			errStr := err.Error()
-			if strings.Contains(errStr, "unable to parse filter expression") ||
-			   strings.Contains(errStr, "cannot compare values") ||
-			   strings.Contains(errStr, "operator not supported") ||
-			   strings.Contains(errStr, "function value must be string") ||
-			   strings.Contains(errStr, "unknown function") ||
-			   strings.Contains(errStr, "invalid filter node") {
-				writeError(c, http.StatusBadRequest, "InvalidRequest", errStr)
+			if isFilterError(err) {
+				writeError(c, http.StatusBadRequest, "InvalidRequest", err.Error())
 			} else {
 				writeError(c, http.StatusInternalServerError, "InternalError", "Failed to list applications")
 			}
@@ -55,11 +48,11 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 			applications = []model.Application{}
 		}
 
-		var responseValue interface{} = applications
+		var responseValue any = applications
 		if len(opts.ExpandOptions) > 0 {
-			expandedApps := make([]map[string]interface{}, 0, len(applications))
+			expandedApps := make([]map[string]any, 0, len(applications))
 			for _, app := range applications {
-				appMap := make(map[string]interface{})
+				appMap := make(map[string]any)
 				appJSON, err := json.Marshal(app)
 				if err != nil {
 					writeError(c, http.StatusInternalServerError, "InternalError", "Failed to process application expansion")
@@ -72,11 +65,11 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 
 				for _, expand := range opts.ExpandOptions {
 					switch expand.Property {
-			case "owners":
-					owners, _, err := st.ListApplicationOwners(c.Request.Context(), app.ID, model.ListOptions{Top: 999})
-					if err == nil {
-						appMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
-					}
+					case "owners":
+						owners, _, err := st.ListApplicationOwners(c.Request.Context(), app.ID, model.ListOptions{Top: maxTopValue})
+						if err == nil {
+							appMap["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
+						}
 					}
 				}
 				expandedApps = append(expandedApps, appMap)
@@ -88,19 +81,19 @@ func listApplicationsHandler(st store.Store) gin.HandlerFunc {
 		if len(opts.Select) > 0 {
 			if len(opts.ExpandOptions) > 0 {
 				expandedProps := computeExpandedPropertyNames(opts.ExpandOptions)
-				maps := responseValue.([]map[string]interface{})
+				maps := responseValue.([]map[string]any)
 				for i, m := range maps {
 					maps[i] = applySelect(m, opts.Select, expandedProps)
 				}
 			} else {
-				filteredItems := make([]map[string]interface{}, 0, len(applications))
+				filteredItems := make([]map[string]any, 0, len(applications))
 				for i := range applications {
 					itemJSON, err := json.Marshal(applications[i])
 					if err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
 					}
-					var itemMap map[string]interface{}
+					var itemMap map[string]any
 					if err := json.Unmarshal(itemJSON, &itemMap); err != nil {
 						writeError(c, http.StatusInternalServerError, "Service_InternalServerError", "Failed to serialize response.")
 						return
@@ -168,7 +161,7 @@ func getApplicationHandler(st store.Store) gin.HandlerFunc {
 		for _, expand := range opts.ExpandOptions {
 			switch expand.Property {
 			case "owners":
-				owners, _, err := st.ListApplicationOwners(c.Request.Context(), id, model.ListOptions{Top: 999})
+				owners, _, err := st.ListApplicationOwners(c.Request.Context(), id, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 				}
@@ -223,7 +216,7 @@ func getApplicationByAppIDHandler(st store.Store) gin.HandlerFunc {
 		for _, expand := range opts.ExpandOptions {
 			switch expand.Property {
 			case "owners":
-				owners, _, err := st.ListApplicationOwners(c.Request.Context(), application.ID, model.ListOptions{Top: 999})
+				owners, _, err := st.ListApplicationOwners(c.Request.Context(), application.ID, model.ListOptions{Top: maxTopValue})
 				if err == nil {
 					response["owners"] = applyNestedSelectToDirectoryObjects(nilToEmptyDirectoryObjects(owners), expand.Select)
 				}
@@ -244,7 +237,7 @@ func getApplicationByAppIDHandler(st store.Store) gin.HandlerFunc {
 func createApplicationHandler(st store.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// First, read the raw request body to handle owners@odata.bind
-		var requestBody map[string]interface{}
+		var requestBody map[string]any
 		bodyBytes, err := io.ReadAll(io.LimitReader(c.Request.Body, maxBodyBytes))
 		if err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Failed to read request body")
@@ -263,7 +256,7 @@ func createApplicationHandler(st store.Store) gin.HandlerFunc {
 
 		// Handle owners@odata.bind
 		if ownersBind, ok := requestBody["owners@odata.bind"]; ok {
-			if ownersArray, ok := ownersBind.([]interface{}); ok {
+			if ownersArray, ok := ownersBind.([]any); ok {
 				for _, ownerRef := range ownersArray {
 					if ownerStr, ok := ownerRef.(string); ok {
 						app.Owners = append(app.Owners, model.DirectoryObjectRef{
@@ -320,7 +313,7 @@ func updateApplicationHandler(st store.Store) gin.HandlerFunc {
 		}
 
 		// Decode patch as map
-		var patch map[string]interface{}
+		var patch map[string]any
 		if err := json.NewDecoder(io.LimitReader(c.Request.Body, maxBodyBytes)).Decode(&patch); err != nil {
 			writeError(c, http.StatusBadRequest, "InvalidRequest", "Invalid JSON body")
 			return
@@ -683,7 +676,7 @@ func listExtensionPropertiesHandler(st store.Store) gin.HandlerFunc {
 			extProps = []model.ExtensionProperty{}
 		}
 
-		response := map[string]interface{}{
+		response := map[string]any{
 			"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#extensionProperties",
 			"value":          extProps,
 		}
@@ -791,7 +784,7 @@ func setVerifiedPublisherHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		_, err := st.UpdateApplication(c.Request.Context(), id, map[string]interface{}{"verifiedPublisher": body})
+		_, err := st.UpdateApplication(c.Request.Context(), id, map[string]any{"verifiedPublisher": body})
 		if err != nil {
 			if errors.Is(err, store.ErrApplicationNotFound) {
 				writeError(c, http.StatusNotFound, "ResourceNotFound", "Application not found")
@@ -816,10 +809,10 @@ func applicationsDeltaHandler(st store.Store) gin.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
-			"@odata.context":    "https://graph.microsoft.com/v1.0/$metadata#applications",
-			"value":             items,
-			"@odata.deltaLink":  getBaseURL(c) + "/v1.0/applications/delta?$deltatoken=" + newDeltaToken,
+		response := map[string]any{
+			"@odata.context":   "https://graph.microsoft.com/v1.0/$metadata#applications",
+			"value":            items,
+			"@odata.deltaLink": getBaseURL(c) + "/v1.0/applications/delta?$deltatoken=" + newDeltaToken,
 		}
 
 		writeJSON(c, http.StatusOK, response)

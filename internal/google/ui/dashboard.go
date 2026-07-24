@@ -69,14 +69,14 @@ func DashboardHandler(h *UIHandler) gin.HandlerFunc {
 		}
 
 		h.render(c, "templates/dashboard.html", gin.H{
-			"ActiveNav":           "dashboard",
-			"TotalUsers":          totalUsers,
-			"TotalGroups":         totalGroups,
-			"TotalOrgUnits":       totalOrgUnits,
+			"ActiveNav":            "dashboard",
+			"TotalUsers":           totalUsers,
+			"TotalGroups":          totalGroups,
+			"TotalOrgUnits":        totalOrgUnits,
 			"TotalChromeOSDevices": totalChromeOSDevices,
-			"TotalMobileDevices":  totalMobileDevices,
-			"TotalRoles":          totalRoles,
-			"TotalDomains":        totalDomains,
+			"TotalMobileDevices":   totalMobileDevices,
+			"TotalRoles":           totalRoles,
+			"TotalDomains":         totalDomains,
 		})
 	}
 }

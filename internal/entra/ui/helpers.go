@@ -36,6 +36,13 @@ func planIDsToNames(planIDs []string) []string {
 	return names
 }
 
+func skuIDToPartNumber(skuID string) string {
+	if pn, found := model.FindSkuBySkuID(skuID); found {
+		return pn
+	}
+	return skuID // Return GUID if not found
+}
+
 func formatDate(t time.Time) string {
 	return t.Format("Jan 02, 2006")
 }
@@ -63,12 +70,13 @@ func contains(s, substr string) bool {
 
 func funcMap() template.FuncMap {
 	return template.FuncMap{
-		"formatDate":     formatDate,
-		"truncate":       truncate,
-		"yesno":          yesno,
-		"join":           strings.Join,
-		"planIDToName":   planIDToName,
-		"planIDsToNames": planIDsToNames,
-		"contains":       contains,
+		"formatDate":        formatDate,
+		"truncate":          truncate,
+		"yesno":             yesno,
+		"join":              strings.Join,
+		"planIDToName":      planIDToName,
+		"planIDsToNames":    planIDsToNames,
+		"skuIDToPartNumber": skuIDToPartNumber,
+		"contains":          contains,
 	}
 }
