@@ -847,6 +847,44 @@ func TestSeedFromConfig_NewSchema(t *testing.T) {
 	}
 }
 
+func TestSeedFromConfig_ServicePrincipalWithID(t *testing.T) {
+	s := store.NewMemoryStore()
+
+	const spID = "sim-wiz-sp-object-id"
+	cfg := &SeedConfig{
+		Clients: []SeedClient{
+			{
+				ClientID:     "test-client-id",
+				ClientSecret: "test-client-secret",
+				TenantID:     "test-tenant-id",
+			},
+		},
+		ServicePrincipals: []SeedServicePrincipal{
+			{
+				ID:    spID,
+				AppID: "sim-wiz-sso-app",
+			},
+		},
+	}
+
+	err := SeedFromConfig(s, cfg)
+	if err != nil {
+		t.Fatalf("SeedFromConfig() failed: %v", err)
+	}
+
+	// The SP must be retrievable by the fixed object ID.
+	sp, err := s.GetServicePrincipal(nil, spID)
+	if err != nil {
+		t.Fatalf("Failed to get service principal by ID %s: %v", spID, err)
+	}
+	if sp.ID != spID {
+		t.Errorf("Expected SP ID %s, got %s", spID, sp.ID)
+	}
+	if sp.AppID != "sim-wiz-sso-app" {
+		t.Errorf("Expected SP app_id 'sim-wiz-sso-app', got '%s'", sp.AppID)
+	}
+}
+
 func TestSeedFromConfig_NestedGroups(t *testing.T) {
 	// Create a memory store
 	s := store.NewMemoryStore()
